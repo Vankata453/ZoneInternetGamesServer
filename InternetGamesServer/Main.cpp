@@ -6,6 +6,7 @@
 
 #include <iostream>
 
+#include "MatchManager.hpp"
 #include "Socket.hpp"
 
 #define DEFAULT_PORT "80"
@@ -26,6 +27,11 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	// Create a thread to update the logic of all matches
+	DWORD nMatchManagerThreadID;
+	CreateThread(0, 0, MatchManager::UpdateHandler, nullptr, 0, &nMatchManagerThreadID);
+
+	/** SET UP WINSOCK */
 	WSADATA wsaData;
 	HRESULT startupResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (startupResult != 0)
@@ -94,8 +100,8 @@ int main(int argc, char* argv[])
 		std::cout << "Accepted connection from " << Socket::GetAddressString(ClientSocket) << "." << std::endl;
 
 		// Create a thread to handle the socket
-		DWORD nThreadID;
-		CreateThread(0, 0, Socket::SocketHandler, (void*)ClientSocket, 0, &nThreadID);
+		DWORD nSocketThreadID;
+		CreateThread(0, 0, Socket::SocketHandler, (void*)ClientSocket, 0, &nSocketThreadID);
 	}
 
 	// Clean up

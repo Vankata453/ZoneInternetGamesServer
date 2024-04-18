@@ -141,19 +141,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BackgammonMatch.cpp" />
+    <ClCompile Include="CheckersMatch.cpp" />
     <ClCompile Include="external\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Match.cpp" />
     <ClCompile Include="MatchManager.cpp" />
     <ClCompile Include="PlayerSocket.cpp" />
     <ClCompile Include="Socket.cpp" />
+    <ClCompile Include="SpadesMatch.cpp" />
+    <ClCompile Include="StateTags.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BackgammonMatch.hpp" />
+    <ClInclude Include="CheckersMatch.hpp" />
     <ClInclude Include="Match.hpp" />
     <ClInclude Include="MatchManager.hpp" />
     <ClInclude Include="PlayerSocket.hpp" />
     <ClInclude Include="Socket.hpp" />
+    <ClInclude Include="SpadesMatch.hpp" />
+    <ClInclude Include="StateTags.hpp" />
     <ClInclude Include="Util.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

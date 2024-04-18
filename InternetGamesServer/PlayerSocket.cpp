@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <sstream>
 
-#include <tinyxml2.h>
+#include "tinyxml2.h"
 
 #include "MatchManager.hpp"
 #include "Socket.hpp"
@@ -14,7 +14,9 @@ PlayerSocket::PlayerSocket(SOCKET socket) :
 	m_state(STATE_NOT_INITIALIZED),
 	m_guid(),
 	m_game(),
-	m_match()
+	m_match(),
+	m_name(RandomString(8) + "      01"),
+	m_role(-1)
 {
 }
 
@@ -40,16 +42,17 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 				// Find/Create a lobby (pending match), based on the game to be played
 				m_match = MatchManager::Get().FindLobby(*this, m_game); // TODO: Find lobbies, based on skill level
 
-				m_state = STATE_JOINED;
+				m_state = STATE_JOINING;
 				m_guid = StringSplit(receivedData[0], "=")[1];
 				return { ConstructJoinContextMessage() };
 			}
 			break;
 
-		case STATE_JOINED:
+		case STATE_JOINING:
 			if (StartsWith(receivedData[0], "PLAY match"))
 			{
-				return { ConstructReadyMessage(), ConstructStateMessage(ConstructReadyXML()) };
+				m_state = STATE_WAITINGFOROPPONENTS;
+				return { ConstructReadyMessage(), ConstructStateMessage(m_match->ConstructReadyXML()) };
 			}
 			break;
 	}
@@ -60,8 +63,15 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 void
 PlayerSocket::OnGameStart()
 {
-	// Indicate the server is ready to the client
-	//Socket::SendData(m_socket, {  });
+	if (m_state != STATE_WAITINGFOROPPONENTS)
+		return;
+
+	m_state = STATE_PLAYING;
+
+	// Send a game initialization message
+	std::vector<std::unique_ptr<StateTag>> tags;
+	tags.push_back(m_match->ConstructGameInitSTag(this));
+	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML(tags)) });
 }
 
 void
@@ -125,26 +135,4 @@ PlayerSocket::ConstructStateMessage(const std::string& xml)
 	std::stringstream out;
 	out << "STATE " << m_match->GetGUID() << "\r\nLength: " << hexsize.str() << "\r\n\r\n" << xml << "\r\n";
 	return out.str();
-}
-
-
-std::string
-PlayerSocket::ConstructReadyXML()
-{
-	tinyxml2::XMLDocument doc;
-
-	tinyxml2::XMLElement* elReadyMessage = doc.NewElement("ReadyMessage");
-	doc.InsertFirstChild(elReadyMessage);
-
-	tinyxml2::XMLElement* elEStatus = doc.NewElement("eStatus");
-	elEStatus->SetText("Ready");
-	elReadyMessage->InsertEndChild(elEStatus);
-
-	tinyxml2::XMLElement* elSMode = doc.NewElement("sMode");
-	elEStatus->SetText("normal");
-	elReadyMessage->InsertEndChild(elSMode);
-
-	tinyxml2::XMLPrinter printer;
-	doc.Print(&printer);
-	return printer.CStr();
 }

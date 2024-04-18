@@ -1,6 +1,12 @@
 #include "Util.hpp"
 
+#include <algorithm>
+#include <ctime>
 #include <ostream>
+#include <random>
+#include <sstream>
+
+#include "tinyxml2.h"
 
 bool StartsWith(const std::string& str, const std::string& prefix)
 {
@@ -21,6 +27,56 @@ std::vector<std::string> StringSplit(std::string str, const std::string& delimit
 	}
 
 	result.push_back(str);
+	return result;
+}
+
+// From https://stackoverflow.com/a/12468109
+std::string RandomString(size_t length)
+{
+	srand(static_cast<unsigned int>(std::time(nullptr)));
+
+	auto randchar = []() -> char
+	{
+		static const char charset[] =
+			"0123456789"
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			"abcdefghijklmnopqrstuvwxyz";
+		const size_t max_index = sizeof(charset) - 1;
+		return charset[rand() % max_index];
+	};
+
+	std::string str(length, 0);
+	std::generate_n(str.begin(), length, randchar);
+	return str;
+}
+
+
+/** TinyXML2 shortcuts */
+tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, const std::string& text)
+{
+	tinyxml2::XMLElement* el = root->GetDocument()->NewElement(name.c_str());
+	el->SetText(text.c_str());
+	root->InsertEndChild(el);
+	return el;
+}
+
+std::string PrintXML(tinyxml2::XMLDocument& doc)
+{
+	tinyxml2::XMLPrinter printer(nullptr, /* Compact mode */ true);
+	doc.Print(&printer);
+	return printer.CStr();
+}
+
+
+std::vector<int> GenerateUniqueRandomNums(int start, int end)
+{
+	std::vector<int> result;
+	for (int i = start; i <= end; i++)
+		result.push_back(i);
+
+	std::random_device rd;
+	std::shuffle(result.begin(), result.end(), rd);
+
 	return result;
 }
 
