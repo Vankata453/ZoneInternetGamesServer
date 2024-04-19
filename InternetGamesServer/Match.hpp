@@ -37,6 +37,9 @@ public:
 	/** Update match logic */
 	virtual void Update();
 
+	/** Event handling */
+	void EventSend(const PlayerSocket* caller, const std::string& XMLDataString) const;
+
 	inline State GetState() const { return m_state; }
 	inline REFGUID GetGUID() const { return m_guid; }
 
@@ -47,6 +50,7 @@ public:
 	/** Construct "Tag"s to be used in "StateMessage"s */
 	std::unique_ptr<StateTag> ConstructGameInitSTag(PlayerSocket* caller) const;
 	std::unique_ptr<StateTag> ConstructGameStartSTag() const;
+	std::unique_ptr<StateTag> ConstructEventReceiveSTag(const std::string& xml) const;
 
 protected:
 	virtual size_t GetRequiredPlayerCount() const { return 2; }

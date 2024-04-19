@@ -23,8 +23,10 @@ public:
 
 	std::vector<std::string> GetResponse(const std::vector<std::string>& receivedData);
 
+	/** Event handling */
 	void OnGameStart();
 	void OnDisconnected();
+	void OnEventReceive(const std::string& XMLDataString) const;
 
 	inline State GetState() const { return m_state; }
 
@@ -32,9 +34,9 @@ private:
 	void ParseGasTicket(const std::string& xml);
 
 	/** Construct protocol messages */
-	std::string ConstructJoinContextMessage();
-	std::string ConstructReadyMessage();
-	std::string ConstructStateMessage(const std::string& xml);
+	std::string ConstructJoinContextMessage() const;
+	std::string ConstructReadyMessage() const;
+	std::string ConstructStateMessage(const std::string& xml) const;
 
 private:
 	SOCKET m_socket;

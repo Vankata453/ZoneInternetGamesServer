@@ -57,12 +57,18 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 			break;
 
 		case STATE_PLAYING:
-			if (StartsWith(receivedData[0], "CALL GameReady"))
+			if (StartsWith(receivedData[0], "CALL GameReady")) // Game is ready, start it
 			{
 				// Send a game start message
 				std::vector<std::unique_ptr<StateTag>> tags;
 				tags.push_back(m_match->ConstructGameStartSTag());
 				return { ConstructStateMessage(m_match->ConstructStateXML(tags)) };
+			}
+			else if (receivedData[0] == "CALL EventSend messageID=EventSend" && receivedData.size() > 1 &&
+				StartsWith(receivedData[1], "XMLDataString=")) // An event is being sent, let the Match send it to all players
+			{
+				m_match->EventSend(this, receivedData[1].substr(14)); // Remove "XMLDataString=" from the beginning
+				return {};
 			}
 			break;
 	}
@@ -91,6 +97,15 @@ PlayerSocket::OnDisconnected()
 		m_match->DisconnectedPlayer(*this);
 }
 
+void
+PlayerSocket::OnEventReceive(const std::string& XMLDataString) const
+{
+	// Send an event receive message
+	std::vector<std::unique_ptr<StateTag>> tags;
+	tags.push_back(m_match->ConstructEventReceiveSTag(DecodeURL(XMLDataString)));
+	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML(tags)) });
+}
+
 
 void
 PlayerSocket::ParseGasTicket(const std::string& xml)
@@ -117,7 +132,7 @@ PlayerSocket::ParseGasTicket(const std::string& xml)
 
 
 std::string
-PlayerSocket::ConstructJoinContextMessage()
+PlayerSocket::ConstructJoinContextMessage() const
 {
 	// Construct JoinContext message
 	std::stringstream out;
@@ -126,7 +141,7 @@ PlayerSocket::ConstructJoinContextMessage()
 }
 
 std::string
-PlayerSocket::ConstructReadyMessage()
+PlayerSocket::ConstructReadyMessage() const
 {
 	// Construct READY message
 	std::stringstream out;
@@ -135,7 +150,7 @@ PlayerSocket::ConstructReadyMessage()
 }
 
 std::string
-PlayerSocket::ConstructStateMessage(const std::string& xml)
+PlayerSocket::ConstructStateMessage(const std::string& xml) const
 {
 	// Get a hex number of XML string size
 	std::stringstream hexsize;

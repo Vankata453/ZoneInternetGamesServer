@@ -91,6 +91,18 @@ Match::Update()
 }
 
 
+void
+Match::EventSend(const PlayerSocket* caller, const std::string& XMLDataString) const
+{
+	// Send the event to all other players
+	for (PlayerSocket* p : m_players)
+	{
+		if (p != caller)
+			p->OnEventReceive(XMLDataString);
+	}
+}
+
+
 std::string
 Match::ConstructReadyXML() const
 {
@@ -145,5 +157,15 @@ Match::ConstructGameStartSTag() const
 	auto sTag = std::make_unique<StateSTag>();
 	sTag->msgID = "GameStart";
 	sTag->msgIDSbky = "GameStart";
+	return sTag;
+}
+
+std::unique_ptr<StateTag>
+Match::ConstructEventReceiveSTag(const std::string& xml) const
+{
+	auto sTag = std::make_unique<StateSTag>();
+	sTag->msgID = "EventReceive";
+	sTag->msgIDSbky = "EventReceive";
+	sTag->msgD = xml;
 	return sTag;
 }

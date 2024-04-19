@@ -8,6 +8,7 @@
 
 #include "tinyxml2.h"
 
+/** String utilities */
 bool StartsWith(const std::string& str, const std::string& prefix)
 {
 	return str.rfind(prefix, 0) == 0;
@@ -51,6 +52,36 @@ std::string RandomString(size_t length)
 }
 
 
+/** Encoding/Decoding */
+// From https://stackoverflow.com/questions/154536/encode-decode-urls-in-c#comment113952077_32595923
+std::string DecodeURL(const std::string& str)
+{
+	std::stringstream out;
+	for (auto i = str.begin(), n = str.end(); i != n; ++i)
+	{
+		const std::string::value_type c = (*i);
+		if (c == '%')
+		{
+			if (i[1] && i[2])
+			{
+				char hs[]{ i[1], i[2] };
+				out << static_cast<char>(strtol(hs, nullptr, 16));
+				i += 2;
+			}
+		}
+		else if (c == '+')
+		{
+			out << ' ';
+		}
+		else
+		{
+			out << c;
+		}
+	}
+	return out.str();
+}
+
+
 /** TinyXML2 shortcuts */
 tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, const std::string& text)
 {
@@ -68,6 +99,7 @@ std::string PrintXML(tinyxml2::XMLDocument& doc)
 }
 
 
+/** Random generation */
 std::vector<int> GenerateUniqueRandomNums(int start, int end)
 {
 	std::vector<int> result;
