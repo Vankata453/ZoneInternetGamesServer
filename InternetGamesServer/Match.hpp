@@ -46,6 +46,7 @@ public:
 
 	/** Construct "Tag"s to be used in "StateMessage"s */
 	std::unique_ptr<StateTag> ConstructGameInitSTag(PlayerSocket* caller) const;
+	std::unique_ptr<StateTag> ConstructGameStartSTag() const;
 
 protected:
 	virtual size_t GetRequiredPlayerCount() const { return 2; }

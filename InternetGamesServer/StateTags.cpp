@@ -18,6 +18,6 @@ StateSTag::AppendToTags(tinyxml2::XMLElement& arTags) const
 	tinyxml2::XMLElement* elOValue = doc.NewElement("oValue");
 	NewElementWithText(elOValue, "MsgID", msgID);
 	NewElementWithText(elOValue, "MsgIDSbky", msgIDSbky);
-	NewElementWithText(elOValue, "MsgD", msgD);
+	NewElementWithText(elOValue, "MsgD", msgD.empty() ? "0" : msgD);
 	elTag->InsertEndChild(elOValue);
 }

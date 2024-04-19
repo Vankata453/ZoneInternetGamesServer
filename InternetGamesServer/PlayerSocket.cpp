@@ -55,6 +55,16 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 				return { ConstructReadyMessage(), ConstructStateMessage(m_match->ConstructReadyXML()) };
 			}
 			break;
+
+		case STATE_PLAYING:
+			if (StartsWith(receivedData[0], "CALL GameReady"))
+			{
+				// Send a game start message
+				std::vector<std::unique_ptr<StateTag>> tags;
+				tags.push_back(m_match->ConstructGameStartSTag());
+				return { ConstructStateMessage(m_match->ConstructStateXML(tags)) };
+			}
+			break;
 	}
 	return {};
 }

@@ -138,3 +138,12 @@ Match::ConstructGameInitSTag(PlayerSocket* caller) const
 	sTag->msgD = ConstructGameInitXML(caller);
 	return sTag;
 }
+
+std::unique_ptr<StateTag>
+Match::ConstructGameStartSTag() const
+{
+	auto sTag = std::make_unique<StateSTag>();
+	sTag->msgID = "GameStart";
+	sTag->msgIDSbky = "GameStart";
+	return sTag;
+}
