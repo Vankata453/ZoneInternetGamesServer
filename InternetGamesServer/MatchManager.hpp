@@ -21,6 +21,7 @@ public:
 
 public:
 	MatchManager();
+	~MatchManager();
 
 	/** Update the logic of all matches */
 	void Update();
@@ -33,6 +34,8 @@ private:
 	Match* CreateLobby(PlayerSocket& player, Match::Game game);
 
 private:
+	HANDLE m_mutex; // Mutex to prevent simultaneous updating and creation of matches
+
 	std::vector<std::unique_ptr<BackgammonMatch>> m_backgammonMatches;
 	std::vector<std::unique_ptr<CheckersMatch>> m_checkersMatches;
 	std::vector<std::unique_ptr<SpadesMatch>> m_spadesMatches;
