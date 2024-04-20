@@ -29,7 +29,11 @@ int main(int argc, char* argv[])
 
 	// Create a thread to update the logic of all matches
 	DWORD nMatchManagerThreadID;
-	CreateThread(0, 0, MatchManager::UpdateHandler, nullptr, 0, &nMatchManagerThreadID);
+	if (!CreateThread(0, 0, MatchManager::UpdateHandler, nullptr, 0, &nMatchManagerThreadID))
+	{
+		std::cout << "Couldn't create a thread to update MatchManager: " << GetLastError() << std::endl;
+		return 1;
+	}
 
 	/** SET UP WINSOCK */
 	WSADATA wsaData;
@@ -101,7 +105,11 @@ int main(int argc, char* argv[])
 
 		// Create a thread to handle the socket
 		DWORD nSocketThreadID;
-		CreateThread(0, 0, Socket::SocketHandler, (void*)ClientSocket, 0, &nSocketThreadID);
+		if (!CreateThread(0, 0, Socket::SocketHandler, (void*)ClientSocket, 0, &nSocketThreadID))
+		{
+			std::cout << "Couldn't create a thread to handle socket from " << Socket::GetAddressString(ClientSocket)
+				<< ": " << GetLastError() << std::endl;
+		}
 	}
 
 	// Clean up
