@@ -30,8 +30,10 @@ public:
 	void OnChatByID(const StateChatTag* tag);
 
 	inline State GetState() const { return m_state; }
+	inline std::string GetPUID() const { return m_puid; }
 
 private:
+	void ParseSasTicket(const std::string& xml);
 	void ParseGasTicket(const std::string& xml);
 
 	/** Construct protocol messages */
@@ -44,12 +46,12 @@ private:
 	State m_state;
 
 	std::string m_guid;
+	std::string m_puid;
 	Match::Game m_game;
 
 	Match* m_match;
 
 public:
-	// Match-related variables
-	std::string m_name;
+	// Variables, set by the match
 	int m_role;
 };

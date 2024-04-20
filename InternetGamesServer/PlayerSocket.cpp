@@ -13,9 +13,9 @@ PlayerSocket::PlayerSocket(SOCKET socket) :
 	m_socket(socket),
 	m_state(STATE_NOT_INITIALIZED),
 	m_guid(),
+	m_puid(),
 	m_game(),
 	m_match(),
-	m_name(RandomString(8)),
 	m_role(-1)
 {
 }
@@ -37,6 +37,7 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 		case STATE_INITIALIZED:
 			if (receivedData.size() >= 6 && StartsWith(receivedData[0], "JOIN Session="))
 			{
+				ParseSasTicket(receivedData[2]);
 				ParseGasTicket(receivedData[3]);
 
 				// Find/Create a lobby (pending match), based on the game to be played
@@ -73,7 +74,7 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 			{
 				StateChatTag tag;
 				tag.userID = m_guid.substr(1, m_guid.size() - 2); // Remove braces from beginning and end
-				tag.nickname = m_name;
+				tag.nickname = m_puid;
 				tag.text = receivedData[0].substr(20); // Remove "CALL Chat sChatText=" from the beginning
 				tag.fontFace = DecodeURL(receivedData[1].substr(10)); // Remove "sFontFace=" from the beginning
 				tag.fontFlags = receivedData[2].substr(13); // Remove "arfFontFlags=" from the beginning
@@ -124,6 +125,29 @@ PlayerSocket::OnChatByID(const StateChatTag* tag)
 	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ tag })) });
 }
 
+
+void
+PlayerSocket::ParseSasTicket(const std::string& xml)
+{
+	tinyxml2::XMLDocument doc;
+	tinyxml2::XMLError status = doc.Parse(xml.substr(10).c_str()); // Remove "GasTicket=" from the beginning
+	if (status != tinyxml2::XML_SUCCESS)
+		throw std::runtime_error("Corrupted data received: Error parsing SasTicket: " + status);
+
+	tinyxml2::XMLElement* elAnon = doc.RootElement();
+	if (!elAnon)
+		throw std::runtime_error("Corrupted data received: No root element in SasTicket.");
+
+	tinyxml2::XMLElement* elPub = elAnon->FirstChildElement("pub");
+	if (!elPub)
+		throw std::runtime_error("Corrupted data received: No \"<pub>...</pub>\" in SasTicket.");
+
+	// "Game"
+	tinyxml2::XMLElement* elPUID = elPub->FirstChildElement("PUID");
+	if (!elPUID || !elPUID->GetText())
+		throw std::runtime_error("Corrupted data received: No \"<PUID>...</PUID>\" in SasTicket.");
+	m_puid = elPUID->GetText();
+}
 
 void
 PlayerSocket::ParseGasTicket(const std::string& xml)

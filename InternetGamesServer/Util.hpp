@@ -14,7 +14,6 @@ namespace tinyxml2 {
 bool StartsWith(const std::string& str, const std::string& prefix);
 std::vector<std::string> StringSplit(std::string str, const std::string& delimiter);
 void RemoveNewlines(std::string& str);
-std::string RandomString(size_t length);
 
 /** Encoding/Decoding */
 std::string DecodeURL(const std::string& str);

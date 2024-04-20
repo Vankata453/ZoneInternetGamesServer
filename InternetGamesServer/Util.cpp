@@ -1,6 +1,5 @@
 #include "Util.hpp"
 
-#include <algorithm>
 #include <ctime>
 #include <ostream>
 #include <random>
@@ -37,26 +36,6 @@ void RemoveNewlines(std::string& str)
 	str.erase(std::remove_if(str.begin(), str.end(),
 		[](char ch) { return std::iscntrl(static_cast<unsigned char>(ch)); }),
 		str.end());
-}
-
-// From https://stackoverflow.com/a/12468109
-std::string RandomString(size_t length)
-{
-	srand(static_cast<unsigned int>(std::time(nullptr)));
-
-	auto randchar = []() -> char
-	{
-		static const char charset[] =
-			"0123456789"
-			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-			"abcdefghijklmnopqrstuvwxyz";
-		const size_t max_index = sizeof(charset) - 1;
-		return charset[rand() % max_index];
-	};
-
-	std::string str(length, 0);
-	std::generate_n(str.begin(), length, randchar);
-	return str;
 }
 
 
