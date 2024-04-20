@@ -3,11 +3,11 @@
 #include <memory>
 #include <vector>
 
-#include "Match.hpp"
 #include "PlayerSocket.hpp"
 
 class BackgammonMatch;
 class CheckersMatch;
+class Match;
 class SpadesMatch;
 
 class MatchManager final
@@ -28,10 +28,10 @@ public:
 
 	/** Find a lobby (pending match) to join a player in, based on their game.
 		If none is available, create one. */
-	Match* FindLobby(PlayerSocket& player, Match::Game game);
+	Match* FindLobby(PlayerSocket& player);
 
 private:
-	Match* CreateLobby(PlayerSocket& player, Match::Game game);
+	Match* CreateLobby(PlayerSocket& player);
 
 private:
 	HANDLE m_mutex; // Mutex to prevent simultaneous updating and creation of matches

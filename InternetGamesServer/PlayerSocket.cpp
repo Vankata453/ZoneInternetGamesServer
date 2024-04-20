@@ -14,7 +14,8 @@ PlayerSocket::PlayerSocket(SOCKET socket) :
 	m_state(STATE_NOT_INITIALIZED),
 	m_guid(),
 	m_puid(),
-	m_game(),
+	m_game(Match::Game::INVALID),
+	m_level(Match::Level::INVALID),
 	m_match(),
 	m_role(-1)
 {
@@ -39,9 +40,10 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 			{
 				ParseSasTicket(receivedData[2]);
 				ParseGasTicket(receivedData[3]);
+				ParsePasTicket(receivedData[4]);
 
-				// Find/Create a lobby (pending match), based on the game to be played
-				m_match = MatchManager::Get().FindLobby(*this, m_game); // TODO: Find lobbies, based on skill level
+				// Find/Create a lobby (pending match), based on the game to be played and skill level
+				m_match = MatchManager::Get().FindLobby(*this);
 
 				m_state = STATE_JOINING;
 				m_guid = StringSplit(receivedData[0], "=")[1];
@@ -142,7 +144,7 @@ PlayerSocket::ParseSasTicket(const std::string& xml)
 	if (!elPub)
 		throw std::runtime_error("Corrupted data received: No \"<pub>...</pub>\" in SasTicket.");
 
-	// "Game"
+	// PUID
 	tinyxml2::XMLElement* elPUID = elPub->FirstChildElement("PUID");
 	if (!elPUID || !elPUID->GetText())
 		throw std::runtime_error("Corrupted data received: No \"<PUID>...</PUID>\" in SasTicket.");
@@ -165,11 +167,46 @@ PlayerSocket::ParseGasTicket(const std::string& xml)
 	if (!elPub)
 		throw std::runtime_error("Corrupted data received: No \"<pub>...</pub>\" in GasTicket.");
 
-	// "Game"
+	// Game
 	tinyxml2::XMLElement* elGame = elPub->FirstChildElement("Game");
 	if (!elGame || !elGame->GetText())
 		throw std::runtime_error("Corrupted data received: No \"<Game>...</Game>\" in GasTicket.");
 	m_game = Match::GameFromString(elGame->GetText());
+}
+
+void
+PlayerSocket::ParsePasTicket(const std::string& xml)
+{
+	tinyxml2::XMLDocument doc;
+	tinyxml2::XMLError status = doc.Parse(xml.substr(10).c_str()); // Remove "GasTicket=" from the beginning
+	if (status != tinyxml2::XML_SUCCESS)
+		throw std::runtime_error("Corrupted data received: Error parsing PasTicket: " + status);
+
+	tinyxml2::XMLElement* elAnon = doc.RootElement();
+	if (!elAnon)
+		throw std::runtime_error("Corrupted data received: No root element in PasTicket.");
+
+	tinyxml2::XMLElement* elPub = elAnon->FirstChildElement("pub");
+	if (!elPub)
+		throw std::runtime_error("Corrupted data received: No \"<pub>...</pub>\" in PasTicket.");
+
+	tinyxml2::XMLElement* elMaskedStats = elPub->FirstChildElement("MaskedStats");
+	if (!elMaskedStats)
+		throw std::runtime_error("Corrupted data received: No \"<MaskedStats>...</MaskedStats>\" in PasTicket.");
+
+	tinyxml2::XMLElement* elNewDataSet = elMaskedStats->FirstChildElement("NewDataSet");
+	if (!elNewDataSet)
+		throw std::runtime_error("Corrupted data received: No \"<NewDataSet>...</NewDataSet>\" in PasTicket.");
+
+	tinyxml2::XMLElement* elTable = elNewDataSet->FirstChildElement("Table");
+	if (!elTable)
+		throw std::runtime_error("Corrupted data received: No \"<Table>...</Table>\" in PasTicket.");
+
+	// Difficulty
+	tinyxml2::XMLElement* elZSPublicELO = elTable->FirstChildElement("ZS_PublicELO");
+	if (!elZSPublicELO || !elZSPublicELO->GetText())
+		throw std::runtime_error("Corrupted data received: No \"<ZS_PublicELO>...</ZS_PublicELO>\" in PasTicket.");
+	m_level = Match::LevelFromPublicELO(elZSPublicELO->GetText());
 }
 
 

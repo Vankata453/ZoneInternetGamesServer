@@ -22,10 +22,24 @@ Match::GameFromString(const std::string& str)
 	return Game::INVALID;
 }
 
+Match::Level
+Match::LevelFromPublicELO(const std::string& str)
+{
+	if (str == "1000")
+		return Level::BEGINNER;
+	else if (str == "2000")
+		return Level::INTERMEDIATE;
+	else if (str == "3000")
+		return Level::EXPERT;
+
+	return Level::INVALID;
+}
+
 
 Match::Match(PlayerSocket& player) :
 	m_state(STATE_WAITINGFORPLAYERS),
 	m_guid(),
+	m_level(player.GetLevel()),
 	m_players(),
 	m_creationTime(std::time(nullptr))
 {

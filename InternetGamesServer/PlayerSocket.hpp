@@ -31,10 +31,13 @@ public:
 
 	inline State GetState() const { return m_state; }
 	inline std::string GetPUID() const { return m_puid; }
+	inline Match::Game GetGame() const { return m_game; }
+	inline Match::Level GetLevel() const { return m_level; }
 
 private:
 	void ParseSasTicket(const std::string& xml);
 	void ParseGasTicket(const std::string& xml);
+	void ParsePasTicket(const std::string& xml);
 
 	/** Construct protocol messages */
 	std::string ConstructJoinContextMessage() const;
@@ -48,6 +51,7 @@ private:
 	std::string m_guid;
 	std::string m_puid;
 	Match::Game m_game;
+	Match::Level m_level;
 
 	Match* m_match;
 

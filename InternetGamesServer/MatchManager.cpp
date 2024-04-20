@@ -62,15 +62,19 @@ MatchManager::Update()
 
 
 Match*
-MatchManager::FindLobby(PlayerSocket& player, Match::Game game)
+MatchManager::FindLobby(PlayerSocket& player)
 {
+	if (player.GetLevel() == Match::Level::INVALID)
+		throw std::runtime_error("Cannot find lobby for player: Invalid level!");
+
 	Match* targetMatch = nullptr;
-	switch (game)
+	switch (player.GetGame())
 	{
 		case Match::Game::BACKGAMMON:
 			for (const auto& match : m_backgammonMatches)
 			{
-				if (match->GetState() == Match::STATE_WAITINGFORPLAYERS)
+				if (match->GetState() == Match::STATE_WAITINGFORPLAYERS &&
+					match->GetLevel() == player.GetLevel())
 				{
 					targetMatch = match.get();
 					break;
@@ -81,7 +85,8 @@ MatchManager::FindLobby(PlayerSocket& player, Match::Game game)
 		case Match::Game::CHECKERS:
 			for (const auto& match : m_checkersMatches)
 			{
-				if (match->GetState() == Match::STATE_WAITINGFORPLAYERS)
+				if (match->GetState() == Match::STATE_WAITINGFORPLAYERS &&
+					match->GetLevel() == player.GetLevel())
 				{
 					targetMatch = match.get();
 					break;
@@ -92,7 +97,8 @@ MatchManager::FindLobby(PlayerSocket& player, Match::Game game)
 		case Match::Game::SPADES:
 			for (const auto& match : m_spadesMatches)
 			{
-				if (match->GetState() == Match::STATE_WAITINGFORPLAYERS)
+				if (match->GetState() == Match::STATE_WAITINGFORPLAYERS &&
+					match->GetLevel() == player.GetLevel())
 				{
 					targetMatch = match.get();
 					break;
@@ -110,18 +116,18 @@ MatchManager::FindLobby(PlayerSocket& player, Match::Game game)
 	}
 
 	// No free lobby found - create a new one
-	return CreateLobby(player, game);
+	return CreateLobby(player);
 }
 
 Match*
-MatchManager::CreateLobby(PlayerSocket& player, Match::Game game)
+MatchManager::CreateLobby(PlayerSocket& player)
 {
 	switch (WaitForSingleObject(m_mutex, 5000))
 	{
 		case WAIT_OBJECT_0: // Acquired ownership of the mutex
 		{
 			Match* match = nullptr;
-			switch (game)
+			switch (player.GetGame())
 			{
 				case Match::Game::BACKGAMMON:
 					m_backgammonMatches.push_back(std::make_unique<BackgammonMatch>(player));

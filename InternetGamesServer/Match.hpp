@@ -21,6 +21,14 @@ public:
 	};
 	static Game GameFromString(const std::string& str);
 
+	enum class Level {
+		INVALID = 0,
+		BEGINNER,
+		INTERMEDIATE,
+		EXPERT
+	};
+	static Level LevelFromPublicELO(const std::string& str);
+
 	enum State {
 		STATE_WAITINGFORPLAYERS,
 		STATE_PENDINGSTART,
@@ -42,6 +50,7 @@ public:
 
 	inline State GetState() const { return m_state; }
 	inline REFGUID GetGUID() const { return m_guid; }
+	inline Level GetLevel() const { return m_level; }
 
 	/** Construct XML messages */
 	std::string ConstructReadyXML() const;
@@ -61,6 +70,7 @@ protected:
 	State m_state;
 
 	GUID m_guid;
+	const Level m_level;
 	std::vector<PlayerSocket*> m_players;
 
 	const std::time_t m_creationTime;
