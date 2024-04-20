@@ -27,7 +27,7 @@ public:
 	void OnGameStart();
 	void OnDisconnected();
 	void OnEventReceive(const std::string& XMLDataString) const;
-	void OnChatByID(const StateChatTag* tag);
+	void OnChat(const StateChatTag* tag);
 
 	inline State GetState() const { return m_state; }
 	inline std::string GetPUID() const { return m_puid; }

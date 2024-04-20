@@ -38,7 +38,7 @@ public:
 
 	/** Event handling */
 	void EventSend(const PlayerSocket* caller, const std::string& XMLDataString) const;
-	void ChatByID(const PlayerSocket* caller, const StateChatTag tag) const;
+	void Chat(const StateChatTag tag) const;
 
 	inline State GetState() const { return m_state; }
 	inline REFGUID GetGUID() const { return m_guid; }

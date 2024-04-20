@@ -81,7 +81,7 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 				tag.fontColor = receivedData[3].substr(11); // Remove "eFontColor=" from the beginning
 				tag.fontCharSet = receivedData[4].substr(11); // Remove "eFontCharSet=" from the beginning
 
-				m_match->ChatByID(this, std::move(tag));
+				m_match->Chat(std::move(tag));
 				return {};
 			}
 			break;
@@ -119,7 +119,7 @@ PlayerSocket::OnEventReceive(const std::string& XMLDataString) const
 }
 
 void
-PlayerSocket::OnChatByID(const StateChatTag* tag)
+PlayerSocket::OnChat(const StateChatTag* tag)
 {
 	// Send the "chatbyid" tag
 	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ tag })) });

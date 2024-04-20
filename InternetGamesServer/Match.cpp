@@ -103,13 +103,12 @@ Match::EventSend(const PlayerSocket* caller, const std::string& XMLDataString) c
 }
 
 void
-Match::ChatByID(const PlayerSocket* caller, const StateChatTag tag) const
+Match::Chat(const StateChatTag tag) const
 {
 	// Send the event to all other players
 	for (PlayerSocket* p : m_players)
 	{
-		if (p != caller)
-			p->OnChatByID(&tag);
+		p->OnChat(&tag);
 	}
 }
 
