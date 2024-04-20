@@ -25,7 +25,7 @@ CheckersMatch::ConstructGameInitXML(PlayerSocket* caller) const
 	{
 		tinyxml2::XMLElement* elPlayer = doc.NewElement("Player");
 		NewElementWithText(elPlayer, "Role", std::to_string(player->m_role));
-		NewElementWithText(elPlayer, "Name", player->m_name);
+		NewElementWithText(elPlayer, "Name", player->m_name + "      01");
 		NewElementWithText(elPlayer, "Type", "Human");
 		elPlayers->InsertEndChild(elPlayer);
 	}

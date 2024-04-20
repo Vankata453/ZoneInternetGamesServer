@@ -15,7 +15,7 @@ PlayerSocket::PlayerSocket(SOCKET socket) :
 	m_guid(),
 	m_game(),
 	m_match(),
-	m_name(RandomString(8) + "      01"),
+	m_name(RandomString(8)),
 	m_role(-1)
 {
 }
