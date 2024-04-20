@@ -69,6 +69,20 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 				m_match->EventSend(this, receivedData[1].substr(14)); // Remove "XMLDataString=" from the beginning
 				return {};
 			}
+			else if (StartsWith(receivedData[0], "CALL Chat") && receivedData.size() > 1) // A chat message was sent, let the Match send it to all players
+			{
+				StateChatTag tag;
+				tag.userID = m_guid.substr(1, m_guid.size() - 2); // Remove braces from beginning and end
+				tag.nickname = m_name;
+				tag.text = receivedData[0].substr(20); // Remove "CALL Chat sChatText=" from the beginning
+				tag.fontFace = DecodeURL(receivedData[1].substr(10)); // Remove "sFontFace=" from the beginning
+				tag.fontFlags = receivedData[2].substr(13); // Remove "arfFontFlags=" from the beginning
+				tag.fontColor = receivedData[3].substr(11); // Remove "eFontColor=" from the beginning
+				tag.fontCharSet = receivedData[4].substr(11); // Remove "eFontCharSet=" from the beginning
+
+				m_match->ChatByID(this, std::move(tag));
+				return {};
+			}
 			break;
 	}
 	return {};
@@ -101,6 +115,13 @@ PlayerSocket::OnEventReceive(const std::string& XMLDataString) const
 	// Send an event receive message
 	const StateSTag tag = m_match->ConstructEventReceiveSTag(DecodeURL(XMLDataString));
 	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ &tag })) });
+}
+
+void
+PlayerSocket::OnChatByID(const StateChatTag* tag)
+{
+	// Send the "chatbyid" tag
+	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ tag })) });
 }
 
 

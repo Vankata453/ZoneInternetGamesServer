@@ -31,6 +31,14 @@ std::vector<std::string> StringSplit(std::string str, const std::string& delimit
 	return result;
 }
 
+// From https://stackoverflow.com/a/68590599
+void RemoveNewlines(std::string& str)
+{
+	str.erase(std::remove_if(str.begin(), str.end(),
+		[](char ch) { return std::iscntrl(static_cast<unsigned char>(ch)); }),
+		str.end());
+}
+
 // From https://stackoverflow.com/a/12468109
 std::string RandomString(size_t length)
 {
@@ -83,8 +91,10 @@ std::string DecodeURL(const std::string& str)
 
 
 /** TinyXML2 shortcuts */
-tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, const std::string& text)
+tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, std::string text)
 {
+	RemoveNewlines(text);
+
 	tinyxml2::XMLElement* el = root->GetDocument()->NewElement(name.c_str());
 	el->SetText(text.c_str());
 	root->InsertEndChild(el);

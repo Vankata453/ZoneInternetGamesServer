@@ -13,13 +13,14 @@ namespace tinyxml2 {
 /** String utilities */
 bool StartsWith(const std::string& str, const std::string& prefix);
 std::vector<std::string> StringSplit(std::string str, const std::string& delimiter);
+void RemoveNewlines(std::string& str);
 std::string RandomString(size_t length);
 
 /** Encoding/Decoding */
 std::string DecodeURL(const std::string& str);
 
 /** TinyXML2 shortcuts */
-tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, const std::string& text);
+tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, std::string text);
 std::string PrintXML(tinyxml2::XMLDocument& doc);
 
 /** Random generation */
