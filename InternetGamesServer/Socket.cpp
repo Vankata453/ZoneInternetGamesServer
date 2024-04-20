@@ -63,12 +63,11 @@ std::vector<std::string> ReceiveData(SOCKET socket)
 {
 	char recvbuf[DEFAULT_BUFLEN];
 
-	// Receive until the peer shuts down the connection
 	HRESULT recvResult = recv(socket, recvbuf, DEFAULT_BUFLEN, 0);
 	if (recvResult > 0)
 	{
 		const std::string received(recvbuf, recvResult);
-		const std::vector<std::string> receivedEntries = StringSplit(received, "&");
+		const std::vector<std::string> receivedEntries = StringSplit(received, "&"); // Split data by "&" for easier parsing in certain cases
 		std::cout << "Data received from " << GetAddressString(socket) << ":" << std::endl;
 		for (const std::string& entry : receivedEntries)
 		{
@@ -93,7 +92,7 @@ void SendData(SOCKET socket, std::vector<std::string> data)
 {
 	for (const std::string& message : data)
 	{
-		HRESULT sendResult = send(socket, message.c_str(), message.length(), 0);
+		HRESULT sendResult = send(socket, message.c_str(), static_cast<int>(message.length()), 0);
 		if (sendResult == SOCKET_ERROR)
 			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
 
@@ -108,7 +107,7 @@ std::string GetAddressString(SOCKET socket)
 	sockaddr_in socketInfo;
 	int socketInfoSize = sizeof(socketInfo);
 
-	getpeername(socket, (sockaddr*)&socketInfo, &socketInfoSize);
+	getpeername(socket, reinterpret_cast<sockaddr*>(&socketInfo), &socketInfoSize);
 
 	std::stringstream stream;
 	stream << inet_ntoa(socketInfo.sin_addr) << ':' << ntohs(socketInfo.sin_port);
