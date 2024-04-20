@@ -60,9 +60,8 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 			if (StartsWith(receivedData[0], "CALL GameReady")) // Game is ready, start it
 			{
 				// Send a game start message
-				std::vector<std::unique_ptr<StateTag>> tags;
-				tags.push_back(m_match->ConstructGameStartSTag());
-				return { ConstructStateMessage(m_match->ConstructStateXML(tags)) };
+				const StateSTag tag = m_match->ConstructGameStartSTag();
+				return { ConstructStateMessage(m_match->ConstructStateXML({ &tag })) };
 			}
 			else if (receivedData[0] == "CALL EventSend messageID=EventSend" && receivedData.size() > 1 &&
 				StartsWith(receivedData[1], "XMLDataString=")) // An event is being sent, let the Match send it to all players
@@ -85,9 +84,8 @@ PlayerSocket::OnGameStart()
 	m_state = STATE_PLAYING;
 
 	// Send a game initialization message
-	std::vector<std::unique_ptr<StateTag>> tags;
-	tags.push_back(m_match->ConstructGameInitSTag(this));
-	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML(tags)) });
+	const StateSTag tag = m_match->ConstructGameInitSTag(this);
+	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ &tag })) });
 }
 
 void
@@ -101,9 +99,8 @@ void
 PlayerSocket::OnEventReceive(const std::string& XMLDataString) const
 {
 	// Send an event receive message
-	std::vector<std::unique_ptr<StateTag>> tags;
-	tags.push_back(m_match->ConstructEventReceiveSTag(DecodeURL(XMLDataString)));
-	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML(tags)) });
+	const StateSTag tag = m_match->ConstructEventReceiveSTag(DecodeURL(XMLDataString));
+	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ &tag })) });
 }
 
 

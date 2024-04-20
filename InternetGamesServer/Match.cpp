@@ -118,7 +118,7 @@ Match::ConstructReadyXML() const
 }
 
 std::string
-Match::ConstructStateXML(const std::vector<std::unique_ptr<StateTag>>& tags) const
+Match::ConstructStateXML(const std::vector<const StateTag*> tags) const
 {
 	tinyxml2::XMLDocument doc;
 
@@ -133,7 +133,7 @@ Match::ConstructStateXML(const std::vector<std::unique_ptr<StateTag>>& tags) con
 
 	// Tags
 	tinyxml2::XMLElement& elArTags = *doc.NewElement("arTags");
-	for (const auto& tag : tags)
+	for (const StateTag* tag : tags)
 		tag->AppendToTags(elArTags);
 	elStateMessage->InsertEndChild(&elArTags);
 
@@ -141,31 +141,31 @@ Match::ConstructStateXML(const std::vector<std::unique_ptr<StateTag>>& tags) con
 }
 
 
-std::unique_ptr<StateTag> 
+StateSTag
 Match::ConstructGameInitSTag(PlayerSocket* caller) const
 {
-	auto sTag = std::make_unique<StateSTag>();
-	sTag->msgID = "GameInit";
-	sTag->msgIDSbky = "GameInit";
-	sTag->msgD = ConstructGameInitXML(caller);
+	StateSTag sTag;
+	sTag.msgID = "GameInit";
+	sTag.msgIDSbky = "GameInit";
+	sTag.msgD = ConstructGameInitXML(caller);
 	return sTag;
 }
 
-std::unique_ptr<StateTag>
+StateSTag
 Match::ConstructGameStartSTag() const
 {
-	auto sTag = std::make_unique<StateSTag>();
-	sTag->msgID = "GameStart";
-	sTag->msgIDSbky = "GameStart";
+	StateSTag sTag;
+	sTag.msgID = "GameStart";
+	sTag.msgIDSbky = "GameStart";
 	return sTag;
 }
 
-std::unique_ptr<StateTag>
+StateSTag
 Match::ConstructEventReceiveSTag(const std::string& xml) const
 {
-	auto sTag = std::make_unique<StateSTag>();
-	sTag->msgID = "EventReceive";
-	sTag->msgIDSbky = "EventReceive";
-	sTag->msgD = xml;
+	StateSTag sTag;
+	sTag.msgID = "EventReceive";
+	sTag.msgIDSbky = "EventReceive";
+	sTag.msgD = xml;
 	return sTag;
 }

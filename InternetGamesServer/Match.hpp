@@ -1,7 +1,6 @@
 #pragma once
 
 #include <ctime>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -45,12 +44,12 @@ public:
 
 	/** Construct XML messages */
 	std::string ConstructReadyXML() const;
-	std::string ConstructStateXML(const std::vector<std::unique_ptr<StateTag>>& tags) const;
+	std::string ConstructStateXML(const std::vector<const StateTag*> tags) const;
 
 	/** Construct "Tag"s to be used in "StateMessage"s */
-	std::unique_ptr<StateTag> ConstructGameInitSTag(PlayerSocket* caller) const;
-	std::unique_ptr<StateTag> ConstructGameStartSTag() const;
-	std::unique_ptr<StateTag> ConstructEventReceiveSTag(const std::string& xml) const;
+	StateSTag ConstructGameInitSTag(PlayerSocket* caller) const;
+	StateSTag ConstructGameStartSTag() const;
+	StateSTag ConstructEventReceiveSTag(const std::string& xml) const;
 
 protected:
 	virtual size_t GetRequiredPlayerCount() const { return 2; }
