@@ -6,8 +6,57 @@
 #include "Util.hpp"
 
 CheckersMatch::CheckersMatch(PlayerSocket& player) :
-	Match(player)
+	Match(player),
+	m_drawOffered(false)
 {}
+
+
+CheckersMatch::QueuedEvent
+CheckersMatch::ProcessEvent(const std::string& xml)
+{
+	tinyxml2::XMLDocument doc;
+	tinyxml2::XMLError status = doc.Parse(xml.c_str());
+	if (status != tinyxml2::XML_SUCCESS)
+		return xml;
+
+	tinyxml2::XMLElement* elMessage = doc.RootElement();
+	if (!elMessage || strcmp(elMessage->Name(), "Message"))
+		return xml;
+
+	// Game management events
+	tinyxml2::XMLElement* elGameManagement = elMessage->FirstChildElement("GameManagement");
+	if (elGameManagement)
+	{
+		// Method
+		tinyxml2::XMLElement* elMethod = elGameManagement->FirstChildElement("Method");
+		if (elMethod && elMethod->GetText())
+		{
+			if (!strcmp(elMethod->GetText(), "ResignGiven")) // Player has resigned
+			{
+				return StateSTag::ConstructGameManagementMessage("ServerGameOver", "PlayerQuit");
+			}
+			else if (!strcmp(elMethod->GetText(), "OfferDraw")) // Player has offered a draw to their opponent
+			{
+				m_drawOffered = true;
+				return xml;
+			}
+			else if (!strcmp(elMethod->GetText(), "DrawReject")) // Player has rejected a draw from their opponent
+			{
+				m_drawOffered = false;
+				return xml;
+			}
+			else if (!strcmp(elMethod->GetText(), "DrawAccept")) // Player has accepted a draw by the opponent
+			{
+				if (!m_drawOffered)
+					return xml;
+
+				return QueuedEvent(StateSTag::ConstructGameManagementMessage("ServerGameOver", "DrawOffered"), true);
+			}
+		}
+	}
+
+	return xml;
+}
 
 
 std::string

@@ -26,7 +26,7 @@ public:
 	/** Event handling */
 	void OnGameStart();
 	void OnDisconnected();
-	void OnEventReceive(const std::string& XMLDataString) const;
+	void OnEventReceive(const std::string& xml) const;
 	void OnChat(const StateChatTag* tag);
 
 	inline State GetState() const { return m_state; }

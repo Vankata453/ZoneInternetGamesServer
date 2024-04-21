@@ -4,6 +4,24 @@
 
 #include "Util.hpp"
 
+std::string
+StateSTag::ConstructGameManagementMessage(const std::string& method, const std::string& param)
+{
+	tinyxml2::XMLDocument doc;
+
+	tinyxml2::XMLElement* elMessage = doc.NewElement("Message");
+	doc.InsertFirstChild(elMessage);
+
+	tinyxml2::XMLElement* elGameManagement = doc.NewElement("GameManagement");
+	elMessage->InsertFirstChild(elGameManagement);
+
+	NewElementWithText(elGameManagement, "Method", method);
+	if (!param.empty())
+		NewElementWithText(elGameManagement, "Params", param);
+
+	return PrintXML(doc);
+}
+
 void
 StateSTag::AppendToTags(tinyxml2::XMLElement& arTags) const
 {

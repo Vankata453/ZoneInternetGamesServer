@@ -67,9 +67,9 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 				return { ConstructStateMessage(m_match->ConstructStateXML({ &tag })) };
 			}
 			else if (receivedData[0] == "CALL EventSend messageID=EventSend" && receivedData.size() > 1 &&
-				StartsWith(receivedData[1], "XMLDataString=")) // An event is being sent, let the Match send it to all players
+				StartsWith(receivedData[1], "XMLDataString=")) // An event is being sent, let the Match send it to all other players
 			{
-				m_match->EventSend(this, receivedData[1].substr(14)); // Remove "XMLDataString=" from the beginning
+				m_match->EventSend(this, DecodeURL(receivedData[1].substr(14))); // Remove "XMLDataString=" from the beginning
 				return {};
 			}
 			else if (StartsWith(receivedData[0], "CALL Chat") && receivedData.size() > 1) // A chat message was sent, let the Match send it to all players
@@ -113,10 +113,10 @@ PlayerSocket::OnDisconnected()
 }
 
 void
-PlayerSocket::OnEventReceive(const std::string& XMLDataString) const
+PlayerSocket::OnEventReceive(const std::string& xml) const
 {
 	// Send an event receive message
-	const StateSTag tag = m_match->ConstructEventReceiveSTag(DecodeURL(XMLDataString));
+	const StateSTag tag = m_match->ConstructEventReceiveSTag(xml);
 	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ &tag })) });
 }
 

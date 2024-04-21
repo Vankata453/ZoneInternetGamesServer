@@ -45,8 +45,8 @@ public:
 	virtual void Update();
 
 	/** Event handling */
-	void EventSend(const PlayerSocket* caller, const std::string& XMLDataString) const;
-	void Chat(const StateChatTag tag) const;
+	void EventSend(const PlayerSocket* caller, const std::string& xml);
+	void Chat(const StateChatTag tag);
 
 	inline State GetState() const { return m_state; }
 	inline REFGUID GetGUID() const { return m_guid; }
@@ -62,7 +62,22 @@ public:
 	StateSTag ConstructEventReceiveSTag(const std::string& xml) const;
 
 protected:
+	struct QueuedEvent final
+	{
+		QueuedEvent(const std::string& xml_, bool includeSender_ = false) :
+			xml(xml_),
+			includeSender(includeSender_)
+		{}
+
+		std::string xml; // The XML data string for the event.
+		bool includeSender; // Should the event also be sent back to the original sender?
+	};
+
+protected:
 	virtual size_t GetRequiredPlayerCount() const { return 2; }
+
+	/** Game-specific matches can use this function to modify "EventSend" messages for "EventReceive". */
+	virtual QueuedEvent ProcessEvent(const std::string& xml);
 
 	virtual std::string ConstructGameInitXML(PlayerSocket* caller) const = 0;
 

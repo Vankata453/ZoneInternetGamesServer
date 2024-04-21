@@ -8,5 +8,10 @@ public:
 	CheckersMatch(PlayerSocket& player);
 
 protected:
+	QueuedEvent ProcessEvent(const std::string& xml) override;
+
 	std::string ConstructGameInitXML(PlayerSocket* caller) const override;
+
+private:
+	bool m_drawOffered;
 };
