@@ -15,6 +15,12 @@ namespace Socket {
 
 	std::string GetAddressString(SOCKET socket);
 
+	// Server disconnection request
+	class DisconnectionRequest final : public std::exception
+	{
+	public:
+		DisconnectionRequest() throw() {}
+	};
 	// Client disconnected exception
 	class ClientDisconnected final : public std::exception
 	{

@@ -11,6 +11,14 @@ CheckersMatch::CheckersMatch(PlayerSocket& player) :
 {}
 
 
+std::string
+CheckersMatch::ConstructEndMatchMessage() const
+{
+	// Give the win to the other player (same as if the opponent resigned)
+	return StateSTag::ConstructGameManagementMessage("ServerGameOver", "PlayerQuit");
+}
+
+
 CheckersMatch::QueuedEvent
 CheckersMatch::ProcessEvent(const std::string& xml)
 {

@@ -32,7 +32,8 @@ public:
 	enum State {
 		STATE_WAITINGFORPLAYERS,
 		STATE_PENDINGSTART,
-		STATE_PLAYING
+		STATE_PLAYING,
+		STATE_ENDED
 	};
 
 public:
@@ -60,6 +61,9 @@ public:
 	StateSTag ConstructGameInitSTag(PlayerSocket* caller) const;
 	StateSTag ConstructGameStartSTag() const;
 	StateSTag ConstructEventReceiveSTag(const std::string& xml) const;
+
+	/** Construct "STag" messages */
+	virtual std::string ConstructEndMatchMessage() const = 0;
 
 protected:
 	struct QueuedEvent final

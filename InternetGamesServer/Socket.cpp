@@ -29,6 +29,13 @@ DWORD WINAPI SocketHandler(void* socket_)
 
 			SendData(socket, player.GetResponse(receivedData));
 		}
+		catch (const DisconnectionRequest&)
+		{
+			std::cout << "Disconnecting from " << GetAddressString(socket) << '.' << std::endl;
+
+			player.OnDisconnected();
+			break;
+		}
 		catch (const ClientDisconnected&)
 		{
 			std::cout << "Error communicating with socket " << GetAddressString(socket)

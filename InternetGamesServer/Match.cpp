@@ -70,7 +70,25 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 	// Remove from players array
 	m_players.erase(std::remove(m_players.begin(), m_players.end(), &player), m_players.end());
 
-	// TODO: Indicate that to remaining players in some way?
+	// End the match on no players, marking it as to-be-removed from MatchManager
+	if (m_players.empty())
+	{
+		m_state = STATE_ENDED;
+		return;
+	}
+
+	// Originally, servers replaced players who have left the game with AI.
+	// However, since there is no logic support for any of the games on this server currently,
+	// if currently playing a game, we end the game directly.
+	if (m_state == STATE_PLAYING)
+	{
+		m_state = STATE_ENDED;
+		for (PlayerSocket* p : m_players)
+		{
+			if (p != &player)
+				p->OnMatchEnded();
+		}
+	}
 }
 
 

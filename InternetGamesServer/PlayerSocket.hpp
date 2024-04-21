@@ -28,6 +28,7 @@ public:
 	void OnDisconnected();
 	void OnEventReceive(const std::string& xml) const;
 	void OnChat(const StateChatTag* tag);
+	void OnMatchEnded();
 
 	inline State GetState() const { return m_state; }
 	inline std::string GetPUID() const { return m_puid; }

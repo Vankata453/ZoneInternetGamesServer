@@ -7,6 +7,9 @@ class CheckersMatch final : public Match
 public:
 	CheckersMatch(PlayerSocket& player);
 
+	/** Construct "STag" messages */
+	std::string ConstructEndMatchMessage() const override;
+
 protected:
 	QueuedEvent ProcessEvent(const std::string& xml) override;
 

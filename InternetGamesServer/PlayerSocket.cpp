@@ -25,6 +25,9 @@ PlayerSocket::PlayerSocket(SOCKET socket) :
 std::vector<std::string>
 PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 {
+	if (receivedData[0] == "LEAVE\r\n") // The client has requested to be disconnected from the server
+		throw Socket::DisconnectionRequest();
+
 	switch (m_state)
 	{
 		case STATE_NOT_INITIALIZED:
@@ -125,6 +128,14 @@ PlayerSocket::OnChat(const StateChatTag* tag)
 {
 	// Send the "chatbyid" tag
 	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ tag })) });
+}
+
+void
+PlayerSocket::OnMatchEnded()
+{
+	// Send a match end message, specific for the current game
+	const StateSTag tag = m_match->ConstructEventReceiveSTag(m_match->ConstructEndMatchMessage());
+	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ &tag })) });
 }
 
 
