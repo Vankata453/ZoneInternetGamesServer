@@ -7,6 +7,8 @@ class CheckersMatch final : public Match
 public:
 	CheckersMatch(PlayerSocket& player);
 
+	Game GetGame() const override { return Game::CHECKERS; }
+
 	/** Construct "STag" messages */
 	std::string ConstructEndMatchMessage() const override;
 

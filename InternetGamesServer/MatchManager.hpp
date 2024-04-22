@@ -5,10 +5,7 @@
 
 #include "PlayerSocket.hpp"
 
-class BackgammonMatch;
-class CheckersMatch;
 class Match;
-class SpadesMatch;
 
 class MatchManager final
 {
@@ -36,7 +33,5 @@ private:
 private:
 	HANDLE m_mutex; // Mutex to prevent simultaneous updating and creation of matches
 
-	std::vector<std::unique_ptr<BackgammonMatch>> m_backgammonMatches;
-	std::vector<std::unique_ptr<CheckersMatch>> m_checkersMatches;
-	std::vector<std::unique_ptr<SpadesMatch>> m_spadesMatches;
+	std::vector<std::unique_ptr<Match>> m_matches;
 };

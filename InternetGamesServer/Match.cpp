@@ -22,6 +22,22 @@ Match::GameFromString(const std::string& str)
 	return Game::INVALID;
 }
 
+std::string
+Match::GameToNameString(Match::Game game)
+{
+	switch (game)
+	{
+		case Game::BACKGAMMON:
+			return "Backgammon";
+		case Game::CHECKERS:
+			return "Checkers";
+		case Game::SPADES:
+			return "Spades";
+		default:
+			return "Invalid";
+	}
+}
+
 Match::Level
 Match::LevelFromPublicELO(const std::string& str)
 {
@@ -68,7 +84,8 @@ void
 Match::DisconnectedPlayer(PlayerSocket& player)
 {
 	// Remove from players array
-	m_players.erase(std::remove(m_players.begin(), m_players.end(), &player), m_players.end());
+	if (!m_players.empty())
+		m_players.erase(std::remove(m_players.begin(), m_players.end(), &player), m_players.end());
 
 	// End the match on no players, marking it as to-be-removed from MatchManager
 	if (m_players.empty())

@@ -7,6 +7,8 @@ class BackgammonMatch final : public Match
 public:
 	BackgammonMatch(PlayerSocket& player);
 
+	Game GetGame() const override { return Game::BACKGAMMON; }
+
 	/** Construct "STag" messages */
 	std::string ConstructEndMatchMessage() const override { return ""; } // TODO
 

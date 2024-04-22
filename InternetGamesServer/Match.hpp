@@ -20,6 +20,7 @@ public:
 		SPADES
 	};
 	static Game GameFromString(const std::string& str);
+	static std::string GameToNameString(Game game);
 
 	enum class Level {
 		INVALID = 0,
@@ -49,6 +50,7 @@ public:
 	void EventSend(const PlayerSocket* caller, const std::string& xml);
 	void Chat(const StateChatTag tag);
 
+	virtual Game GetGame() const = 0;
 	inline State GetState() const { return m_state; }
 	inline REFGUID GetGUID() const { return m_guid; }
 	inline Level GetLevel() const { return m_level; }

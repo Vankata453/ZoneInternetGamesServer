@@ -7,6 +7,8 @@ class SpadesMatch final : public Match
 public:
 	SpadesMatch(PlayerSocket& player);
 
+	Game GetGame() const override { return Game::SPADES; }
+
 	/** Construct "STag" messages */
 	std::string ConstructEndMatchMessage() const override { return ""; } // TODO
 
