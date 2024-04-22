@@ -14,16 +14,22 @@
 int main(int argc, char* argv[])
 {
 	PCSTR port = DEFAULT_PORT;
-	if (argc > 1) // Arguments have been provided
+
+	// Process arguments
+	for (int i = 1; i < argc; ++i)
 	{
-		if (argv[1] == "-p" || argv[1] == "--port")
+		if (!strcmp(argv[i], "-p") || !strcmp(argv[i], "--port"))
 		{
-			if (argc < 3)
+			if (argc < i + 2)
 			{
 				std::cout << "ERROR: Port number must be provided after \"-p\" or \"--port\"." << std::endl;
-				return 1;
+				return -1;
 			}
-			port = argv[2];
+			port = argv[++i];
+		}
+		else if (!strcmp(argv[i], "--skip-level-matching"))
+		{
+			MatchManager::s_skipLevelMatching = true;
 		}
 	}
 

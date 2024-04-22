@@ -23,6 +23,8 @@ MatchManager::UpdateHandler(void*)
 }
 
 
+bool MatchManager::s_skipLevelMatching = false;
+
 MatchManager::MatchManager() :
 	m_mutex(CreateMutex(nullptr, false, nullptr)),
 	m_matches()
@@ -80,7 +82,7 @@ MatchManager::FindLobby(PlayerSocket& player)
 	{
 		if (match->GetState() == Match::STATE_WAITINGFORPLAYERS &&
 			match->GetGame() == player.GetGame() &&
-			match->GetLevel() == player.GetLevel())
+			(s_skipLevelMatching || match->GetLevel() == player.GetLevel()))
 		{
 			targetMatch = match.get();
 			break;
