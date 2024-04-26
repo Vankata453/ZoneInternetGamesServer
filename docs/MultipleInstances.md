@@ -49,15 +49,14 @@ Running multiple instances of different Internet Games is not an issue, since th
 
 4. Search for the "_zm" Unicode string.
 
-> ![HxD string search dialog](img/MultipleInstances_HxDStringSearch.png)
+![HxD string search dialog](img/MultipleInstances_HxDStringSearch.png)
+![HxD found mutex name string](img/MultipleInstances_HxDFoundString.png)
 
 5. Modify any part of the found mutex name string, so it's different from the one in the main executable.
 
-> ![HxD found mutex name string](img/MultipleInstances_HxDFoundString.png)
-
 For example, let's change it from "mchkr_zm" to "mcckr_zm".
 
-> ![HxD modified mutex name string](img/MultipleInstances_HxDModifiedString.png)
+![HxD modified mutex name string](img/MultipleInstances_HxDModifiedString.png)
 
 > [!NOTE]
 >
@@ -68,6 +67,6 @@ For example, let's change it from "mchkr_zm" to "mcckr_zm".
 
 7. Launch both the original and the copied executable. You now have two running instances of the same game!
 
-> ![Two instances of Internet Checkers running](img/MultipleInstances_Running.png)
+![Two instances of Internet Checkers running](img/MultipleInstances_Running.png)
 
 You can create shortcuts to each executable for convenience.
