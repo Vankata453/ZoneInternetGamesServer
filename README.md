@@ -55,7 +55,7 @@ Attempts to implement Internet Spades support are yet to be started.
 >   If a player were to modify messages, being sent to the server, to try and cheat, it's up to the opponents' game clients to determine if the action is legitimate or not.
 >   Luckily, from my testing, this local validation seems to work nicely. On invalid data, the game ends with a "Corrupted data" message.
 
-### Internet Games Client DLL + Injector [TODO]
+### Internet Games Client DLL [WIP] + Injector [TODO]
 
 A DLL, which is to be injected into any of the 3 games, using the Injector application.
 
