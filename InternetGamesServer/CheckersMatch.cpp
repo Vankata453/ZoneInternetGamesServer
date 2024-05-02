@@ -34,7 +34,7 @@ CheckersMatch::ProcessEvent(const std::string& xml)
 			if (!strcmp(elMethod->GetText(), "ResignGiven")) // Player has resigned
 			{
 				m_state = STATE_GAMEOVER;
-				return StateSTag::ConstructGameManagementMessage("ServerGameOver", "PlayerQuit");
+				return StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "PlayerQuit");
 			}
 			else if (!strcmp(elMethod->GetText(), "OfferDraw")) // Player has offered a draw to their opponent
 			{
@@ -52,7 +52,7 @@ CheckersMatch::ProcessEvent(const std::string& xml)
 					return xml;
 
 				m_state = STATE_GAMEOVER;
-				return QueuedEvent(StateSTag::ConstructGameManagementMessage("ServerGameOver", "DrawOffered"), true);
+				return QueuedEvent(StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "DrawOffered"), true);
 			}
 		}
 	}

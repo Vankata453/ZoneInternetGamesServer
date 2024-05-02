@@ -10,7 +10,13 @@ public:
 	Game GetGame() const override { return Game::BACKGAMMON; }
 
 	/** Construct XML data for STag messages */
-	std::string ConstructGameInitXML(PlayerSocket* caller) const override { return ""; } // TODO
+	std::string ConstructGameInitXML(PlayerSocket* caller) const;
+
+protected:
+	QueuedEvent ProcessEvent(const std::string& xml) override;
+
+private:
+	bool m_initialRollStarted;
 
 private:
 	BackgammonMatch(const BackgammonMatch&) = delete;

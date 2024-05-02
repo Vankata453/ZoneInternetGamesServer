@@ -147,6 +147,7 @@ void
 Match::EventSend(const PlayerSocket* caller, const std::string& xml)
 {
 	const QueuedEvent ev = ProcessEvent(xml);
+	if (ev.xml.empty()) return;
 
 	// Send the event to all players, including the sender only if specified by the event
 	for (PlayerSocket* p : m_players)

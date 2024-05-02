@@ -34,14 +34,14 @@ StateSTag::ConstructEventReceive(const std::string& xml)
 }
 
 std::string
-StateSTag::ConstructGameManagementMessage(const std::string& method, const std::string& param)
+StateSTag::ConstructMethodMessage(const char* managementModule, const std::string& method, const std::string& param)
 {
 	tinyxml2::XMLDocument doc;
 
 	tinyxml2::XMLElement* elMessage = doc.NewElement("Message");
 	doc.InsertFirstChild(elMessage);
 
-	tinyxml2::XMLElement* elGameManagement = doc.NewElement("GameManagement");
+	tinyxml2::XMLElement* elGameManagement = doc.NewElement(managementModule);
 	elMessage->InsertFirstChild(elGameManagement);
 
 	NewElementWithText(elGameManagement, "Method", method);
