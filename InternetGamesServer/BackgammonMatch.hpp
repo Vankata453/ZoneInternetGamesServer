@@ -10,9 +10,14 @@ public:
 	Game GetGame() const override { return Game::BACKGAMMON; }
 
 	/** Construct "STag" messages */
-	std::string ConstructEndMatchMessage() const override { return ""; } // TODO
+	std::string ConstructEndMatchMessage() const override;
 
 protected:
-	std::string ConstructGameInitXML(PlayerSocket* caller) const override { return ""; } // TODO
+	QueuedEvent ProcessEvent(const std::string& xml) override;
+
+	std::string ConstructGameInitXML(PlayerSocket* caller) const override;
+
+private:
+	bool m_initialRollStarted;
 };
 

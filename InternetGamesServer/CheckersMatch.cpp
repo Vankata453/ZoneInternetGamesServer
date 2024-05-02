@@ -15,7 +15,7 @@ std::string
 CheckersMatch::ConstructEndMatchMessage() const
 {
 	// Give the win to the other player (same as if the opponent resigned)
-	return StateSTag::ConstructGameManagementMessage("ServerGameOver", "PlayerQuit");
+	return StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "PlayerQuit");
 }
 
 
@@ -41,7 +41,7 @@ CheckersMatch::ProcessEvent(const std::string& xml)
 		{
 			if (!strcmp(elMethod->GetText(), "ResignGiven")) // Player has resigned
 			{
-				return StateSTag::ConstructGameManagementMessage("ServerGameOver", "PlayerQuit");
+				return StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "PlayerQuit");
 			}
 			else if (!strcmp(elMethod->GetText(), "OfferDraw")) // Player has offered a draw to their opponent
 			{
@@ -58,7 +58,7 @@ CheckersMatch::ProcessEvent(const std::string& xml)
 				if (!m_drawOffered)
 					return xml;
 
-				return QueuedEvent(StateSTag::ConstructGameManagementMessage("ServerGameOver", "DrawOffered"), true);
+				return QueuedEvent(StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "DrawOffered"), true);
 			}
 		}
 	}

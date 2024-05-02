@@ -17,7 +17,7 @@ public:
 class StateSTag final : public StateTag
 {
 public:
-	static std::string ConstructGameManagementMessage(const std::string& method, const std::string& param = {});
+	static std::string ConstructMethodMessage(const char* managementModule, const std::string& method, const std::string& param = {});
 
 public:
 	void AppendToTags(tinyxml2::XMLElement& arTags) const override;
