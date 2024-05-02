@@ -21,6 +21,12 @@
     <ClInclude Include="Functions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Resource.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dialogs.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DllMain.cpp">
@@ -32,5 +38,13 @@
     <ClCompile Include="Functions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Dialogs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="RemoteAddressDialog.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

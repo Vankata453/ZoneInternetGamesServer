@@ -152,12 +152,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Breakpoints.hpp" />
+    <ClInclude Include="Dialogs.hpp" />
     <ClInclude Include="Functions.hpp" />
+    <ClInclude Include="Resource.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Breakpoints.cpp" />
+    <ClCompile Include="Dialogs.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="Functions.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="RemoteAddressDialog.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <ws2def.h>
 
+#include "Dialogs.hpp"
 #include "Functions.hpp"
 
 // Credit to https://www.codereversing.com/archives/138
@@ -54,8 +55,8 @@ LONG CALLBACK VectoredExceptionHandler(EXCEPTION_POINTERS* exceptionInfo)
             if (!wcscmp(reinterpret_cast<PCWSTR>(context->Rcx), L"mpmatch.games.msn.com")) // Ensure the function is trying to connect to the default game server
             {
                 // Set custom address
-                wcscpy(reinterpret_cast<WCHAR*>(context->Rcx), L"localhost");
-                wcscpy(reinterpret_cast<WCHAR*>(context->Rdx), L"80");
+                wcscpy(reinterpret_cast<WCHAR*>(context->Rcx), RemoteAddressDialog::valHost.c_str());
+                wcscpy(reinterpret_cast<WCHAR*>(context->Rdx), RemoteAddressDialog::valPort.c_str());
 
                 // Set properties, required for connecting to the custom server
                 ADDRINFOW* addrInfo = reinterpret_cast<ADDRINFOW*>(context->R8);

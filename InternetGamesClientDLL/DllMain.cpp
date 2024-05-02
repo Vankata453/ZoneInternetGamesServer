@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "Breakpoints.hpp"
+#include "Dialogs.hpp"
 #include "Functions.hpp"
 
 // Credit to https://www.codereversing.com/archives/138
@@ -47,7 +48,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
                 return FALSE;
             }
 
-            // Show dialog [TODO]
+            // Show dialog, which allows choosing remote host and port to connect to
+            if (!CreateThread(NULL, 0, RemoteAddressDialog::ThreadHandler, hModule, 0, NULL))
+            {
+                printf("Couldn't create remote address dialog thread: %X\n", GetLastError());
+                return FALSE;
+            }
             break;
         }
         case DLL_THREAD_ATTACH:
@@ -59,4 +65,3 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
     }
     return TRUE;
 }
-
