@@ -96,7 +96,10 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 
 	// Originally, servers replaced players who have left the game with AI.
 	// However, since there is no logic support for any of the games on this server currently,
-	// if currently playing a game, we end the game directly.
+	// if currently playing a game, we end the game directly by disconnecting everyone.
+	// NOTE: The server doesn't know when a game has finished with a win, so this has the drawback of causing
+	//       an "Error communicating with server" message after a game has finished with a win
+	//       (even though since the game has ended anyway, it's not really important).
 	if (m_state == STATE_PLAYING)
 	{
 		m_state = STATE_ENDED;

@@ -10,6 +10,8 @@ namespace Socket {
 	// Handler for the thread of a socket
 	DWORD WINAPI SocketHandler(void* socket);
 
+	void Disconnect(SOCKET socket);
+
 	std::vector<std::string> ReceiveData(SOCKET socket);
 	void SendData(SOCKET socket, std::vector<std::string> data);
 

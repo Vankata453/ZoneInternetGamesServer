@@ -133,9 +133,8 @@ PlayerSocket::OnChat(const StateChatTag* tag)
 void
 PlayerSocket::OnMatchEnded()
 {
-	// Send a match end message, specific for the current game
-	const StateSTag tag = m_match->ConstructEventReceiveSTag(m_match->ConstructEndMatchMessage());
-	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ &tag })) });
+	// The match has ended, so disconnect the player
+	Socket::Disconnect(m_socket);
 }
 
 

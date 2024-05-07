@@ -34,6 +34,7 @@ public:
 		STATE_WAITINGFORPLAYERS,
 		STATE_PENDINGSTART,
 		STATE_PLAYING,
+		STATE_GAMEOVER,
 		STATE_ENDED
 	};
 
@@ -63,9 +64,6 @@ public:
 	StateSTag ConstructGameInitSTag(PlayerSocket* caller) const;
 	StateSTag ConstructGameStartSTag() const;
 	StateSTag ConstructEventReceiveSTag(const std::string& xml) const;
-
-	/** Construct "STag" messages */
-	virtual std::string ConstructEndMatchMessage() const = 0;
 
 protected:
 	struct QueuedEvent final

@@ -44,11 +44,12 @@ Attempts to implement Internet Spades support are yet to be started.
 > * **If an opponent leaves the game, instead of replacing them with an AI player, the server ends the game.**
 >
 >   The reason for this is that AI player logic has originally been developed server-side.
->   Since this server does not support game logic, they cannot be supported, hence the game is ended.
+>   Since this server does not support game logic, they cannot be supported, hence the match is ended
+>   by disconnecting all players, causing an "Error communicating with server" error on their game clients.
 >
->   If an opponent leaves while it's not their turn, the game will end with a "Corrupted data" message.
->   This happens, because a resignation message is sent to end the game, but a player is not supposed to be able to resign if it isn't their turn.
->   This could be fixed in the future by directly disconnecting other players from the server, resulting in just an "Error communicating with server" error for everyone else.
+>   The server doesn't know when a game has finished with a win, so this has the drawback of causing
+>   an "Error communicating with server" message after a game has finished with a win
+>   (even though since the game has ended anyway, it's not really important).
 >
 > * **Since the server does not support game logic, it will send over any messages, regardless of their validity.**
 >

@@ -9,9 +9,6 @@ public:
 
 	Game GetGame() const override { return Game::CHECKERS; }
 
-	/** Construct "STag" messages */
-	std::string ConstructEndMatchMessage() const override;
-
 protected:
 	QueuedEvent ProcessEvent(const std::string& xml) override;
 

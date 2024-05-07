@@ -39,7 +39,7 @@ DWORD WINAPI SocketHandler(void* socket_)
 		catch (const ClientDisconnected&)
 		{
 			std::cout << "Error communicating with socket " << GetAddressString(socket)
-				<< ": Client has disconnected." << std::endl;
+				<< ": Client has been disconnected." << std::endl;
 
 			player.OnDisconnected();
 			break;
@@ -54,15 +54,20 @@ DWORD WINAPI SocketHandler(void* socket_)
 		}
 	}
 
+	// Clean up
+	Disconnect(socket);
+	closesocket(socket);
+
+	return 0;
+}
+
+
+void Disconnect(SOCKET socket)
+{
 	// Shut down the connection
 	HRESULT shutdownResult = shutdown(socket, SD_BOTH);
 	if (shutdownResult == SOCKET_ERROR)
 		std::cout << "\"shutdown\" failed: " << WSAGetLastError() << std::endl;
-
-	// Clean up
-	closesocket(socket);
-
-	return 0;
 }
 
 
