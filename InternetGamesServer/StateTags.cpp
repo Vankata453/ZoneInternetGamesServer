@@ -4,6 +4,35 @@
 
 #include "Util.hpp"
 
+StateSTag
+StateSTag::ConstructGameInit(const std::string& xml)
+{
+	StateSTag sTag;
+	sTag.msgID = "GameInit";
+	sTag.msgIDSbky = "GameInit";
+	sTag.msgD = xml;
+	return sTag;
+}
+
+StateSTag
+StateSTag::ConstructGameStart()
+{
+	StateSTag sTag;
+	sTag.msgID = "GameStart";
+	sTag.msgIDSbky = "GameStart";
+	return sTag;
+}
+
+StateSTag
+StateSTag::ConstructEventReceive(const std::string& xml)
+{
+	StateSTag sTag;
+	sTag.msgID = "EventReceive";
+	sTag.msgIDSbky = "EventReceive";
+	sTag.msgD = xml;
+	return sTag;
+}
+
 std::string
 StateSTag::ConstructGameManagementMessage(const std::string& method, const std::string& param)
 {

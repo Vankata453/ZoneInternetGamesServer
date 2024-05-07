@@ -17,6 +17,10 @@ public:
 class StateSTag final : public StateTag
 {
 public:
+	static StateSTag ConstructGameInit(const std::string& xml);
+	static StateSTag ConstructGameStart();
+	static StateSTag ConstructEventReceive(const std::string& xml);
+
 	static std::string ConstructGameManagementMessage(const std::string& method, const std::string& param = {});
 
 public:

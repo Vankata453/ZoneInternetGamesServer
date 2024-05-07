@@ -9,7 +9,6 @@ public:
 
 	Game GetGame() const override { return Game::BACKGAMMON; }
 
-protected:
+	/** Construct XML data for STag messages */
 	std::string ConstructGameInitXML(PlayerSocket* caller) const override { return ""; } // TODO
 };
-

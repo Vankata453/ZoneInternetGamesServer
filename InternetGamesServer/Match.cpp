@@ -210,33 +210,3 @@ Match::ConstructStateXML(const std::vector<const StateTag*> tags) const
 
 	return PrintXML(doc);
 }
-
-
-StateSTag
-Match::ConstructGameInitSTag(PlayerSocket* caller) const
-{
-	StateSTag sTag;
-	sTag.msgID = "GameInit";
-	sTag.msgIDSbky = "GameInit";
-	sTag.msgD = ConstructGameInitXML(caller);
-	return sTag;
-}
-
-StateSTag
-Match::ConstructGameStartSTag() const
-{
-	StateSTag sTag;
-	sTag.msgID = "GameStart";
-	sTag.msgIDSbky = "GameStart";
-	return sTag;
-}
-
-StateSTag
-Match::ConstructEventReceiveSTag(const std::string& xml) const
-{
-	StateSTag sTag;
-	sTag.msgID = "EventReceive";
-	sTag.msgIDSbky = "EventReceive";
-	sTag.msgD = xml;
-	return sTag;
-}

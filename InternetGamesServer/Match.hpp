@@ -60,10 +60,8 @@ public:
 	std::string ConstructReadyXML() const;
 	std::string ConstructStateXML(const std::vector<const StateTag*> tags) const;
 
-	/** Construct "Tag"s to be used in "StateMessage"s */
-	StateSTag ConstructGameInitSTag(PlayerSocket* caller) const;
-	StateSTag ConstructGameStartSTag() const;
-	StateSTag ConstructEventReceiveSTag(const std::string& xml) const;
+	/** Construct XML data for STag messages */
+	virtual std::string ConstructGameInitXML(PlayerSocket* caller) const = 0;
 
 protected:
 	struct QueuedEvent final
@@ -82,8 +80,6 @@ protected:
 
 	/** Game-specific matches can use this function to modify "EventSend" messages for "EventReceive". */
 	virtual QueuedEvent ProcessEvent(const std::string& xml);
-
-	virtual std::string ConstructGameInitXML(PlayerSocket* caller) const = 0;
 
 protected:
 	State m_state;
