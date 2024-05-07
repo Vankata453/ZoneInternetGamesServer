@@ -89,4 +89,8 @@ protected:
 	std::vector<PlayerSocket*> m_players;
 
 	const std::time_t m_creationTime;
+
+private:
+	Match(const Match&) = delete;
+	Match operator=(const Match&) = delete;
 };

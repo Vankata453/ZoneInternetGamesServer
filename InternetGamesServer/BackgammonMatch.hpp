@@ -11,4 +11,8 @@ public:
 
 	/** Construct XML data for STag messages */
 	std::string ConstructGameInitXML(PlayerSocket* caller) const override { return ""; } // TODO
+
+private:
+	BackgammonMatch(const BackgammonMatch&) = delete;
+	BackgammonMatch operator=(const BackgammonMatch&) = delete;
 };

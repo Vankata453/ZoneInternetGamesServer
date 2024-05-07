@@ -37,4 +37,8 @@ private:
 	HANDLE m_mutex; // Mutex to prevent simultaneous updating and creation of matches
 
 	std::vector<std::unique_ptr<Match>> m_matches;
+
+private:
+	MatchManager(const MatchManager&) = delete;
+	MatchManager operator=(const MatchManager&) = delete;
 };

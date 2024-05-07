@@ -17,4 +17,8 @@ protected:
 
 private:
 	bool m_drawOffered;
+
+private:
+	CheckersMatch(const CheckersMatch&) = delete;
+	CheckersMatch operator=(const CheckersMatch&) = delete;
 };
