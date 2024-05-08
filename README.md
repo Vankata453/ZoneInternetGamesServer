@@ -56,16 +56,16 @@ Attempts to implement Internet Spades support are yet to be started.
 >   If a player were to modify messages, being sent to the server, to try and cheat, it's up to the opponents' game clients to determine if the action is legitimate or not.
 >   Luckily, from my testing, this local validation seems to work nicely. On invalid data, the game ends with a "Corrupted data" message.
 
-### Internet Games Client DLL [WIP] + Injector [TODO]
+### Internet Games Client DLL + Injector [TODO]
 
-A DLL, which is to be injected into any of the 3 games, using the Injector application.
+A DLL, which is to be injected into any of the 3 games, using the (TODO) Injector application.
 
-The DLL would do the following:
+The DLL performs the following operations:
 
-* Create the `HKEY_CURRENT_USER\Software\Microsoft\zone.com\Zgmprxy` registry key, if it doesn't exist.
-* Create a `DisableTLS` DWORD 32-bit registry value under `HKEY_CURRENT_USER\Software\Microsoft\zone.com\Zgmprxy`, set to 1.
-* Display a dialog, where the user can enter a host and port, where an [Internet Games Server](#internet-games-server) is located, to connect to.
-* Put a hook on the [`GetAddrInfoW`](https://learn.microsoft.com/en-us/windows/win32/api/ws2tcpip/nf-ws2tcpip-getaddrinfow) function from `ws2_32.dll`, setting appropriate arguments, as well as the host and the port, specified in the dialog.
+* Creates the `HKEY_CURRENT_USER\Software\Microsoft\zone.com\Zgmprxy` registry key, if it doesn't exist.
+* Creates a `DisableTLS` DWORD 32-bit registry value under `HKEY_CURRENT_USER\Software\Microsoft\zone.com\Zgmprxy`, set to 1.
+* Displays a dialog, where the user can enter a host and port, where an [Internet Games Server](#internet-games-server) is located, to connect to.
+* Puts a hook on the [`GetAddrInfoW`](https://learn.microsoft.com/en-us/windows/win32/api/ws2tcpip/nf-ws2tcpip-getaddrinfow) function from `ws2_32.dll`, setting appropriate arguments, as well as the host and the port, specified in the dialog.
 
 ## Building
 
