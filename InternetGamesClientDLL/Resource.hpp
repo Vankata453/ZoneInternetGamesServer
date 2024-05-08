@@ -2,7 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by RemoteAddressDialog.rc
 //
-#define IDD_MAIN                     101
+#define IDD_REMOTEADDRESS            101
 #define IDC_HOSTLABEL                1002
 #define IDC_PORTLABEL                1003
 #define IDC_HOST                     1004

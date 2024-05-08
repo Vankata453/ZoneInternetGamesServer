@@ -24,13 +24,15 @@ INT_PTR CALLBACK ProcessMessage(HWND hDialog, UINT message, WPARAM wParam, LPARA
                 {
                     // Host string
                     LPWSTR wHost = new WCHAR[256];
-                    GetDlgItemTextW(hDialog, IDC_HOST, wHost, wcslen(wHost));
+                    if (!GetDlgItemTextW(hDialog, IDC_HOST, wHost, 256))
+                        printf("Couldn't get specified remote address host in remote address dialog.\n");
                     valHost = wHost;
                     delete[] wHost;
 
                     // Port string
-                    LPWSTR wPort = new WCHAR[256];
-                    GetDlgItemTextW(hDialog, IDC_PORT, wPort, wcslen(wPort));
+                    LPWSTR wPort = new WCHAR[5];
+                    if (!GetDlgItemTextW(hDialog, IDC_PORT, wPort, 5))
+                        printf("Couldn't get specified remote address port in remote address dialog.\n");
                     valPort = wPort;
                     delete[] wPort;
 
@@ -56,7 +58,7 @@ INT_PTR CALLBACK ProcessMessage(HWND hDialog, UINT message, WPARAM wParam, LPARA
 /* Thread handler */
 DWORD WINAPI ThreadHandler(void* hModule)
 {
-    return static_cast<DWORD>(DialogBox(reinterpret_cast<HINSTANCE>(hModule), MAKEINTRESOURCE(IDD_MAIN), NULL, ProcessMessage));
+    return static_cast<DWORD>(DialogBox(reinterpret_cast<HINSTANCE>(hModule), MAKEINTRESOURCE(IDD_REMOTEADDRESS), NULL, ProcessMessage));
 }
 
 }
