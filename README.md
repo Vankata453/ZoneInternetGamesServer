@@ -56,9 +56,9 @@ Attempts to implement Internet Spades support are yet to be started.
 >   If a player were to modify messages, being sent to the server, to try and cheat, it's up to the opponents' game clients to determine if the action is legitimate or not.
 >   Luckily, from my testing, this local validation seems to work nicely. On invalid data, the game ends with a "Corrupted data" message.
 
-### Internet Games Client DLL + Injector [TODO]
+### Internet Games Client DLL + DLL Injector
 
-A DLL, which is to be injected into any of the 3 games, using the (TODO) Injector application.
+A DLL, which is to be injected into any of the 3 games, using the DLL Injector application.
 
 The DLL performs the following operations:
 
@@ -71,7 +71,13 @@ The DLL performs the following operations:
 
 To build any of the projects, open up the respective project file (.vcxproj) in Visual Studio and build from there.
 
-For information on how to run multiple instances of any of the games, [read this](docs/MultipleInstances.md).
+### Running Multiple Instances
+
+For information on how to run multiple instances of any of the Internet Games, [read this](docs/MultipleInstances.md).
+
+To use the DLL Injector on multiple instances at the same time, provide the `-r` (or `--repeat`) argument to it,
+allowing to skip a select number of previously started processes of the specified Internet Game.
+For example, to inject the DLL into a second instance of the same game, provide `-r 1` (or `--repeat 1`).
 
 ## Credits
 
