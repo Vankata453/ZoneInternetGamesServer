@@ -1,0 +1,46 @@
+name: Windows
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - DLLInjector/*
+      - InternetGamesClientDLL/*
+      - InternetGamesServer/*
+  pull_request:
+    branches: [ "master" ]
+    paths:
+      - DLLInjector/*
+      - InternetGamesClientDLL/*
+      - InternetGamesServer/*
+  workflow_dispatch:
+
+jobs:
+  windows:
+    strategy:
+      matrix:
+        arch: [ x64, x86 ]
+        build_type: [ Debug, Release ]
+
+    runs-on: windows-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: true
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build
+        env:
+          ARCH: ${{ matrix.arch }}
+          BUILD_TYPE: ${{ matrix.build_type }}
+        run: |
+          msbuild ZoneInternetGamesServer.sln /p:Configuration=$Env:BUILD_TYPE /p:Platform=$Env:ARCH
+
+      - name: Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: "ZoneInternetGamesServer-Windows-${{ matrix.arch }}-${{ matrix.build_type }}-${{ github.sha }}-binaries"
+          path: "${{ (matrix.arch == 'x64' && 'x64/') || '' }}${{ matrix.build_type }}"
