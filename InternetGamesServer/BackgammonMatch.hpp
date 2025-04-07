@@ -13,7 +13,7 @@ public:
 	std::string ConstructGameInitXML(PlayerSocket* caller) const;
 
 protected:
-	QueuedEvent ProcessEvent(const std::string& xml) override;
+	QueuedEvent ProcessEvent(const std::string& xml, const PlayerSocket* caller) override;
 
 private:
 	bool m_initialRollStarted;

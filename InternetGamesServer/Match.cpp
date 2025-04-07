@@ -146,14 +146,20 @@ Match::Update()
 void
 Match::EventSend(const PlayerSocket* caller, const std::string& xml)
 {
-	const QueuedEvent ev = ProcessEvent(xml);
+	const QueuedEvent ev = ProcessEvent(xml, caller);
 	if (ev.xml.empty()) return;
+
+	const bool includeSender = ev.includeSender && ev.xmlSender.empty();
 
 	// Send the event to all players, including the sender only if specified by the event
 	for (PlayerSocket* p : m_players)
 	{
-		if (ev.includeSender || p != caller)
+		if (includeSender || p != caller)
 			p->OnEventReceive(ev.xml);
+	}
+	if (!ev.xmlSender.empty())
+	{
+		caller->OnEventReceive(ev.xmlSender);
 	}
 }
 
@@ -169,7 +175,7 @@ Match::Chat(const StateChatTag tag)
 
 
 Match::QueuedEvent
-Match::ProcessEvent(const std::string& xml)
+Match::ProcessEvent(const std::string& xml, const PlayerSocket*)
 {
 	return xml;
 }

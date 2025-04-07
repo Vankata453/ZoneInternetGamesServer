@@ -12,7 +12,7 @@ CheckersMatch::CheckersMatch(PlayerSocket& player) :
 
 
 CheckersMatch::QueuedEvent
-CheckersMatch::ProcessEvent(const std::string& xml)
+CheckersMatch::ProcessEvent(const std::string& xml, const PlayerSocket* caller)
 {
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLError status = doc.Parse(xml.c_str());

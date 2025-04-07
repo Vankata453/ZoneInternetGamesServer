@@ -12,7 +12,7 @@ BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
 
 
 BackgammonMatch::QueuedEvent
-BackgammonMatch::ProcessEvent(const std::string& xml)
+BackgammonMatch::ProcessEvent(const std::string& xml, const PlayerSocket* caller)
 {
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLError status = doc.Parse(xml.c_str());
