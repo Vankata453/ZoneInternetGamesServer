@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <functional>
 
 namespace tinyxml2 {
 	class XMLElement;
@@ -22,6 +23,8 @@ public:
 	static StateSTag ConstructEventReceive(const std::string& xml);
 
 	static std::string ConstructMethodMessage(const char* managementModule, const std::string& method, const std::string& param = {});
+	static std::string ConstructMethodMessage(const char* managementModule, const std::string& method,
+		const std::function<void(tinyxml2::XMLElement*)>& elParamsProcessor);
 
 public:
 	void AppendToTags(tinyxml2::XMLElement& arTags) const override;

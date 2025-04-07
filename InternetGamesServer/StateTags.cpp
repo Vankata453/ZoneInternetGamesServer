@@ -41,12 +41,33 @@ StateSTag::ConstructMethodMessage(const char* managementModule, const std::strin
 	tinyxml2::XMLElement* elMessage = doc.NewElement("Message");
 	doc.InsertFirstChild(elMessage);
 
-	tinyxml2::XMLElement* elGameManagement = doc.NewElement(managementModule);
-	elMessage->InsertFirstChild(elGameManagement);
+	tinyxml2::XMLElement* elModule = doc.NewElement(managementModule);
+	elMessage->InsertFirstChild(elModule);
 
-	NewElementWithText(elGameManagement, "Method", method);
+	NewElementWithText(elModule, "Method", method);
 	if (!param.empty())
-		NewElementWithText(elGameManagement, "Params", param);
+		NewElementWithText(elModule, "Params", param);
+
+	return PrintXML(doc);
+}
+
+std::string
+StateSTag::ConstructMethodMessage(const char* managementModule, const std::string& method,
+	const std::function<void(tinyxml2::XMLElement*)>& elParamsProcessor)
+{
+	tinyxml2::XMLDocument doc;
+
+	tinyxml2::XMLElement* elMessage = doc.NewElement("Message");
+	doc.InsertFirstChild(elMessage);
+
+	tinyxml2::XMLElement* elModule = doc.NewElement(managementModule);
+	elMessage->InsertFirstChild(elModule);
+
+	NewElementWithText(elModule, "Method", method);
+
+	tinyxml2::XMLElement* elParams = doc.NewElement("Params");
+	elParamsProcessor(elParams);
+	elModule->InsertEndChild(elParams);
 
 	return PrintXML(doc);
 }
