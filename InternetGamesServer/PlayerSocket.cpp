@@ -31,7 +31,7 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 	switch (m_state)
 	{
 		case STATE_NOT_INITIALIZED:
-			if (receivedData[0] == "STADIUM/2.0\r\n")
+			if (receivedData[0] == "STADIUM/2.0")
 			{
 				m_state = STATE_INITIALIZED;
 				return { "STADIUM/2.0\r\n" };

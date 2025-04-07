@@ -24,10 +24,11 @@ DWORD WINAPI SocketHandler(void* socket_)
 		try
 		{
 			// Receive and send back data
-			const std::vector<std::string> receivedData = ReceiveData(socket);
+			const std::vector<std::vector<std::string>> receivedData = ReceiveData(socket);
 			assert(!receivedData.empty());
 
-			SendData(socket, player.GetResponse(receivedData));
+			for (const std::vector<std::string>& receivedLineData : receivedData)
+				SendData(socket, player.GetResponse(receivedLineData));
 		}
 		catch (const DisconnectionRequest&)
 		{
@@ -71,7 +72,7 @@ void Disconnect(SOCKET socket)
 }
 
 
-std::vector<std::string> ReceiveData(SOCKET socket)
+std::vector<std::vector<std::string>> ReceiveData(SOCKET socket)
 {
 	char recvbuf[DEFAULT_BUFLEN];
 
@@ -79,13 +80,30 @@ std::vector<std::string> ReceiveData(SOCKET socket)
 	if (recvResult > 0)
 	{
 		const std::string received(recvbuf, recvResult);
-		const std::vector<std::string> receivedEntries = StringSplit(received, "&"); // Split data by "&" for easier parsing in certain cases
-		std::cout << "Data received from " << GetAddressString(socket) << ":" << std::endl;
-		for (const std::string& entry : receivedEntries)
+		std::istringstream receivedStream(received);
+
+		std::vector<std::vector<std::string>> receivedEntries;
+		std::string receivedLine;
+		while (std::getline(receivedStream, receivedLine))
 		{
-			std::cout << entry << std::endl;
+			if (receivedLine.empty())
+				continue;
+
+			if (receivedLine.back() == '\r')
+				receivedLine.pop_back(); // Remove carriage return
+
+			receivedEntries.push_back(StringSplit(std::move(receivedLine), "&")); // Split data by "&" for easier parsing in certain cases
 		}
-		std::cout << std::endl;
+
+		std::cout << "Data received from " << GetAddressString(socket) << ":" << std::endl;
+		for (const std::vector<std::string>& receivedLineEntries : receivedEntries)
+		{
+			for (const std::string& entry : receivedLineEntries)
+			{
+				std::cout << entry << std::endl;
+			}
+			std::cout << std::endl;
+		}
 
 		return receivedEntries;
 	}

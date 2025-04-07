@@ -12,7 +12,7 @@ namespace Socket {
 
 	void Disconnect(SOCKET socket);
 
-	std::vector<std::string> ReceiveData(SOCKET socket);
+	std::vector<std::vector<std::string>> ReceiveData(SOCKET socket);
 	void SendData(SOCKET socket, std::vector<std::string> data);
 
 	std::string GetAddressString(SOCKET socket);
