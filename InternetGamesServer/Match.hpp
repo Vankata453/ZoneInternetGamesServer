@@ -84,7 +84,7 @@ protected:
 	virtual size_t GetRequiredPlayerCount() const { return 2; }
 
 	/** Game-specific matches can use this function to modify "EventSend" messages for "EventReceive". */
-	virtual QueuedEvent ProcessEvent(const std::string& xml, const PlayerSocket* caller);
+	virtual std::vector<QueuedEvent> ProcessEvent(const std::string& xml, const PlayerSocket* caller);
 
 protected:
 	State m_state;

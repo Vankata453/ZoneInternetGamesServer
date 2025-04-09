@@ -11,17 +11,17 @@ CheckersMatch::CheckersMatch(PlayerSocket& player) :
 {}
 
 
-CheckersMatch::QueuedEvent
+std::vector<CheckersMatch::QueuedEvent>
 CheckersMatch::ProcessEvent(const std::string& xml, const PlayerSocket* caller)
 {
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLError status = doc.Parse(xml.c_str());
 	if (status != tinyxml2::XML_SUCCESS)
-		return xml;
+		return { xml };
 
 	tinyxml2::XMLElement* elMessage = doc.RootElement();
 	if (!elMessage || strcmp(elMessage->Name(), "Message"))
-		return xml;
+		return { xml };
 
 	// Game management events
 	tinyxml2::XMLElement* elGameManagement = elMessage->FirstChildElement("GameManagement");
@@ -34,30 +34,30 @@ CheckersMatch::ProcessEvent(const std::string& xml, const PlayerSocket* caller)
 			if (!strcmp(elMethod->GetText(), "ResignGiven")) // Player has resigned
 			{
 				m_state = STATE_GAMEOVER;
-				return StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "PlayerQuit");
+				return { StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "PlayerQuit") };
 			}
 			else if (!strcmp(elMethod->GetText(), "OfferDraw")) // Player has offered a draw to their opponent
 			{
 				m_drawOffered = true;
-				return xml;
+				return { xml };
 			}
 			else if (!strcmp(elMethod->GetText(), "DrawReject")) // Player has rejected a draw from their opponent
 			{
 				m_drawOffered = false;
-				return xml;
+				return { xml };
 			}
 			else if (!strcmp(elMethod->GetText(), "DrawAccept")) // Player has accepted a draw by the opponent
 			{
 				if (!m_drawOffered)
-					return xml;
+					return { xml };
 
 				m_state = STATE_GAMEOVER;
-				return QueuedEvent(StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "DrawOffered"), true);
+				return { QueuedEvent(StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "DrawOffered"), true) };
 			}
 		}
 	}
 
-	return xml;
+	return { xml };
 }
 
 

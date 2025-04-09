@@ -13,7 +13,7 @@ public:
 	std::string ConstructGameInitXML(PlayerSocket* caller) const override;
 
 protected:
-	QueuedEvent ProcessEvent(const std::string& xml, const PlayerSocket* caller) override;
+	std::vector<QueuedEvent> ProcessEvent(const std::string& xml, const PlayerSocket* caller) override;
 
 private:
 	bool m_drawOffered;

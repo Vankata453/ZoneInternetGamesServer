@@ -23,10 +23,7 @@ The current progress on individual game support is the following:
 
 #### Internet Backgammon [WIP]
 
-The current phase of implementing Backgammon support is trying to understand what `DiceManager` `DieRolls` message needs to be
-returned to the players, in reply to the `GenerateInitialValues` message, sent by them.
-
-That is required for indication of dice results and which player wins the initial roll.
+Internet Backgammon, according to my testing, is fully supported.
 
 #### Internet Checkers
 
