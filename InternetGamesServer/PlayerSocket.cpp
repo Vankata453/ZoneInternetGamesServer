@@ -72,8 +72,7 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 			else if (receivedData[0] == "CALL EventSend messageID=EventSend" && receivedData.size() > 1 &&
 				StartsWith(receivedData[1], "XMLDataString=")) // An event is being sent, let the Match send it to all other players
 			{
-				m_match->EventSend(this, DecodeURL(receivedData[1].substr(14))); // Remove "XMLDataString=" from the beginning
-				return {};
+				m_match->EventSend(*this, DecodeURL(receivedData[1].substr(14))); // Remove "XMLDataString=" from the beginning
 			}
 			else if (StartsWith(receivedData[0], "CALL Chat") && receivedData.size() > 1) // A chat message was sent, let the Match send it to all players
 			{
@@ -87,7 +86,10 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 				tag.fontCharSet = receivedData[4].substr(11); // Remove "eFontCharSet=" from the beginning
 
 				m_match->Chat(std::move(tag));
-				return {};
+			}
+			else if (receivedData[0] == "LEAVE") // Client has left the game, disconnect it from the server
+			{
+				Socket::Disconnect(m_socket);
 			}
 			break;
 	}
@@ -112,7 +114,10 @@ void
 PlayerSocket::OnDisconnected()
 {
 	if (m_match)
+	{
 		m_match->DisconnectedPlayer(*this);
+		m_match = nullptr;
+	}
 }
 
 void
