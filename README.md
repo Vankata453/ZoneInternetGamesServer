@@ -14,7 +14,9 @@ This repository includes, or will include, the following:
 
 ### Internet Games Server
 
-A Winsock server, which aims to reproduce the functionality of the original game servers.
+![Preview of the Internet Games Server in action](docs/img/README_ServerPreview.png)
+
+A Winsock server, which aims to make the Internet Games playable by acting as a Zone games server.
 It matches players in lobbies, depending on the game being played, as well as the chosen skill level.
 It can manage many matches of any of the 3 games at the same time.
 
