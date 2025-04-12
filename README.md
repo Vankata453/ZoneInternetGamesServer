@@ -21,7 +21,7 @@ It can manage many matches of any of the 3 games at the same time.
 Each game has custom messages, which need to be supported by the server in order for it to function properly.
 The current progress on individual game support is the following:
 
-#### Internet Backgammon [WIP]
+#### Internet Backgammon
 
 Internet Backgammon, according to my testing, is fully supported.
 
@@ -48,9 +48,9 @@ Attempts to implement Internet Spades support are yet to be started.
 >   an "Error communicating with server" message after a game has finished with a win
 >   (even though since the game has ended anyway, it's not really important).
 >
-> * **Since the server does not support game logic, it will send over any messages, regardless of their validity.**
+> * **Since the server does not support game logic, it will send over any event messages, regardless of their validity.**
 >
->   If a player were to modify messages, being sent to the server, to try and cheat, it's up to the opponents' game clients to determine if the action is legitimate or not.
+>   If a player were to modify event messages being sent to the server to try and cheat, it's up to the opponents' game clients to determine whether the actions are legitimate or not.
 >   Luckily, from my testing, this local validation seems to work nicely. On invalid data, the game ends with a "Corrupted data" message.
 
 ### Internet Games Client DLL + DLL Injector

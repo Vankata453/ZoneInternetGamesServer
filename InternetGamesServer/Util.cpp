@@ -5,8 +5,6 @@
 #include <random>
 #include <sstream>
 
-#include "tinyxml2.h"
-
 /** String utilities */
 bool StartsWith(const std::string& str, const std::string& prefix)
 {
@@ -69,7 +67,41 @@ std::string DecodeURL(const std::string& str)
 }
 
 
-/** TinyXML2 shortcuts */
+/** TinyXML2 */
+XMLPrinter::XMLPrinter() :
+	tinyxml2::XMLPrinter(nullptr, true /* Compact mode */),
+	m_elementTree()
+{}
+
+void
+XMLPrinter::OpenElement(const char* name)
+{
+	tinyxml2::XMLPrinter::OpenElement(name, true /* Compact mode */);
+	m_elementTree.push_back(name);
+}
+
+void
+XMLPrinter::CloseElement(const char* name)
+{
+	if (m_elementTree.empty() || strcmp(m_elementTree.back(), name))
+	{
+		throw std::runtime_error("XMLPrinter: Attempted to close non-existent element '" + std::string(name) + "'!");
+	}
+	tinyxml2::XMLPrinter::CloseElement(true /* Compact mode */);
+	m_elementTree.pop_back();
+}
+
+std::string
+XMLPrinter::print() const
+{
+	if (!m_elementTree.empty())
+	{
+		throw std::runtime_error("XMLPrinter: Attempted to print with open elements!");
+	}
+	return tinyxml2::XMLPrinter::CStr();
+}
+
+
 tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, std::string text)
 {
 	RemoveNewlines(text);
@@ -80,11 +112,13 @@ tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::
 	return el;
 }
 
-std::string PrintXML(tinyxml2::XMLDocument& doc)
+void NewElementWithText(XMLPrinter& printer, const std::string& name, std::string text)
 {
-	tinyxml2::XMLPrinter printer(nullptr, /* Compact mode */ true);
-	doc.Print(&printer);
-	return printer.CStr();
+	RemoveNewlines(text);
+
+	printer.OpenElement(name);
+	printer.PushText(text);
+	printer.CloseElement(name);
 }
 
 

@@ -16,10 +16,10 @@ public:
 	std::string ConstructGameInitXML(PlayerSocket* caller) const;
 
 protected:
-	std::vector<QueuedEvent> ProcessEvent(const std::string& xml, const PlayerSocket* caller) override;
+	std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller) override;
 
 private:
-	void ClearState();
+	void ClearGameState();
 
 private:
 	std::mt19937 m_rng;

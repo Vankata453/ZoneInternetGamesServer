@@ -3,8 +3,6 @@
 #include <stdexcept>
 #include <sstream>
 
-#include "tinyxml2.h"
-
 #include "MatchManager.hpp"
 #include "Socket.hpp"
 #include "Util.hpp"

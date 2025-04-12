@@ -4,8 +4,6 @@
 #include <rpcdce.h>
 #include <sstream>
 
-#include "tinyxml2.h"
-
 #include "PlayerSocket.hpp"
 #include "Util.hpp"
 
@@ -50,6 +48,19 @@ Match::LevelFromPublicELO(const std::string& str)
 
 	return Level::INVALID;
 }
+
+
+Match::QueuedEvent::QueuedEvent(const std::string& xml_, bool includeSender_) :
+	xml(xml_),
+	xmlSender(),
+	includeSender(includeSender_)
+{}
+
+Match::QueuedEvent::QueuedEvent(const std::string& xml_, const std::string& xmlSender_) :
+	xml(xml_),
+	xmlSender(xmlSender_),
+	includeSender(false)
+{}
 
 
 Match::Match(PlayerSocket& player) :
@@ -144,24 +155,39 @@ Match::Update()
 
 
 void
-Match::EventSend(const PlayerSocket* caller, const std::string& xml)
+Match::EventSend(const PlayerSocket& caller, const std::string& xml)
 {
-	const std::vector<QueuedEvent> events = ProcessEvent(xml, caller);
+	/* Get event XML element */
+	tinyxml2::XMLDocument eventDoc;
+	tinyxml2::XMLError status = eventDoc.Parse(xml.c_str());
+	if (status != tinyxml2::XML_SUCCESS)
+		return;
+
+	const tinyxml2::XMLElement* elMessage = eventDoc.RootElement();
+	if (!elMessage || strcmp(elMessage->Name(), "Message"))
+		return;
+
+	const tinyxml2::XMLElement* elEvent = elMessage->FirstChildElement();
+	if (!elEvent || !elEvent->Name())
+		return;
+
+	/* Process event */
+	const std::vector<QueuedEvent> events = ProcessEvent(*elEvent, caller);
 	for (const QueuedEvent& ev : events)
 	{
-		if (ev.xml.empty()) return;
+		if (ev.xml.empty()) continue;
 
 		const bool includeSender = ev.includeSender && ev.xmlSender.empty();
 
 		// Send the event to all players, including the sender only if specified by the event
 		for (PlayerSocket* p : m_players)
 		{
-			if (includeSender || p != caller)
+			if (includeSender || p != &caller)
 				p->OnEventReceive(ev.xml);
 		}
 		if (!ev.xmlSender.empty())
 		{
-			caller->OnEventReceive(ev.xmlSender);
+			caller.OnEventReceive(ev.xmlSender);
 		}
 	}
 }
@@ -178,45 +204,43 @@ Match::Chat(const StateChatTag tag)
 
 
 std::vector<Match::QueuedEvent>
-Match::ProcessEvent(const std::string& xml, const PlayerSocket*)
+Match::ProcessEvent(const tinyxml2::XMLElement&, const PlayerSocket&)
 {
-	return { xml };
+	return {};
 }
 
 
 std::string
 Match::ConstructReadyXML() const
 {
-	tinyxml2::XMLDocument doc;
+	XMLPrinter printer;
+	printer.OpenElement("ReadyMessage");
 
-	tinyxml2::XMLElement* elReadyMessage = doc.NewElement("ReadyMessage");
-	doc.InsertFirstChild(elReadyMessage);
+	NewElementWithText(printer, "eStatus", "Ready");
+	NewElementWithText(printer, "sMode", "normal");
 
-	NewElementWithText(elReadyMessage, "eStatus", "Ready");
-	NewElementWithText(elReadyMessage, "sMode", "normal");
-
-	return PrintXML(doc);
+	printer.CloseElement("ReadyMessage");
+	return printer;
 }
 
 std::string
 Match::ConstructStateXML(const std::vector<const StateTag*> tags) const
 {
-	tinyxml2::XMLDocument doc;
+	XMLPrinter printer;
+	printer.OpenElement("StateMessage");
 
-	tinyxml2::XMLElement* elStateMessage = doc.NewElement("StateMessage");
-	doc.InsertFirstChild(elStateMessage);
-
-	NewElementWithText(elStateMessage, "nSeq", "4"); // TODO: Figure out what "nSeq" is for. Currently it doesn't seem to matter
-	NewElementWithText(elStateMessage, "nRole", "0"); // TODO: Figure out what "nRole" is for. Currently it doesn't seem to matter
-	NewElementWithText(elStateMessage, "eStatus", "Ready");
-	NewElementWithText(elStateMessage, "nTimestamp", std::to_string(std::time(nullptr) - m_creationTime));
-	NewElementWithText(elStateMessage, "sMode", "normal");
+	NewElementWithText(printer, "nSeq", "4"); // TODO: Figure out what "nSeq" is for. Currently it doesn't seem to matter
+	NewElementWithText(printer, "nRole", "0"); // TODO: Figure out what "nRole" is for. Currently it doesn't seem to matter
+	NewElementWithText(printer, "eStatus", "Ready");
+	NewElementWithText(printer, "nTimestamp", std::to_string(std::time(nullptr) - m_creationTime));
+	NewElementWithText(printer, "sMode", "normal");
 
 	// Tags
-	tinyxml2::XMLElement& elArTags = *doc.NewElement("arTags");
+	printer.OpenElement("arTags");
 	for (const StateTag* tag : tags)
-		tag->AppendToTags(elArTags);
-	elStateMessage->InsertEndChild(&elArTags);
+		tag->AppendToTags(printer);
+	printer.CloseElement("arTags");
 
-	return PrintXML(doc);
+	printer.CloseElement("StateMessage");
+	return printer;
 }

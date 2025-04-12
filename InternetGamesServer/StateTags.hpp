@@ -3,6 +3,8 @@
 #include <string>
 #include <functional>
 
+class XMLPrinter;
+
 namespace tinyxml2 {
 	class XMLElement;
 }
@@ -11,7 +13,7 @@ namespace tinyxml2 {
 class StateTag
 {
 public:
-	virtual void AppendToTags(tinyxml2::XMLElement& arTags) const = 0;
+	virtual void AppendToTags(XMLPrinter& printer) const = 0;
 };
 
 /** A tag, containing a message, sent as a part of "arTags" in a "StateMessage" */
@@ -22,12 +24,15 @@ public:
 	static StateSTag ConstructGameStart();
 	static StateSTag ConstructEventReceive(const std::string& xml);
 
-	static std::string ConstructMethodMessage(const char* managementModule, const std::string& method, const std::string& param = {});
+	static std::string ConstructMethodMessage(const char* managementModule, const std::string& method, const std::string& param = "");
 	static std::string ConstructMethodMessage(const char* managementModule, const std::string& method,
-		const std::function<void(tinyxml2::XMLElement*)>& elParamsProcessor);
+		const std::function<void(XMLPrinter&)>& elParamsProcessor);
+	static void PrintMethodMessage(XMLPrinter& printer, const char* managementModule, const std::string& method, const std::string& param = "");
+	static void PrintMethodMessage(XMLPrinter& printer, const char* managementModule, const std::string& method,
+		const std::function<void(XMLPrinter&)>& elParamsProcessor);
 
 public:
-	void AppendToTags(tinyxml2::XMLElement& arTags) const override;
+	void AppendToTags(XMLPrinter& printer) const override;
 
 public:
 	std::string msgID;
@@ -39,7 +44,7 @@ public:
 class StateChatTag final : public StateTag
 {
 public:
-	void AppendToTags(tinyxml2::XMLElement& arTags) const override;
+	void AppendToTags(XMLPrinter& printer) const override;
 
 public:
 	std::string userID;

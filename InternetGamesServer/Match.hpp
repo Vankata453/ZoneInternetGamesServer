@@ -48,7 +48,7 @@ public:
 	virtual void Update();
 
 	/** Event handling */
-	void EventSend(const PlayerSocket* caller, const std::string& xml);
+	void EventSend(const PlayerSocket& caller, const std::string& xml);
 	void Chat(const StateChatTag tag);
 
 	virtual Game GetGame() const = 0;
@@ -66,25 +66,19 @@ public:
 protected:
 	struct QueuedEvent final
 	{
-		QueuedEvent(const std::string& xml_, bool includeSender_ = false) :
-			xml(xml_),
-			includeSender(includeSender_)
-		{}
-		QueuedEvent(const std::string& xml_, const std::string& xmlSender_) :
-			xml(xml_),
-			xmlSender(xmlSender_)
-		{}
+		QueuedEvent(const std::string& xml, bool includeSender = false);
+		QueuedEvent(const std::string& xml, const std::string& xmlSender);
 
-		std::string xml; // The XML data string for the event.
-		bool includeSender; // Should the event also be sent back to the original sender?
-		std::string xmlSender;  // The XML data string for the event, to be sent only to the original sender.
+		const std::string xml; // The XML data string for the event.
+		const std::string xmlSender;  // The XML data string for the event, to be sent only to the original sender.
+		const bool includeSender; // Should the event also be sent back to the original sender? (Ignored if xmlSender is set.)
 	};
 
 protected:
 	virtual size_t GetRequiredPlayerCount() const { return 2; }
 
-	/** Game-specific matches can use this function to modify "EventSend" messages for "EventReceive". */
-	virtual std::vector<QueuedEvent> ProcessEvent(const std::string& xml, const PlayerSocket* caller);
+	/** Process event and return a custom response. */
+	virtual std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller);
 
 protected:
 	State m_state;

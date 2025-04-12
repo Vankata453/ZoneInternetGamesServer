@@ -1,7 +1,5 @@
 #include "BackgammonMatch.hpp"
 
-#include "tinyxml2.h"
-
 #include "PlayerSocket.hpp"
 #include "Util.hpp"
 
@@ -22,7 +20,7 @@ BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
 
 
 void
-BackgammonMatch::ClearState()
+BackgammonMatch::ClearGameState()
 {
 	m_homeTableStones = { 0, 0 };
 	m_lastMovePlayer = -1;
@@ -36,23 +34,11 @@ BackgammonMatch::ClearState()
 
 
 std::vector<BackgammonMatch::QueuedEvent>
-BackgammonMatch::ProcessEvent(const std::string& xml, const PlayerSocket* caller)
+BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller)
 {
-	tinyxml2::XMLDocument doc;
-	tinyxml2::XMLError status = doc.Parse(xml.c_str());
-	if (status != tinyxml2::XML_SUCCESS)
-		return { xml };
-
-	tinyxml2::XMLElement* elMessage = doc.RootElement();
-	if (!elMessage || strcmp(elMessage->Name(), "Message"))
-		return { xml };
-
-	// Dice management events
-	tinyxml2::XMLElement* elDiceManager = elMessage->FirstChildElement("DiceManager");
-	if (elDiceManager)
+	if (!strcmp(elEvent.Name(), "DiceManager"))
 	{
-		// Method
-		tinyxml2::XMLElement* elMethod = elDiceManager->FirstChildElement("Method");
+		const tinyxml2::XMLElement* elMethod = elEvent.FirstChildElement("Method");
 		if (elMethod && elMethod->GetText())
 		{
 			if (!strcmp(elMethod->GetText(), "GenerateValues")) // Generate dice values
@@ -62,11 +48,11 @@ BackgammonMatch::ProcessEvent(const std::string& xml, const PlayerSocket* caller
 				return {
 					QueuedEvent(
 						StateSTag::ConstructMethodMessage("DiceManager", "DieRolls",
-						[caller, &dieValues](tinyxml2::XMLElement* elParams) {
-							NewElementWithText(elParams, "Seat", std::to_string(caller->m_role));
-							NewElementWithText(elParams, "FirstDie", std::to_string(dieValues.first));
-							NewElementWithText(elParams, "SecondDie", std::to_string(dieValues.second));
-						}),
+							[&caller, &dieValues](XMLPrinter& printer) {
+								NewElementWithText(printer, "Seat", std::to_string(caller.m_role));
+								NewElementWithText(printer, "FirstDie", std::to_string(dieValues.first));
+								NewElementWithText(printer, "SecondDie", std::to_string(dieValues.second));
+							}),
 						true)
 				};
 			}
@@ -88,108 +74,169 @@ BackgammonMatch::ProcessEvent(const std::string& xml, const PlayerSocket* caller
 				return {
 					QueuedEvent(
 						StateSTag::ConstructMethodMessage("DiceManager", "InitialDieRoles",
-							[&firstDieValues, &secondDieValues](tinyxml2::XMLElement* elParams) {
-								NewElementWithText(elParams, "PlayersFirstDieValue", std::to_string(firstDieValues.first));
-								NewElementWithText(elParams, "OpponentsFirstDieValue", std::to_string(firstDieValues.second));
-								NewElementWithText(elParams, "PlayersSecondDieValue", std::to_string(secondDieValues.first));
-								NewElementWithText(elParams, "OpponentsSecondDieValue", std::to_string(secondDieValues.second));
+							[&firstDieValues, &secondDieValues](XMLPrinter& printer) {
+								NewElementWithText(printer, "PlayersFirstDieValue", std::to_string(firstDieValues.first));
+								NewElementWithText(printer, "OpponentsFirstDieValue", std::to_string(firstDieValues.second));
+								NewElementWithText(printer, "PlayersSecondDieValue", std::to_string(secondDieValues.first));
+								NewElementWithText(printer, "OpponentsSecondDieValue", std::to_string(secondDieValues.second));
 							}),
 						StateSTag::ConstructMethodMessage("DiceManager", "InitialDieRoles",
-							[&firstDieValues, &secondDieValues](tinyxml2::XMLElement* elParams) {
-								NewElementWithText(elParams, "PlayersFirstDieValue", std::to_string(firstDieValues.second));
-								NewElementWithText(elParams, "OpponentsFirstDieValue", std::to_string(firstDieValues.first));
-								NewElementWithText(elParams, "PlayersSecondDieValue", std::to_string(secondDieValues.second));
-								NewElementWithText(elParams, "OpponentsSecondDieValue", std::to_string(secondDieValues.first));
+							[&firstDieValues, &secondDieValues](XMLPrinter& printer) {
+								NewElementWithText(printer, "PlayersFirstDieValue", std::to_string(firstDieValues.second));
+								NewElementWithText(printer, "OpponentsFirstDieValue", std::to_string(firstDieValues.first));
+								NewElementWithText(printer, "PlayersSecondDieValue", std::to_string(secondDieValues.second));
+								NewElementWithText(printer, "OpponentsSecondDieValue", std::to_string(secondDieValues.first));
 							}))
 				};
 			}
 		}
-
-		return { xml };
 	}
-	// Move events
-	tinyxml2::XMLElement* elMove = elMessage->FirstChildElement("Move");
-	if (elMove)
+	else if (!strcmp(elEvent.Name(), "Move"))
 	{
-		// Method
-		tinyxml2::XMLElement* elDouble = elMove->FirstChildElement("Double");
+		XMLPrinter sanitizedMoveMessage;
+		sanitizedMoveMessage.OpenElement("Message");
+		sanitizedMoveMessage.OpenElement("Move");
+
+		const tinyxml2::XMLElement* elDouble = elEvent.FirstChildElement("Double");
 		if (elDouble && elDouble->GetText()) // Player has requested double
 		{
 			if (m_doubleRequested)
 			{
 				return {};
 			}
-			m_doubleRequested = true;
-		}
-		else
-		{
-			m_lastMovePlayer = caller->m_role;
-			m_lastMoveHomeTableStone = false;
-
-			tinyxml2::XMLElement* elTarget = elMove->FirstChildElement("Target");
-			if (elTarget)
+			try
 			{
-				tinyxml2::XMLElement* elTargetX = elTarget->FirstChildElement("X");
-				tinyxml2::XMLElement* elTargetY = elTarget->FirstChildElement("Y");
-				if (elTargetX && elTargetX->GetText() && elTargetY && elTargetY->GetText())
+				const int doubleBy = std::stoi(elDouble->GetText());
+				if (doubleBy >= 2 && doubleBy % 2 == 0)
 				{
-					if ((caller->m_role == 0 && !strcmp(elTargetX->GetText(), "25")) ||
-						(caller->m_role == 1 && !strcmp(elTargetX->GetText(), "26"))) // Player has moved stone to home table
-					{
-						try
-						{
-							const int targetY = std::stoi(elTargetY->GetText());
-							if (targetY >= 0 && targetY < 15)
-							{
-								int& homeTableStones = caller->m_role == 0 ? m_homeTableStones.first : m_homeTableStones.second;
-								++homeTableStones;
-								m_lastMoveHomeTableStone = true;
+					m_doubleRequested = true;
 
-								if (homeTableStones >= 15) // All stones are in the player's home board
-								{
-									m_startNextGameState = StartNextGameState::ALLOWED;
-									return {
-										QueuedEvent(
-											StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "BearOff," + std::to_string(caller->m_role)),
-											true)
-									};
-								}
-							}
+					sanitizedMoveMessage.OpenElement("Source");
+					NewElementWithText(sanitizedMoveMessage, "X", "-1");
+					NewElementWithText(sanitizedMoveMessage, "Y", "-1");
+					sanitizedMoveMessage.CloseElement("Source");
+
+					sanitizedMoveMessage.OpenElement("Target");
+					NewElementWithText(sanitizedMoveMessage, "X", "-1");
+					NewElementWithText(sanitizedMoveMessage, "Y", "-1");
+					sanitizedMoveMessage.CloseElement("Target");
+
+					NewElementWithText(sanitizedMoveMessage, "Double", std::to_string(doubleBy));
+
+					sanitizedMoveMessage.CloseElement("Move");
+					sanitizedMoveMessage.CloseElement("Message");
+					return {
+						sanitizedMoveMessage.print()
+					};
+				}
+			}
+			catch (const std::exception&) {}
+		}
+		else // Player has performed a regular move
+		{
+			const tinyxml2::XMLElement* elSource = elEvent.FirstChildElement("Source");
+			const tinyxml2::XMLElement* elTarget = elEvent.FirstChildElement("Target");
+			if (elSource && elTarget)
+			{
+				const tinyxml2::XMLElement* elSourceX = elSource->FirstChildElement("X");
+				const tinyxml2::XMLElement* elSourceY = elSource->FirstChildElement("Y");
+				const tinyxml2::XMLElement* elTargetX = elTarget->FirstChildElement("X");
+				const tinyxml2::XMLElement* elTargetY = elTarget->FirstChildElement("Y");
+				if (elSourceX && elSourceX->GetText() && elSourceY && elSourceY->GetText() &&
+					elTargetX && elTargetX->GetText() && elTargetY && elTargetY->GetText())
+				{
+					try
+					{
+						const int sourceX = std::stoi(elSourceX->GetText());
+						const int sourceY = std::stoi(elSourceY->GetText());
+						const int targetX = std::stoi(elTargetX->GetText());
+						const int targetY = std::stoi(elTargetY->GetText());
+
+						sanitizedMoveMessage.OpenElement("Source");
+						NewElementWithText(sanitizedMoveMessage, "X", elSourceX->GetText());
+						NewElementWithText(sanitizedMoveMessage, "Y", elSourceY->GetText());
+						sanitizedMoveMessage.CloseElement("Source");
+
+						sanitizedMoveMessage.OpenElement("Target");
+						NewElementWithText(sanitizedMoveMessage, "X", elTargetX->GetText());
+						NewElementWithText(sanitizedMoveMessage, "Y", elTargetY->GetText());
+						sanitizedMoveMessage.CloseElement("Target");
+
+						sanitizedMoveMessage.CloseElement("Move");
+						sanitizedMoveMessage.CloseElement("Message");
+
+						if (sourceX >= 0 && sourceX < 25 && targetX >= 0 && targetX < 25)
+						{
+							m_lastMovePlayer = caller.m_role;
+							m_lastMoveHomeTableStone = false;
+							return {
+								sanitizedMoveMessage.print()
+							};
 						}
-						catch (const std::exception&) {}
+						if (((caller.m_role == 0 && targetX == 25) || (caller.m_role == 1 && targetX == 26)) &&
+							targetY >= 0 && targetY < 15)
+						{
+							m_lastMovePlayer = caller.m_role;
+							m_lastMoveHomeTableStone = true;
+
+							int& homeTableStones = caller.m_role == 0 ? m_homeTableStones.first : m_homeTableStones.second;
+							++homeTableStones;
+
+							if (homeTableStones >= 15) // All stones are in the player's home board
+							{
+								m_startNextGameState = StartNextGameState::ALLOWED;
+								return {
+									sanitizedMoveMessage.print(),
+									QueuedEvent(
+										StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "BearOff," + std::to_string(caller.m_role)),
+										true)
+								};
+							}
+							return {
+								sanitizedMoveMessage.print()
+							};
+						}
 					}
+					catch (const std::exception&) {}
 				}
 			}
 		}
-
-		return { xml };
 	}
-	// Game logic events
-	tinyxml2::XMLElement* elGameLogic = elMessage->FirstChildElement("GameLogic");
-	if (elGameLogic)
+	else if (!strcmp(elEvent.Name(), "GameLogic"))
 	{
-		// Method
-		tinyxml2::XMLElement* elMethod = elGameLogic->FirstChildElement("Method");
+		const tinyxml2::XMLElement* elMethod = elEvent.FirstChildElement("Method");
 		if (elMethod && elMethod->GetText())
 		{
+			if (!strcmp(elMethod->GetText(), "DoneMoving")) // Player has done all their moves this round
+			{
+				return {
+					StateSTag::ConstructMethodMessage("GameLogic", "DoneMoving")
+				};
+			}
 			if (!strcmp(elMethod->GetText(), "UndoLast")) // Player has undone their last move
 			{
-				if (m_lastMovePlayer == caller->m_role && m_lastMoveHomeTableStone) // Player has moved stone from home table
+				if (m_lastMovePlayer == caller.m_role && m_lastMoveHomeTableStone) // Player has moved stone from home table
 				{
 					int& homeTableStones = m_lastMovePlayer == 0 ? m_homeTableStones.first : m_homeTableStones.second;
 					--homeTableStones;
 					m_lastMoveHomeTableStone = false;
 				}
+				return {
+					StateSTag::ConstructMethodMessage("GameLogic", "UndoLast")
+				};
 			}
-			else if (!strcmp(elMethod->GetText(), "AcceptDouble")) // Player has accepted other player's double
+			if (!strcmp(elMethod->GetText(), "AcceptDouble")) // Player has accepted other player's double
 			{
 				if (!m_doubleRequested)
 				{
 					return {};
 				}
 				m_doubleRequested = false;
+				return {
+					StateSTag::ConstructMethodMessage("GameLogic", "AcceptDouble")
+				};
 			}
-			else if (!strcmp(elMethod->GetText(), "RejectDouble")) // Player has rejected other player's double
+			if (!strcmp(elMethod->GetText(), "RejectDouble")) // Player has rejected other player's double
 			{
 				if (!m_doubleRequested)
 				{
@@ -199,34 +246,55 @@ BackgammonMatch::ProcessEvent(const std::string& xml, const PlayerSocket* caller
 				m_startNextGameState = StartNextGameState::ALLOWED;
 				return {
 					QueuedEvent(
-						StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "DoubleDecline," + std::string(caller->m_role == 0 ? "1" : "0")),
+						StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "DoubleDecline," + std::string(caller.m_role == 0 ? "1" : "0")),
 						true)
 				};
 			}
-			else if (!strcmp(elMethod->GetText(), "RequestResign")) // Player has requested resign
+			if (!strcmp(elMethod->GetText(), "RequestResign")) // Player has requested resign
 			{
 				if (m_resignRequested)
 				{
 					return {};
 				}
-				m_resignRequested = true;
+				const tinyxml2::XMLElement* elParams = elEvent.FirstChildElement("Params");
+				if (elParams && elParams->GetText())
+				{
+					try
+					{
+						const int pointsOffered = std::stoi(elParams->GetText());
+						if (pointsOffered >= 0)
+						{
+							m_resignRequested = true;
+							return {
+								StateSTag::ConstructMethodMessage("GameLogic", "RequestResign", elParams->GetText())
+							};
+						}
+					}
+					catch (const std::exception&) {}
+				}
 			}
-			else if (!strcmp(elMethod->GetText(), "AcceptResign")) // Player has accepted resign of other player
+			if (!strcmp(elMethod->GetText(), "AcceptResign")) // Player has accepted resign request of other player
 			{
 				if (!m_resignRequested)
 				{
 					return {};
 				}
+				return {
+					StateSTag::ConstructMethodMessage("GameLogic", "AcceptResign")
+				};
 			}
-			else if (!strcmp(elMethod->GetText(), "RejectResign")) // Player has rejected resign of other player
+			if (!strcmp(elMethod->GetText(), "RejectResign")) // Player has rejected resign request of other player
 			{
 				if (!m_resignRequested)
 				{
 					return {};
 				}
 				m_resignRequested = false;
+				return {
+					StateSTag::ConstructMethodMessage("GameLogic", "RejectResign")
+				};
 			}
-			else if (!strcmp(elMethod->GetText(), "StartNextGame")) // Client has requested the start of the next game
+			if (!strcmp(elMethod->GetText(), "StartNextGame")) // Client has requested the start of the next game
 			{
 				switch (m_startNextGameState)
 				{
@@ -237,30 +305,24 @@ BackgammonMatch::ProcessEvent(const std::string& xml, const PlayerSocket* caller
 					case StartNextGameState::ALLOWED:
 					{
 						m_startNextGameState = StartNextGameState::REQUESTED_ONCE;
-						m_startNextGameRequestedOnceBy = caller->m_role;
+						m_startNextGameRequestedOnceBy = caller.m_role;
 						break;
 					}
 					case StartNextGameState::REQUESTED_ONCE:
 					{
-						if (m_startNextGameRequestedOnceBy != caller->m_role)
+						if (m_startNextGameRequestedOnceBy != caller.m_role)
 						{
-							ClearState();
+							ClearGameState();
 						}
 						break;
 					}
 				}
-				return {};
 			}
 		}
-
-		return { xml };
 	}
-	// Game management events
-	tinyxml2::XMLElement* elGameManagement = elMessage->FirstChildElement("GameManagement");
-	if (elGameManagement)
+	else if (!strcmp(elEvent.Name(), "GameManagement"))
 	{
-		// Method
-		tinyxml2::XMLElement* elMethod = elGameManagement->FirstChildElement("Method");
+		const tinyxml2::XMLElement* elMethod = elEvent.FirstChildElement("Method");
 		if (elMethod && elMethod->GetText())
 		{
 			if (!strcmp(elMethod->GetText(), "ResignGiven")) // Player has resigned
@@ -273,37 +335,36 @@ BackgammonMatch::ProcessEvent(const std::string& xml, const PlayerSocket* caller
 				m_startNextGameState = StartNextGameState::ALLOWED;
 				return {
 					QueuedEvent(
-						StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "PlayerResigned," + std::string(caller->m_role == 0 ? "1" : "0")),
+						StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "PlayerResigned," + std::string(caller.m_role == 0 ? "1" : "0")),
 						true)
 				};
 			}
 		}
 	}
-
-	return { xml };
+	return {};
 }
 
 
 std::string
 BackgammonMatch::ConstructGameInitXML(PlayerSocket* caller) const
 {
-	tinyxml2::XMLDocument doc;
+	XMLPrinter printer;
+	printer.OpenElement("GameInit");
 
-	tinyxml2::XMLElement* elGameInit = doc.NewElement("GameInit");
-	doc.InsertFirstChild(elGameInit);
-	NewElementWithText(elGameInit, "Role", std::to_string(caller->m_role));
+	NewElementWithText(printer, "Role", std::to_string(caller->m_role));
 
 	// Players
-	tinyxml2::XMLElement* elPlayers = doc.NewElement("Players");
+	printer.OpenElement("Players");
 	for (PlayerSocket* player : m_players)
 	{
-		tinyxml2::XMLElement* elPlayer = doc.NewElement("Player");
-		NewElementWithText(elPlayer, "Role", std::to_string(player->m_role));
-		NewElementWithText(elPlayer, "Name", player->GetPUID());
-		NewElementWithText(elPlayer, "Type", "Human");
-		elPlayers->InsertEndChild(elPlayer);
+		printer.OpenElement("Player");
+		NewElementWithText(printer, "Role", std::to_string(player->m_role));
+		NewElementWithText(printer, "Name", player->GetPUID());
+		NewElementWithText(printer, "Type", "Human");
+		printer.CloseElement("Player");
 	}
-	elGameInit->InsertEndChild(elPlayers);
+	printer.CloseElement("Players");
 
-	return PrintXML(doc);
+	printer.CloseElement("GameInit");
+	return printer;
 }

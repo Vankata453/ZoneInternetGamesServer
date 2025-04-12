@@ -13,10 +13,10 @@ public:
 	std::string ConstructGameInitXML(PlayerSocket* caller) const override;
 
 protected:
-	std::vector<QueuedEvent> ProcessEvent(const std::string& xml, const PlayerSocket* caller) override;
+	std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller) override;
 
 private:
-	bool m_drawOffered;
+	int m_drawOfferedBy;
 
 private:
 	CheckersMatch(const CheckersMatch&) = delete;

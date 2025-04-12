@@ -1,7 +1,5 @@
 #include "StateTags.hpp"
 
-#include "tinyxml2.h"
-
 #include "Util.hpp"
 
 StateSTag
@@ -33,83 +31,93 @@ StateSTag::ConstructEventReceive(const std::string& xml)
 	return sTag;
 }
 
+
 std::string
 StateSTag::ConstructMethodMessage(const char* managementModule, const std::string& method, const std::string& param)
 {
-	tinyxml2::XMLDocument doc;
-
-	tinyxml2::XMLElement* elMessage = doc.NewElement("Message");
-	doc.InsertFirstChild(elMessage);
-
-	tinyxml2::XMLElement* elModule = doc.NewElement(managementModule);
-	elMessage->InsertFirstChild(elModule);
-
-	NewElementWithText(elModule, "Method", method);
-	if (!param.empty())
-		NewElementWithText(elModule, "Params", param);
-
-	return PrintXML(doc);
+	XMLPrinter printer;
+	PrintMethodMessage(printer, managementModule, method, param);
+	return printer;
 }
 
 std::string
 StateSTag::ConstructMethodMessage(const char* managementModule, const std::string& method,
-	const std::function<void(tinyxml2::XMLElement*)>& elParamsProcessor)
+	const std::function<void(XMLPrinter&)>& elParamsProcessor)
 {
-	tinyxml2::XMLDocument doc;
-
-	tinyxml2::XMLElement* elMessage = doc.NewElement("Message");
-	doc.InsertFirstChild(elMessage);
-
-	tinyxml2::XMLElement* elModule = doc.NewElement(managementModule);
-	elMessage->InsertFirstChild(elModule);
-
-	NewElementWithText(elModule, "Method", method);
-
-	tinyxml2::XMLElement* elParams = doc.NewElement("Params");
-	elParamsProcessor(elParams);
-	elModule->InsertEndChild(elParams);
-
-	return PrintXML(doc);
+	XMLPrinter printer;
+	PrintMethodMessage(printer, managementModule, method, elParamsProcessor);
+	return printer;
 }
 
 void
-StateSTag::AppendToTags(tinyxml2::XMLElement& arTags) const
+StateSTag::PrintMethodMessage(XMLPrinter& printer, const char* managementModule, const std::string& method, const std::string& param)
 {
-	tinyxml2::XMLDocument& doc = *arTags.GetDocument();
+	printer.OpenElement("Message");
 
-	tinyxml2::XMLElement* elTag = doc.NewElement("Tag");
-	arTags.InsertFirstChild(elTag);
+	printer.OpenElement(managementModule);
+	NewElementWithText(printer, "Method", method);
+	if (!param.empty())
+		NewElementWithText(printer, "Params", param);
+	printer.CloseElement(managementModule);
 
-	NewElementWithText(elTag, "id", "STag");
+	printer.CloseElement("Message");
+}
 
-	// "STag" value
-	tinyxml2::XMLElement* elOValue = doc.NewElement("oValue");
-	NewElementWithText(elOValue, "MsgID", msgID);
-	NewElementWithText(elOValue, "MsgIDSbky", msgIDSbky);
-	NewElementWithText(elOValue, "MsgD", msgD.empty() ? "0" : msgD);
-	elTag->InsertEndChild(elOValue);
+void
+StateSTag::PrintMethodMessage(XMLPrinter& printer, const char* managementModule, const std::string& method,
+	const std::function<void(XMLPrinter&)>& elParamsProcessor)
+{
+	printer.OpenElement("Message");
+
+	printer.OpenElement(managementModule);
+	NewElementWithText(printer, "Method", method);
+
+	printer.OpenElement("Params");
+	elParamsProcessor(printer);
+	printer.CloseElement("Params");
+
+	printer.CloseElement(managementModule);
+
+	printer.CloseElement("Message");
 }
 
 
 void
-StateChatTag::AppendToTags(tinyxml2::XMLElement& arTags) const
+StateSTag::AppendToTags(XMLPrinter& printer) const
 {
-	tinyxml2::XMLDocument& doc = *arTags.GetDocument();
+	printer.OpenElement("Tag");
 
-	tinyxml2::XMLElement* elTag = doc.NewElement("Tag");
-	arTags.InsertFirstChild(elTag);
-
-	NewElementWithText(elTag, "id", "chat");
+	NewElementWithText(printer, "id", "STag");
 
 	// "STag" value
-	tinyxml2::XMLElement* elOValue = doc.NewElement("oValue");
-	NewElementWithText(elOValue, "UserID", userID);
-	NewElementWithText(elOValue, "Nickname", nickname);
-	NewElementWithText(elOValue, "Text", text);
-	NewElementWithText(elOValue, "FontFace", fontFace);
-	NewElementWithText(elOValue, "FontFlags", fontFlags);
-	NewElementWithText(elOValue, "FontColor", fontColor);
-	NewElementWithText(elOValue, "FontCharSet", fontCharSet);
-	NewElementWithText(elOValue, "MessageFlags", "2"); // TODO: Figure out what "MessageFlags" is for. Currently it doesn't seem to matter
-	elTag->InsertEndChild(elOValue);
+	printer.OpenElement("oValue");
+	NewElementWithText(printer, "MsgID", msgID);
+	NewElementWithText(printer, "MsgIDSbky", msgIDSbky);
+	NewElementWithText(printer, "MsgD", msgD.empty() ? "0" : msgD);
+	printer.CloseElement("oValue");
+
+	printer.CloseElement("Tag");
+}
+
+
+void
+StateChatTag::AppendToTags(XMLPrinter& printer) const
+{
+	printer.OpenElement("Tag");
+
+	NewElementWithText(printer, "id", "chat");
+
+	// "STag" value
+	printer.OpenElement("oValue");
+	NewElementWithText(printer, "UserID", userID);
+	NewElementWithText(printer, "Nickname", nickname);
+	NewElementWithText(printer, "Text", text);
+	NewElementWithText(printer, "FontFace", fontFace);
+	NewElementWithText(printer, "FontFlags", fontFlags);
+	NewElementWithText(printer, "FontColor", fontColor);
+	NewElementWithText(printer, "FontCharSet", fontCharSet);
+	NewElementWithText(printer, "MessageFlags", "2"); // TODO: Figure out what "MessageFlags" is for. Currently it doesn't seem to matter
+	printer.CloseElement("oValue");
+
+	printer.CloseElement("Tag");
 }
