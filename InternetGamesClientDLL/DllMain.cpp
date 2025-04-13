@@ -12,6 +12,8 @@
 
 // Credit to https://www.codereversing.com/archives/138
 
+#define DEBUG_CONSOLE 0
+
 static void* exceptionHandler = nullptr;
 
 /** Setup functions */
@@ -26,6 +28,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
         {
             DisableThreadLibraryCalls(hModule);
 
+#if DEBUG_CONSOLE
             // Show console
             if (AllocConsole())
             {
@@ -34,6 +37,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
                 SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
                 printf("DLL loaded successfully!\n");
             }
+#endif
 
             if (!GetFunctions())
             {
