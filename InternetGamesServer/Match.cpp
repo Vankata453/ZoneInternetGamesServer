@@ -244,3 +244,29 @@ Match::ConstructStateXML(const std::vector<const StateTag*> tags) const
 	printer.CloseElement("StateMessage");
 	return printer;
 }
+
+std::string
+Match::ConstructGameInitXML(PlayerSocket* caller) const
+{
+	XMLPrinter printer;
+	printer.OpenElement("GameInit");
+
+	NewElementWithText(printer, "Role", std::to_string(caller->m_role));
+
+	// Players
+	printer.OpenElement("Players");
+	for (PlayerSocket* player : m_players)
+	{
+		printer.OpenElement("Player");
+		NewElementWithText(printer, "Role", std::to_string(player->m_role));
+		NewElementWithText(printer, "Name", player->GetPUID());
+		NewElementWithText(printer, "Type", "Human");
+		printer.CloseElement("Player");
+	}
+	printer.CloseElement("Players");
+
+	AppendToGameInitXML(printer, caller);
+
+	printer.CloseElement("GameInit");
+	return printer;
+}

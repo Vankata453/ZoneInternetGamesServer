@@ -9,10 +9,9 @@ public:
 
 	Game GetGame() const override { return Game::CHECKERS; }
 
-	/** Construct XML data for STag messages */
-	std::string ConstructGameInitXML(PlayerSocket* caller) const override;
-
 protected:
+	void AppendToGameInitXML(XMLPrinter& printer, PlayerSocket* caller) const override;
+
 	std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller) override;
 
 private:

@@ -343,28 +343,3 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 	}
 	return {};
 }
-
-
-std::string
-BackgammonMatch::ConstructGameInitXML(PlayerSocket* caller) const
-{
-	XMLPrinter printer;
-	printer.OpenElement("GameInit");
-
-	NewElementWithText(printer, "Role", std::to_string(caller->m_role));
-
-	// Players
-	printer.OpenElement("Players");
-	for (PlayerSocket* player : m_players)
-	{
-		printer.OpenElement("Player");
-		NewElementWithText(printer, "Role", std::to_string(player->m_role));
-		NewElementWithText(printer, "Name", player->GetPUID());
-		NewElementWithText(printer, "Type", "Human");
-		printer.CloseElement("Player");
-	}
-	printer.CloseElement("Players");
-
-	printer.CloseElement("GameInit");
-	return printer;
-}

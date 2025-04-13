@@ -61,7 +61,7 @@ public:
 	std::string ConstructStateXML(const std::vector<const StateTag*> tags) const;
 
 	/** Construct XML data for STag messages */
-	virtual std::string ConstructGameInitXML(PlayerSocket* caller) const = 0;
+	std::string ConstructGameInitXML(PlayerSocket* caller) const;
 
 protected:
 	struct QueuedEvent final
@@ -76,6 +76,9 @@ protected:
 
 protected:
 	virtual size_t GetRequiredPlayerCount() const { return 2; }
+
+	/** Append additional XML data to STag messages */
+	virtual void AppendToGameInitXML(XMLPrinter& printer, PlayerSocket* caller) const {}
 
 	/** Process event and return a custom response. */
 	virtual std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller);

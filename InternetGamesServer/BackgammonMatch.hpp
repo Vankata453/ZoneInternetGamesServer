@@ -2,7 +2,6 @@
 
 #include "Match.hpp"
 
-#include <array>
 #include <random>
 
 class BackgammonMatch final : public Match
@@ -11,9 +10,6 @@ public:
 	BackgammonMatch(PlayerSocket& player);
 
 	Game GetGame() const override { return Game::BACKGAMMON; }
-
-	/** Construct XML data for STag messages */
-	std::string ConstructGameInitXML(PlayerSocket* caller) const;
 
 protected:
 	std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller) override;

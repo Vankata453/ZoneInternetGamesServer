@@ -113,26 +113,9 @@ CheckersMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSoc
 }
 
 
-std::string
-CheckersMatch::ConstructGameInitXML(PlayerSocket* caller) const
+void
+CheckersMatch::AppendToGameInitXML(XMLPrinter& printer, PlayerSocket* caller) const
 {
-	XMLPrinter printer;
-	printer.OpenElement("GameInit");
-
-	NewElementWithText(printer, "Role", std::to_string(caller->m_role));
-
-	// Players
-	printer.OpenElement("Players");
-	for (PlayerSocket* player : m_players)
-	{
-		printer.OpenElement("Player");
-		NewElementWithText(printer, "Role", std::to_string(player->m_role));
-		NewElementWithText(printer, "Name", player->GetPUID());
-		NewElementWithText(printer, "Type", "Human");
-		printer.CloseElement("Player");
-	}
-	printer.CloseElement("Players");
-
 	// Board
 	printer.OpenElement("Board");
 	NewElementWithText(printer, "Row", "0,1,0,1,0,1,0,1");
@@ -146,7 +129,4 @@ CheckersMatch::ConstructGameInitXML(PlayerSocket* caller) const
 	printer.CloseElement("Board");
 
 	NewElementWithText(printer, "GameType", "Standard");
-
-	printer.CloseElement("GameInit");
-	return printer;
 }

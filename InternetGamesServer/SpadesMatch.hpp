@@ -9,9 +9,6 @@ public:
 
 	Game GetGame() const override { return Game::SPADES; }
 
-	/** Construct XML data for STag messages */
-	std::string ConstructGameInitXML(PlayerSocket* caller) const override { return ""; } // TODO
-
 protected:
 	size_t GetRequiredPlayerCount() const override { return 4; }
 
