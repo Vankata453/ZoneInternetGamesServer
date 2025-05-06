@@ -31,9 +31,9 @@ Internet Backgammon, according to my testing, is fully supported.
 
 Internet Checkers, according to my testing, is fully supported.
 
-#### Internet Spades [TODO]
+#### Internet Spades
 
-Attempts to implement Internet Spades support are yet to be started.
+Internet Spades, according to my testing, is fully supported.
 
 
 > [!NOTE]

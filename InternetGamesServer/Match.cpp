@@ -288,3 +288,9 @@ Match::ConstructGameInitXML(PlayerSocket* caller) const
 	printer.CloseElement("GameInit");
 	return printer;
 }
+
+std::vector<std::string>
+Match::ConstructGameStartMessagesXML(const PlayerSocket&) const
+{
+	return {};
+}

@@ -62,6 +62,7 @@ public:
 
 	/** Construct XML data for STag messages */
 	std::string ConstructGameInitXML(PlayerSocket* caller) const;
+	virtual std::vector<std::string> ConstructGameStartMessagesXML(const PlayerSocket& caller) const;
 
 protected:
 	struct QueuedEvent final

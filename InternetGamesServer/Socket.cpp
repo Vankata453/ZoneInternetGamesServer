@@ -122,6 +122,8 @@ void SendData(SOCKET socket, std::vector<std::string> data)
 {
 	for (const std::string& message : data)
 	{
+		if (message.empty()) continue;
+
 		HRESULT sendResult = send(socket, message.c_str(), static_cast<int>(message.length()), 0);
 		if (sendResult == SOCKET_ERROR)
 			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());

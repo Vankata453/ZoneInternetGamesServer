@@ -64,8 +64,20 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 			if (StartsWith(receivedData[0], "CALL GameReady")) // Game is ready, start it
 			{
 				// Send a game start message
-				const StateSTag tag = StateSTag::ConstructGameStart();
-				return { ConstructStateMessage(m_match->ConstructStateXML({ &tag })) };
+				const StateSTag startTag = StateSTag::ConstructGameStart();
+				std::vector<std::string> results = {
+					ConstructStateMessage(m_match->ConstructStateXML({ &startTag }))
+				};
+
+				// Include any additional messages, given on game start, by the match
+				const std::vector<std::string> stateXMLs = m_match->ConstructGameStartMessagesXML(*this);
+				for (const std::string& stateXML : stateXMLs)
+				{
+					const StateSTag stateTag = StateSTag::ConstructEventReceive(stateXML);
+					results.push_back(ConstructStateMessage(m_match->ConstructStateXML({ &stateTag })));
+				}
+
+				return results;
 			}
 			else if (receivedData[0] == "CALL EventSend messageID=EventSend" && receivedData.size() > 1 &&
 				StartsWith(receivedData[1], "XMLDataString=")) // An event is being sent, let the Match send it to all other players

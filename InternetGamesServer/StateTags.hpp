@@ -24,12 +24,14 @@ public:
 	static StateSTag ConstructGameStart();
 	static StateSTag ConstructEventReceive(const std::string& xml);
 
-	static std::string ConstructMethodMessage(const char* managementModule, const std::string& method, const std::string& param = "");
+	static std::string ConstructMethodMessage(const char* managementModule, const std::string& method, const std::string& param = "",
+		bool xmlParams = false);
 	static std::string ConstructMethodMessage(const char* managementModule, const std::string& method,
-		const std::function<void(XMLPrinter&)>& elParamsProcessor);
-	static void PrintMethodMessage(XMLPrinter& printer, const char* managementModule, const std::string& method, const std::string& param = "");
+		const std::function<void(XMLPrinter&)>& elParamsProcessor, bool xmlParams = false);
+	static void PrintMethodMessage(XMLPrinter& printer, const char* managementModule, const std::string& method, const std::string& param = "",
+		bool xmlParams = false);
 	static void PrintMethodMessage(XMLPrinter& printer, const char* managementModule, const std::string& method,
-		const std::function<void(XMLPrinter&)>& elParamsProcessor);
+		const std::function<void(XMLPrinter&)>& elParamsProcessor, bool xmlParams = false);
 
 public:
 	void AppendToTags(XMLPrinter& printer) const override;
