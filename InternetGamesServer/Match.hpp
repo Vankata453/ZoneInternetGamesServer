@@ -40,6 +40,7 @@ public:
 
 public:
 	Match(PlayerSocket& player);
+	virtual ~Match();
 
 	void JoinPlayer(PlayerSocket& player);
 	void DisconnectedPlayer(PlayerSocket& player);
@@ -90,9 +91,12 @@ protected:
 	GUID m_guid;
 	const Level m_level;
 	std::vector<PlayerSocket*> m_players;
+
+private:
 	HANDLE m_event_mutex; // Mutex to prevent simultaneous event processing from multiple clients
 
 	const std::time_t m_creationTime;
+	std::time_t m_endTime;
 
 private:
 	Match(const Match&) = delete;

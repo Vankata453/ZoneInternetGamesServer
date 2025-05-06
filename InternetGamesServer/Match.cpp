@@ -1,6 +1,7 @@
 #include "Match.hpp"
 
 #include <algorithm>
+#include <iostream>
 #include <rpcdce.h>
 #include <synchapi.h>
 #include <sstream>
@@ -64,7 +65,7 @@ Match::QueuedEvent::QueuedEvent(const std::string& xml_, const std::string& xmlS
 {}
 
 
-#define MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE 1 // DEBUG: If a player leaves a match, do not disconnect other players.
+#define MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE 0 // DEBUG: If a player leaves a match, do not disconnect other players.
 
 Match::Match(PlayerSocket& player) :
 	m_state(STATE_WAITINGFORPLAYERS),
@@ -72,12 +73,19 @@ Match::Match(PlayerSocket& player) :
 	m_level(player.GetLevel()),
 	m_players(),
 	m_event_mutex(CreateMutex(nullptr, false, nullptr)),
-	m_creationTime(std::time(nullptr))
+	m_creationTime(std::time(nullptr)),
+	m_endTime(0)
 {
 	// Generate a unique GUID for the match
 	UuidCreate(&m_guid);
 
 	JoinPlayer(player);
+}
+
+Match::~Match()
+{
+	for (PlayerSocket* p : m_players)
+		p->OnMatchEnded();
 }
 
 
@@ -117,14 +125,7 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 	//       an "Error communicating with server" message after a game has finished with a win
 	//       (even though since the game has ended anyway, it's not really important).
 	if (m_state == STATE_PLAYING)
-	{
 		m_state = STATE_ENDED;
-		for (PlayerSocket* p : m_players)
-		{
-			if (p != &player)
-				p->OnMatchEnded();
-		}
-	}
 #endif
 }
 
@@ -150,6 +151,19 @@ Match::Update()
 					p->OnGameStart();
 
 				m_state = STATE_PLAYING;
+			}
+			break;
+		}
+		case STATE_GAMEOVER:
+		{
+			if (m_endTime == 0)
+			{
+				m_endTime = std::time(nullptr);
+			}
+			else if (std::time(nullptr) - m_endTime >= 60) // A minute has passed since the match ended
+			{
+				std::cout << GameToNameString(GetGame()) << " match ended a minute ago, closing!" << std::endl;
+				m_state = STATE_ENDED;
 			}
 			break;
 		}

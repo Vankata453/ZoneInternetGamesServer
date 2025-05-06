@@ -124,7 +124,7 @@ SpadesMatch::CardTrick::GetWinner() const
 SpadesMatch::SpadesMatch(PlayerSocket& player) :
 	Match(player),
 	m_rng(std::random_device()()),
-	m_state(MatchState::BIDDING),
+	m_match_state(MatchState::BIDDING),
 	m_teamPoints({ 0, 0 }),
 	m_teamBags({ 0, 0 }),
 	m_handDealer(s_playerDistribution(m_rng)),
@@ -143,7 +143,7 @@ SpadesMatch::SpadesMatch(PlayerSocket& player) :
 void
 SpadesMatch::ResetHand()
 {
-	m_state = MatchState::BIDDING;
+	m_match_state = MatchState::BIDDING;
 
 	if (++m_handDealer >= 4)
 		m_handDealer = 0;
@@ -248,7 +248,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 		const tinyxml2::XMLElement* elBid = elEvent.FirstChildElement("Bid");
 		if (elBid && elBid->GetText()) // Player has bid on number of tricks they expect to make
 		{
-			if (m_state != MatchState::BIDDING)
+			if (m_match_state != MatchState::BIDDING)
 				return {};
 
 			const int bid = std::stoi(elBid->GetText());
@@ -322,7 +322,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 				}
 				if (!moreBidsToSend)
 				{
-					m_state = MatchState::PLAYING;
+					m_match_state = MatchState::PLAYING;
 					eventQueue.emplace_back(
 						StateSTag::ConstructMethodMessage("GameLogic", "StartPlay",
 							[this](XMLPrinter& printer) {
@@ -333,7 +333,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 				return eventQueue;
 			}
 		}
-		else if (m_state == MatchState::PLAYING && m_playerTrickTurn == caller.m_role)
+		else if (m_match_state == MatchState::PLAYING && m_playerTrickTurn == caller.m_role)
 		{
 			const tinyxml2::XMLElement* elCard = elEvent.FirstChildElement("Card");
 			if (elCard)
@@ -393,6 +393,8 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 									if (m_teamPoints[0] >= 500 || m_teamPoints[1] <= -200 ||
 										m_teamPoints[1] >= 500 || m_teamPoints[0] <= -200)
 									{
+										m_state = STATE_GAMEOVER;
+
 										eventQueue.emplace_back(
 											StateSTag::ConstructMethodMessage("GameLogic", "StartEndOfGame", "", true),
 											true);
