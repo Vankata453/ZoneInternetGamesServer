@@ -153,13 +153,13 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 						const int targetY = std::stoi(elTargetY->GetText());
 
 						sanitizedMoveMessage.OpenElement("Source");
-						NewElementWithText(sanitizedMoveMessage, "X", elSourceX->GetText());
-						NewElementWithText(sanitizedMoveMessage, "Y", elSourceY->GetText());
+						NewElementWithText(sanitizedMoveMessage, "X", std::to_string(sourceX));
+						NewElementWithText(sanitizedMoveMessage, "Y", std::to_string(sourceY));
 						sanitizedMoveMessage.CloseElement("Source");
 
 						sanitizedMoveMessage.OpenElement("Target");
-						NewElementWithText(sanitizedMoveMessage, "X", elTargetX->GetText());
-						NewElementWithText(sanitizedMoveMessage, "Y", elTargetY->GetText());
+						NewElementWithText(sanitizedMoveMessage, "X", std::to_string(targetX));
+						NewElementWithText(sanitizedMoveMessage, "Y", std::to_string(targetY));
 						sanitizedMoveMessage.CloseElement("Target");
 
 						sanitizedMoveMessage.CloseElement("Move");
