@@ -211,20 +211,18 @@ SpadesMatch::UpdateTeamPoints()
 
 		// Contract scoring
 		const int contract = max(0, m_playerBids[p1]) + max(0, m_playerBids[p2]);
-		const int tricks = m_playerTricksTaken[p1] + m_playerTricksTaken[p2];
-		if (contract > 0)
+		const int tricksNonNil = static_cast<int>(
+			(m_playerBids[p1] > 0 ? m_playerTricksTaken[p1] : 0) +
+			(m_playerBids[p2] > 0 ? m_playerTricksTaken[p2] : 0));
+		if (tricksNonNil >= contract)
 		{
-			//const int tricks = m_playerTricksTaken[p1] + m_playerTricksTaken[p2];
-			if (tricks >= contract)
-			{
-				const int overtricks = tricks - contract;
-				points += contract * 10 + overtricks;
-				bags += overtricks;
-			}
-			else
-			{
-				points -= contract * 10;
-			}
+			const int tricksAll = static_cast<int>(m_playerTricksTaken[p1] + m_playerTricksTaken[p2]);
+			points += contract * 10 + tricksAll - contract; // Overtricks for points are calculated using all tricks taken, Nil or not
+			bags += tricksNonNil - contract; // Only non-Nil overtricks count towards bags
+		}
+		else
+		{
+			points -= contract * 10;
 		}
 
 		// Bag penalty
