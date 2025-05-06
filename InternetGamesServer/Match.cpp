@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <rpcdce.h>
+#include <synchapi.h>
 #include <sstream>
 
 #include "PlayerSocket.hpp"
@@ -68,6 +69,7 @@ Match::Match(PlayerSocket& player) :
 	m_guid(),
 	m_level(player.GetLevel()),
 	m_players(),
+	m_event_mutex(CreateMutex(nullptr, false, nullptr)),
 	m_creationTime(std::time(nullptr))
 {
 	// Generate a unique GUID for the match
@@ -172,23 +174,35 @@ Match::EventSend(const PlayerSocket& caller, const std::string& xml)
 		return;
 
 	/* Process event */
-	const std::vector<QueuedEvent> events = ProcessEvent(*elEvent, caller);
-	for (const QueuedEvent& ev : events)
+	switch (WaitForSingleObject(m_event_mutex, 5000))
 	{
-		if (ev.xml.empty()) continue;
-
-		const bool includeSender = ev.includeSender && ev.xmlSender.empty();
-
-		// Send the event to all players, including the sender only if specified by the event
-		for (PlayerSocket* p : m_players)
+		case WAIT_OBJECT_0: // Acquired ownership of the event mutex
 		{
-			if (includeSender || p != &caller)
-				p->OnEventReceive(ev.xml);
+			const std::vector<QueuedEvent> events = ProcessEvent(*elEvent, caller);
+			for (const QueuedEvent& ev : events)
+			{
+				if (!ev.xml.empty())
+				{
+					const bool includeSender = ev.includeSender && ev.xmlSender.empty();
+					for (const PlayerSocket* p : m_players)
+					{
+						if (includeSender || p != &caller)
+							p->OnEventReceive(ev.xml);
+					}
+				}
+				if (!ev.xmlSender.empty())
+				{
+					caller.OnEventReceive(ev.xmlSender);
+				}
+			}
+
+			if (!ReleaseMutex(m_event_mutex))
+				throw std::runtime_error("Match::EventSend(): Couldn't release event mutex: " + GetLastError());
+			break;
 		}
-		if (!ev.xmlSender.empty())
-		{
-			caller.OnEventReceive(ev.xmlSender);
-		}
+
+		case WAIT_ABANDONED: // Acquired ownership of an abandoned event mutex
+			throw std::runtime_error("Match::EventSend(): Got ownership of an abandoned event mutex: " + GetLastError());
 	}
 }
 
