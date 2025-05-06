@@ -49,9 +49,9 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 					QueuedEvent(
 						StateSTag::ConstructMethodMessage("DiceManager", "DieRolls",
 							[&caller, &dieValues](XMLPrinter& printer) {
-								NewElementWithText(printer, "Seat", std::to_string(caller.m_role));
-								NewElementWithText(printer, "FirstDie", std::to_string(dieValues.first));
-								NewElementWithText(printer, "SecondDie", std::to_string(dieValues.second));
+								NewElementWithText(printer, "Seat", caller.m_role);
+								NewElementWithText(printer, "FirstDie", dieValues.first);
+								NewElementWithText(printer, "SecondDie", dieValues.second);
 							}),
 						true)
 				};
@@ -75,17 +75,17 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 					QueuedEvent(
 						StateSTag::ConstructMethodMessage("DiceManager", "InitialDieRoles",
 							[&firstDieValues, &secondDieValues](XMLPrinter& printer) {
-								NewElementWithText(printer, "PlayersFirstDieValue", std::to_string(firstDieValues.first));
-								NewElementWithText(printer, "OpponentsFirstDieValue", std::to_string(firstDieValues.second));
-								NewElementWithText(printer, "PlayersSecondDieValue", std::to_string(secondDieValues.first));
-								NewElementWithText(printer, "OpponentsSecondDieValue", std::to_string(secondDieValues.second));
+								NewElementWithText(printer, "PlayersFirstDieValue", firstDieValues.first);
+								NewElementWithText(printer, "OpponentsFirstDieValue", firstDieValues.second);
+								NewElementWithText(printer, "PlayersSecondDieValue", secondDieValues.first);
+								NewElementWithText(printer, "OpponentsSecondDieValue", secondDieValues.second);
 							}),
 						StateSTag::ConstructMethodMessage("DiceManager", "InitialDieRoles",
 							[&firstDieValues, &secondDieValues](XMLPrinter& printer) {
-								NewElementWithText(printer, "PlayersFirstDieValue", std::to_string(firstDieValues.second));
-								NewElementWithText(printer, "OpponentsFirstDieValue", std::to_string(firstDieValues.first));
-								NewElementWithText(printer, "PlayersSecondDieValue", std::to_string(secondDieValues.second));
-								NewElementWithText(printer, "OpponentsSecondDieValue", std::to_string(secondDieValues.first));
+								NewElementWithText(printer, "PlayersFirstDieValue", firstDieValues.second);
+								NewElementWithText(printer, "OpponentsFirstDieValue", firstDieValues.first);
+								NewElementWithText(printer, "PlayersSecondDieValue", secondDieValues.second);
+								NewElementWithText(printer, "OpponentsSecondDieValue", secondDieValues.first);
 							}))
 				};
 			}
@@ -121,7 +121,7 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 					NewElementWithText(sanitizedMoveMessage, "Y", "-1");
 					sanitizedMoveMessage.CloseElement("Target");
 
-					NewElementWithText(sanitizedMoveMessage, "Double", std::to_string(doubleBy));
+					NewElementWithText(sanitizedMoveMessage, "Double", doubleBy);
 
 					sanitizedMoveMessage.CloseElement("Move");
 					sanitizedMoveMessage.CloseElement("Message");
@@ -153,13 +153,13 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 						const int targetY = std::stoi(elTargetY->GetText());
 
 						sanitizedMoveMessage.OpenElement("Source");
-						NewElementWithText(sanitizedMoveMessage, "X", std::to_string(sourceX));
-						NewElementWithText(sanitizedMoveMessage, "Y", std::to_string(sourceY));
+						NewElementWithText(sanitizedMoveMessage, "X", sourceX);
+						NewElementWithText(sanitizedMoveMessage, "Y", sourceY);
 						sanitizedMoveMessage.CloseElement("Source");
 
 						sanitizedMoveMessage.OpenElement("Target");
-						NewElementWithText(sanitizedMoveMessage, "X", std::to_string(targetX));
-						NewElementWithText(sanitizedMoveMessage, "Y", std::to_string(targetY));
+						NewElementWithText(sanitizedMoveMessage, "X", targetX);
+						NewElementWithText(sanitizedMoveMessage, "Y", targetY);
 						sanitizedMoveMessage.CloseElement("Target");
 
 						sanitizedMoveMessage.CloseElement("Move");

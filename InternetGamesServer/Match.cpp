@@ -264,7 +264,7 @@ Match::ConstructStateXML(const std::vector<const StateTag*> tags) const
 	NewElementWithText(printer, "nSeq", "4"); // TODO: Figure out what "nSeq" is for. Currently it doesn't seem to matter
 	NewElementWithText(printer, "nRole", "0"); // TODO: Figure out what "nRole" is for. Currently it doesn't seem to matter
 	NewElementWithText(printer, "eStatus", "Ready");
-	NewElementWithText(printer, "nTimestamp", std::to_string(std::time(nullptr) - m_creationTime));
+	NewElementWithText(printer, "nTimestamp", std::time(nullptr) - m_creationTime);
 	NewElementWithText(printer, "sMode", "normal");
 
 	// Tags
@@ -283,14 +283,14 @@ Match::ConstructGameInitXML(PlayerSocket* caller) const
 	XMLPrinter printer;
 	printer.OpenElement("GameInit");
 
-	NewElementWithText(printer, "Role", std::to_string(caller->m_role));
+	NewElementWithText(printer, "Role", caller->m_role);
 
 	// Players
 	printer.OpenElement("Players");
 	for (PlayerSocket* player : m_players)
 	{
 		printer.OpenElement("Player");
-		NewElementWithText(printer, "Role", std::to_string(player->m_role));
+		NewElementWithText(printer, "Role", player->m_role);
 		NewElementWithText(printer, "Name", player->GetPUID());
 		NewElementWithText(printer, "Type", "Human");
 		printer.CloseElement("Player");

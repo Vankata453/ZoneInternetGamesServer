@@ -264,7 +264,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 							{
 								printer.OpenElement("Cards");
 								for (Card card : cards)
-									NewElementWithText(printer, "C", std::to_string(card));
+									NewElementWithText(printer, "C", card);
 								printer.CloseElement("Cards");
 							}, true))
 				};
@@ -286,8 +286,8 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 					sanitizedBidMessage.OpenElement("Message");
 					sanitizedBidMessage.OpenElement("Move");
 
-					NewElementWithText(sanitizedBidMessage, "Role", std::to_string(m_nextBidPlayer));
-					NewElementWithText(sanitizedBidMessage, "Bid", std::to_string(m_playerBids[m_nextBidPlayer]));
+					NewElementWithText(sanitizedBidMessage, "Role", m_nextBidPlayer);
+					NewElementWithText(sanitizedBidMessage, "Bid", m_playerBids[m_nextBidPlayer]);
 
 					sanitizedBidMessage.CloseElement("Move");
 					sanitizedBidMessage.CloseElement("Message");
@@ -314,7 +314,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 							{
 								printer.OpenElement("Cards");
 								for (Card card : cards)
-									NewElementWithText(printer, "C", std::to_string(card));
+									NewElementWithText(printer, "C", card);
 								printer.CloseElement("Cards");
 							}, true));
 				}
@@ -324,7 +324,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 					eventQueue.emplace_back(
 						StateSTag::ConstructMethodMessage("GameLogic", "StartPlay",
 							[this](XMLPrinter& printer) {
-								NewElementWithText(printer, "Player", std::to_string(m_playerTurn));
+								NewElementWithText(printer, "Player", m_playerTurn);
 							}, true),
 						true);
 				}
@@ -366,11 +366,11 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 							sanitizedMoveMessage.OpenElement("Message");
 							sanitizedMoveMessage.OpenElement("Move");
 
-							NewElementWithText(sanitizedMoveMessage, "Role", std::to_string(caller.m_role));
+							NewElementWithText(sanitizedMoveMessage, "Role", caller.m_role);
 
 							sanitizedMoveMessage.OpenElement("Card");
 							NewElementWithText(sanitizedMoveMessage, "Src", std::to_string(src) + ",");
-							NewElementWithText(sanitizedMoveMessage, "Val", std::to_string(cardValue));
+							NewElementWithText(sanitizedMoveMessage, "Val", cardValue);
 							sanitizedMoveMessage.CloseElement("Card");
 
 							sanitizedMoveMessage.CloseElement("Move");
@@ -410,7 +410,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 										eventQueue.emplace_back(
 											StateSTag::ConstructMethodMessage("GameLogic", "StartBid",
 												[this](XMLPrinter& printer) {
-													NewElementWithText(printer, "Player", std::to_string(m_handDealer));
+													NewElementWithText(printer, "Player", m_handDealer);
 												}, true),
 											true);
 									}
@@ -423,7 +423,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 									eventQueue.emplace_back(
 										StateSTag::ConstructMethodMessage("GameLogic", "StartPlay",
 											[this](XMLPrinter& printer) {
-												NewElementWithText(printer, "Player", std::to_string(m_playerTurn));
+												NewElementWithText(printer, "Player", m_playerTurn);
 											}, true),
 										true);
 								}
@@ -445,7 +445,7 @@ SpadesMatch::ConstructGameStartMessagesXML(const PlayerSocket& caller) const
 	return {
 		StateSTag::ConstructMethodMessage("GameLogic", "StartBid",
 			[this](XMLPrinter& printer) {
-				NewElementWithText(printer, "Player", std::to_string(m_handDealer));
+				NewElementWithText(printer, "Player", m_handDealer);
 			}, true)
 	};
 }

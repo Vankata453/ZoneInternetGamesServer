@@ -42,8 +42,28 @@ public:
 
 	inline operator std::string() const { return print(); }
 };
+
 tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, std::string text);
+inline tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, const char* text)
+{
+	NewElementWithText(root, name, std::string(text));
+};
+template<typename T>
+inline tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, T val)
+{
+	NewElementWithText(root, name, std::to_string(val));
+};
+
 void NewElementWithText(XMLPrinter& printer, const std::string& name, std::string text);
+inline void NewElementWithText(XMLPrinter& printer, const std::string& name, const char* text)
+{
+	NewElementWithText(printer, name, std::string(text));
+};
+template<typename T>
+inline void NewElementWithText(XMLPrinter& printer, const std::string& name, T val)
+{
+	NewElementWithText(printer, name, std::to_string(val));
+};
 
 /** Random generation */
 std::vector<int> GenerateUniqueRandomNums(int start, int end);
