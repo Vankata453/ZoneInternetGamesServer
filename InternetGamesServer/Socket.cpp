@@ -13,6 +13,9 @@
 
 namespace Socket {
 
+bool s_showPingMessages = false;
+
+
 // Handler for the thread of a socket
 DWORD WINAPI SocketHandler(void* socket_)
 {
@@ -94,6 +97,9 @@ std::vector<std::vector<std::string>> ReceiveData(SOCKET socket)
 
 			receivedEntries.push_back(StringSplit(std::move(receivedLine), "&")); // Split data by "&" for easier parsing in certain cases
 		}
+
+		if (!s_showPingMessages && receivedEntries.size() == 1 && receivedEntries[0].size() == 1 && receivedEntries[0][0].empty())
+			return receivedEntries;
 
 		std::cout << "Data received from " << GetAddressString(socket) << ":" << std::endl;
 		for (const std::vector<std::string>& receivedLineEntries : receivedEntries)

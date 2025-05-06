@@ -7,6 +7,8 @@
 
 /** General socket handling functions */
 namespace Socket {
+	extern bool s_showPingMessages; // DEBUG: Print empty ping messages from clients on the console
+
 	// Handler for the thread of a socket
 	DWORD WINAPI SocketHandler(void* socket);
 
