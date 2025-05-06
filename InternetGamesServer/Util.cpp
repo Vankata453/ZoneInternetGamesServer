@@ -1,5 +1,6 @@
 #include "Util.hpp"
 
+#include <cassert>
 #include <ctime>
 #include <ostream>
 #include <random>
@@ -83,10 +84,8 @@ XMLPrinter::OpenElement(const char* name)
 void
 XMLPrinter::CloseElement(const char* name)
 {
-	if (m_elementTree.empty() || strcmp(m_elementTree.back(), name))
-	{
-		throw std::runtime_error("XMLPrinter: Attempted to close non-existent element '" + std::string(name) + "'!");
-	}
+	assert(!m_elementTree.empty() && !strcmp(m_elementTree.back(), name));
+
 	tinyxml2::XMLPrinter::CloseElement(true /* Compact mode */);
 	m_elementTree.pop_back();
 }
@@ -94,10 +93,8 @@ XMLPrinter::CloseElement(const char* name)
 std::string
 XMLPrinter::print() const
 {
-	if (!m_elementTree.empty())
-	{
-		throw std::runtime_error("XMLPrinter: Attempted to print with open elements!");
-	}
+	assert(m_elementTree.empty());
+
 	return tinyxml2::XMLPrinter::CStr();
 }
 
