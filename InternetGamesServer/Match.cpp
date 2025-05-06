@@ -64,6 +64,8 @@ Match::QueuedEvent::QueuedEvent(const std::string& xml_, const std::string& xmlS
 {}
 
 
+#define MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE 1 // DEBUG: If a player leaves a match, do not disconnect other players.
+
 Match::Match(PlayerSocket& player) :
 	m_state(STATE_WAITINGFORPLAYERS),
 	m_guid(),
@@ -107,6 +109,7 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 		return;
 	}
 
+#if not MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE
 	// Originally, servers replaced players who have left the game with AI.
 	// However, since there is no logic support for any of the games on this server currently,
 	// if currently playing a game, we end the game directly by disconnecting everyone.
@@ -122,6 +125,7 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 				p->OnMatchEnded();
 		}
 	}
+#endif
 }
 
 
