@@ -150,6 +150,7 @@ Match::Update()
 				for (PlayerSocket* p : m_players)
 					p->OnGameStart();
 
+				std::cout << "[MATCH] " << m_guid << ": Started match!" << std::endl;
 				m_state = STATE_PLAYING;
 			}
 			break;
@@ -158,11 +159,12 @@ Match::Update()
 		{
 			if (m_endTime == 0)
 			{
+				std::cout << "[MATCH] " << m_guid << ": Game over, match will automatically close in 60 seconds!" << std::endl;
 				m_endTime = std::time(nullptr);
 			}
 			else if (std::time(nullptr) - m_endTime >= 60) // A minute has passed since the match ended
 			{
-				std::cout << GameToNameString(GetGame()) << " match ended a minute ago, closing!" << std::endl;
+				std::cout << "[MATCH] " << m_guid << ": Match ended a minute ago, closing!" << std::endl;
 				m_state = STATE_ENDED;
 			}
 			break;

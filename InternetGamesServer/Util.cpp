@@ -68,6 +68,37 @@ std::string DecodeURL(const std::string& str)
 }
 
 
+/* File I/O */
+void CreateNestedDirectories(const std::string& path)
+{
+	std::istringstream pathStream(path);
+	std::string segment;
+	std::string currentPath;
+	while (std::getline(pathStream, segment, '\\'))
+	{
+		if (segment.empty())
+			continue;
+
+		currentPath += segment + "\\";
+		if (!CreateDirectoryA(currentPath.c_str(), NULL))
+		{
+			DWORD err = GetLastError();
+			if (err != ERROR_ALREADY_EXISTS)
+			{
+				throw std::runtime_error("Failed to create directory: " + currentPath +
+					" (Error code: " + std::to_string(err) + ")");
+			}
+		}
+	}
+}
+
+
+NullStream::NullStream() :
+	std::ostream(&m_buffer),
+	m_buffer()
+{}
+
+
 /** TinyXML2 */
 XMLPrinter::XMLPrinter() :
 	tinyxml2::XMLPrinter(nullptr, true /* Compact mode */),

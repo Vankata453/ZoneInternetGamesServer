@@ -5,21 +5,41 @@
 #include <cassert>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 
 #include "PlayerSocket.hpp"
 #include "Util.hpp"
 
 #define DEFAULT_BUFLEN 2048
 
-namespace Socket {
-
-bool s_showPingMessages = false;
+std::string Socket::s_logsDirectory = "";
+bool Socket::s_showPingMessages = false;
 
 
 // Handler for the thread of a socket
-DWORD WINAPI SocketHandler(void* socket_)
+DWORD WINAPI
+Socket::SocketHandler(void* socket_)
 {
-	SOCKET socket = reinterpret_cast<SOCKET>(socket_);
+	const SOCKET rawSocket = reinterpret_cast<SOCKET>(socket_);
+
+	// Open a stream to log Socket events to
+	std::unique_ptr<std::ostream> logStream;
+	if (s_logsDirectory.empty())
+	{
+		logStream = std::make_unique<NullStream>();
+	}
+	else
+	{
+		std::ostringstream logFileName;
+		logFileName << s_logsDirectory << "\\SOCKET_" << GetAddressString(rawSocket, '_')
+			<< "_" << std::time(nullptr) << ".txt";
+
+		logStream = std::make_unique<std::ofstream>(logFileName.str());
+		if (!static_cast<std::ofstream*>(logStream.get())->is_open())
+			throw std::runtime_error("Failed to open log file \"" + logFileName.str() + "\"!");
+	}
+
+	Socket socket(rawSocket, *logStream);
 	PlayerSocket player(socket);
 
 	while (true)
@@ -27,22 +47,22 @@ DWORD WINAPI SocketHandler(void* socket_)
 		try
 		{
 			// Receive and send back data
-			const std::vector<std::vector<std::string>> receivedData = ReceiveData(socket);
+			const std::vector<std::vector<std::string>> receivedData = socket.ReceiveData();
 			assert(!receivedData.empty());
 
 			for (const std::vector<std::string>& receivedLineData : receivedData)
-				SendData(socket, player.GetResponse(receivedLineData));
+				socket.SendData(player.GetResponse(receivedLineData));
 		}
 		catch (const DisconnectionRequest&)
 		{
-			std::cout << "Disconnecting from " << GetAddressString(socket) << '.' << std::endl;
+			std::cout << "[SOCKET] Disconnecting from " << socket.GetAddressString() << '.' << std::endl;
 
 			player.OnDisconnected();
 			break;
 		}
 		catch (const ClientDisconnected&)
 		{
-			std::cout << "Error communicating with socket " << GetAddressString(socket)
+			std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
 				<< ": Client has been disconnected." << std::endl;
 
 			player.OnDisconnected();
@@ -50,36 +70,60 @@ DWORD WINAPI SocketHandler(void* socket_)
 		}
 		catch (const std::exception& err)
 		{
-			std::cout << "Error communicating with socket " << GetAddressString(socket)
+			std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
 				<< ": " << err.what() << std::endl;
 
 			player.OnDisconnected();
 			break;
 		}
 	}
-
-	// Clean up
-	Disconnect(socket);
-	closesocket(socket);
-
 	return 0;
 }
 
 
-void Disconnect(SOCKET socket)
+std::string
+Socket::GetAddressString(SOCKET socket, const char portSeparator)
 {
-	// Shut down the connection
-	HRESULT shutdownResult = shutdown(socket, SD_BOTH);
-	if (shutdownResult == SOCKET_ERROR)
-		std::cout << "\"shutdown\" failed: " << WSAGetLastError() << std::endl;
+	sockaddr_in socketInfo;
+	int socketInfoSize = sizeof(socketInfo);
+
+	getpeername(socket, reinterpret_cast<sockaddr*>(&socketInfo), &socketInfoSize);
+
+	std::stringstream stream;
+	stream << inet_ntoa(socketInfo.sin_addr) << portSeparator << ntohs(socketInfo.sin_port);
+	return stream.str();
 }
 
 
-std::vector<std::vector<std::string>> ReceiveData(SOCKET socket)
+Socket::Socket(SOCKET socket, std::ostream& log) :
+	m_socket(socket),
+	m_log(log)
+{}
+
+Socket::~Socket()
+{
+	// Clean up
+	Disconnect();
+	closesocket(m_socket);
+}
+
+
+void
+Socket::Disconnect()
+{
+	// Shut down the connection
+	HRESULT shutdownResult = shutdown(m_socket, SD_BOTH);
+	if (shutdownResult == SOCKET_ERROR)
+		std::cout << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+}
+
+
+std::vector<std::vector<std::string>>
+Socket::ReceiveData()
 {
 	char recvbuf[DEFAULT_BUFLEN];
 
-	HRESULT recvResult = recv(socket, recvbuf, DEFAULT_BUFLEN, 0);
+	HRESULT recvResult = recv(m_socket, recvbuf, DEFAULT_BUFLEN, 0);
 	if (recvResult > 0)
 	{
 		const std::string received(recvbuf, recvResult);
@@ -101,15 +145,16 @@ std::vector<std::vector<std::string>> ReceiveData(SOCKET socket)
 		if (!s_showPingMessages && receivedEntries.size() == 1 && receivedEntries[0].size() == 1 && receivedEntries[0][0].empty())
 			return receivedEntries;
 
-		std::cout << "Data received from " << GetAddressString(socket) << ":" << std::endl;
+		m_log << "[RECEIVED]: " << std::endl;
 		for (const std::vector<std::string>& receivedLineEntries : receivedEntries)
 		{
 			for (const std::string& entry : receivedLineEntries)
 			{
-				std::cout << entry << std::endl;
+				m_log << entry << std::endl;
 			}
-			std::cout << std::endl;
+			m_log << std::endl;
 		}
+		m_log << '\n' << std::endl;
 
 		return receivedEntries;
 	}
@@ -124,32 +169,17 @@ std::vector<std::vector<std::string>> ReceiveData(SOCKET socket)
 	return {}; // Would never happen, but surpresses a warning
 }
 
-void SendData(SOCKET socket, std::vector<std::string> data)
+void
+Socket::SendData(std::vector<std::string> data)
 {
 	for (const std::string& message : data)
 	{
 		if (message.empty()) continue;
 
-		HRESULT sendResult = send(socket, message.c_str(), static_cast<int>(message.length()), 0);
+		HRESULT sendResult = send(m_socket, message.c_str(), static_cast<int>(message.length()), 0);
 		if (sendResult == SOCKET_ERROR)
 			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
 
-		std::cout << "Data sent to " << GetAddressString(socket) << ": "
-			<< message << "; " << sendResult << std::endl;
+		m_log << "[SENT]: " << message << "\n(BYTES SENT=" << sendResult << ")\n\n" << std::endl;
 	}
-}
-
-
-std::string GetAddressString(SOCKET socket)
-{
-	sockaddr_in socketInfo;
-	int socketInfoSize = sizeof(socketInfo);
-
-	getpeername(socket, reinterpret_cast<sockaddr*>(&socketInfo), &socketInfoSize);
-
-	std::stringstream stream;
-	stream << inet_ntoa(socketInfo.sin_addr) << ':' << ntohs(socketInfo.sin_port);
-	return stream.str();
-}
-
 }

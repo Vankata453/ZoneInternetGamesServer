@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Match.hpp"
+#include "Socket.hpp"
 
 class PlayerSocket
 {
@@ -19,7 +20,7 @@ public:
 	};
 
 public:
-	PlayerSocket(SOCKET socket);
+	PlayerSocket(Socket& socket);
 
 	std::vector<std::string> GetResponse(const std::vector<std::string>& receivedData);
 
@@ -30,6 +31,7 @@ public:
 	void OnChat(const StateChatTag* tag);
 	void OnMatchEnded();
 
+	inline std::string GetAddressString() const { return m_socket.GetAddressString(); }
 	inline State GetState() const { return m_state; }
 	inline std::string GetPUID() const { return m_puid; }
 	inline Match::Game GetGame() const { return m_game; }
@@ -46,7 +48,7 @@ private:
 	std::string ConstructStateMessage(const std::string& xml) const;
 
 private:
-	SOCKET m_socket;
+	Socket& m_socket;
 	State m_state;
 
 	std::string m_guid;

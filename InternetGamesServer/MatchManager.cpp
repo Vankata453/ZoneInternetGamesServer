@@ -7,6 +7,7 @@
 #include "BackgammonMatch.hpp"
 #include "CheckersMatch.hpp"
 #include "SpadesMatch.hpp"
+#include "Util.hpp"
 
 MatchManager MatchManager::s_instance;
 
@@ -52,7 +53,8 @@ MatchManager::Update()
 				// Close ended matches
 				if (match->GetState() == Match::STATE_ENDED)
 				{
-					std::cout << "Closing ended " << Match::GameToNameString(match->GetGame()) << " match!" << std::endl;
+					std::cout << "[MATCH MANAGER] Closing ended " << Match::GameToNameString(match->GetGame())
+						<< " match " << match->GetGUID() << "!" << std::endl;
 					it = m_matches.erase(it);
 					continue;
 				}
@@ -91,11 +93,18 @@ MatchManager::FindLobby(PlayerSocket& player)
 	if (targetMatch)
 	{
 		targetMatch->JoinPlayer(player);
+		std::cout << "[MATCH MANAGER] Added " << player.GetAddressString()
+			<< " to existing " << Match::GameToNameString(targetMatch->GetGame())
+			<< " match " << targetMatch->GetGUID() << '.' << std::endl;
 		return targetMatch;
 	}
 
 	// No free lobby found - create a new one
-	return CreateLobby(player);
+	Match* match = CreateLobby(player);
+	std::cout << "[MATCH MANAGER] Added " << player.GetAddressString()
+		<< " to new " << Match::GameToNameString(match->GetGame())
+		<< " match " << match->GetGUID() << '.' << std::endl;
+	return match;
 }
 
 Match*

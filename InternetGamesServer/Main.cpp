@@ -8,8 +8,10 @@
 
 #include "MatchManager.hpp"
 #include "Socket.hpp"
+#include "Util.hpp"
 
 #define DEFAULT_PORT "80"
+#define DEFAULT_LOGS_DIRECTORY "InternetGamesServer_logs"
 
 int main(int argc, char* argv[])
 {
@@ -20,12 +22,20 @@ int main(int argc, char* argv[])
 	{
 		if (!strcmp(argv[i], "-p") || !strcmp(argv[i], "--port"))
 		{
-			if (argc < i + 2)
+			if (argc < i + 2 || argv[i + 1][0] == '-')
 			{
 				std::cout << "ERROR: Port number must be provided after \"-p\" or \"--port\"." << std::endl;
 				return -1;
 			}
 			port = argv[++i];
+		}
+		else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--log"))
+		{
+			if (!Socket::s_logsDirectory.empty())
+				continue;
+
+			Socket::s_logsDirectory = (argc >= i + 2 && argv[i + 1][0] != '-' ? argv[++i] : DEFAULT_LOGS_DIRECTORY);
+			CreateNestedDirectories(Socket::s_logsDirectory);
 		}
 		else if (!strcmp(argv[i], "--skip-level-matching"))
 		{
@@ -92,13 +102,13 @@ int main(int argc, char* argv[])
 	}
 	freeaddrinfo(result);
 
-	std::cout << "Listening on port " << port << "!" << std::endl;
+	std::cout << "[MAIN] Listening on port " << port << "!" << std::endl << std::endl;
 	while (true)
 	{
 		// Listen for a client socket connection
 		if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
 		{
-			std::cout << "\"listen\" failed: " << WSAGetLastError() << std::endl;
+			std::cout << "[SOCKET] \"listen\" failed: " << WSAGetLastError() << std::endl;
 			break;
 		}
 
@@ -106,18 +116,18 @@ int main(int argc, char* argv[])
 		SOCKET ClientSocket = accept(ListenSocket, NULL, NULL);
 		if (ClientSocket == INVALID_SOCKET)
 		{
-			std::cout << "\"accept\" failed: " << WSAGetLastError() << std::endl;;
+			std::cout << "[SOCKET] \"accept\" failed: " << WSAGetLastError() << std::endl;;
 			continue;
 		}
 
 		// Connected to socket successfully
-		std::cout << "Accepted connection from " << Socket::GetAddressString(ClientSocket) << "." << std::endl;
+		std::cout << "[SOCKET] Accepted connection from " << Socket::GetAddressString(ClientSocket) << "." << std::endl;
 
 		// Create a thread to handle the socket
 		DWORD nSocketThreadID;
 		if (!CreateThread(0, 0, Socket::SocketHandler, (void*)ClientSocket, 0, &nSocketThreadID))
 		{
-			std::cout << "Couldn't create a thread to handle socket from " << Socket::GetAddressString(ClientSocket)
+			std::cout << "[SOCKET] Couldn't create a thread to handle socket from " << Socket::GetAddressString(ClientSocket)
 				<< ": " << GetLastError() << std::endl;
 		}
 	}

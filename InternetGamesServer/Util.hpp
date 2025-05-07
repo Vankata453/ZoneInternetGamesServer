@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <ostream>
 #include <vector>
 
 #include <winsock2.h>
@@ -14,6 +15,25 @@ void RemoveNewlines(std::string& str);
 
 /** Encoding/Decoding */
 std::string DecodeURL(const std::string& str);
+
+/* I/O */
+void CreateNestedDirectories(const std::string& path);
+
+class NullStream final : public std::ostream
+{
+public:
+	NullStream();
+
+private:
+	class NullBuffer : public std::streambuf
+	{
+	protected:
+		int overflow(int c) override { return c; }
+	};
+
+private:
+	NullBuffer m_buffer;
+};
 
 /** TinyXML2 */
 class XMLPrinter final : private tinyxml2::XMLPrinter

@@ -4,10 +4,9 @@
 #include <sstream>
 
 #include "MatchManager.hpp"
-#include "Socket.hpp"
 #include "Util.hpp"
 
-PlayerSocket::PlayerSocket(SOCKET socket) :
+PlayerSocket::PlayerSocket(Socket& socket) :
 	m_socket(socket),
 	m_state(STATE_NOT_INITIALIZED),
 	m_guid(),
@@ -99,7 +98,7 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 			}
 			else if (receivedData[0] == "LEAVE") // Client has left the game, disconnect it from the server
 			{
-				Socket::Disconnect(m_socket);
+				m_socket.Disconnect();
 			}
 			break;
 	}
@@ -117,7 +116,7 @@ PlayerSocket::OnGameStart()
 
 	// Send a game initialization message
 	const StateSTag tag = StateSTag::ConstructGameInit(m_match->ConstructGameInitXML(this));
-	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ &tag })) });
+	m_socket.SendData({ ConstructStateMessage(m_match->ConstructStateXML({ &tag })) });
 }
 
 void
@@ -135,21 +134,21 @@ PlayerSocket::OnEventReceive(const std::string& xml) const
 {
 	// Send an event receive message
 	const StateSTag tag = StateSTag::ConstructEventReceive(xml);
-	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ &tag })) });
+	m_socket.SendData({ ConstructStateMessage(m_match->ConstructStateXML({ &tag })) });
 }
 
 void
 PlayerSocket::OnChat(const StateChatTag* tag)
 {
 	// Send the "chatbyid" tag
-	Socket::SendData(m_socket, { ConstructStateMessage(m_match->ConstructStateXML({ tag })) });
+	m_socket.SendData({ ConstructStateMessage(m_match->ConstructStateXML({ tag })) });
 }
 
 void
 PlayerSocket::OnMatchEnded()
 {
 	// The match has ended, so disconnect the player
-	Socket::Disconnect(m_socket);
+	m_socket.Disconnect();
 }
 
 
