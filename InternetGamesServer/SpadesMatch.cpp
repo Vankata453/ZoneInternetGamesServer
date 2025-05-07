@@ -450,3 +450,16 @@ SpadesMatch::ConstructGameStartMessagesXML(const PlayerSocket& caller) const
 	};
 }
 
+
+bool
+SpadesMatch::IsValidChatNudgeMessage(const std::string& msg) const
+{
+	return (((m_matchState == MatchState::BIDDING && m_nextBidPlayer == 0) || m_playerTrickTurn == 0) &&
+			msg == "1400_12345") || // Nudge (player 1)
+		(((m_matchState == MatchState::BIDDING && m_nextBidPlayer == 1) || m_playerTrickTurn == 1) &&
+			msg == "1400_12346") || // Nudge (player 2)
+		(((m_matchState == MatchState::BIDDING && m_nextBidPlayer == 2) || m_playerTrickTurn == 2) &&
+			msg == "1400_12347") || // Nudge (player 3)
+		(((m_matchState == MatchState::BIDDING && m_nextBidPlayer == 3) || m_playerTrickTurn == 3) &&
+			msg == "1400_12348"); // Nudge (player 4)
+}

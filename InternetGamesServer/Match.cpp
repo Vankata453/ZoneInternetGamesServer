@@ -227,13 +227,37 @@ Match::EventSend(const PlayerSocket& caller, const std::string& xml)
 }
 
 void
-Match::Chat(const StateChatTag tag)
+Match::Chat(StateChatTag tag)
 {
+	// Validate the chat event
+	if (tag.text != "SYS_CHATON" && // Chat turned on
+		tag.text != "SYS_CHATOFF" && // Chat turned off
+		!IsValidChatNudgeMessage(tag.text)) // Nudge
+	{
+		try
+		{
+			// Ensure the chat message has a valid ID, as clients tend to accept any other custom messages
+			const uint8_t msgID = static_cast<uint8_t>(std::stoi(tag.text));
+			if (msgID < 1)
+				return;
+			if (msgID > 24)
+			{
+				const std::pair<uint8_t, uint8_t> customMsgRange = GetCustomChatMessagesRange();
+				if (msgID < customMsgRange.first || msgID > customMsgRange.second)
+					return;
+			}
+
+			tag.text = std::to_string(msgID);
+		}
+		catch (const std::exception&)
+		{
+			return;
+		}
+	}
+
 	// Send the event to all other players
 	for (PlayerSocket* p : m_players)
-	{
 		p->OnChat(&tag);
-	}
 }
 
 
@@ -309,4 +333,12 @@ std::vector<std::string>
 Match::ConstructGameStartMessagesXML(const PlayerSocket&) const
 {
 	return {};
+}
+
+
+bool
+Match::IsValidChatNudgeMessage(const std::string& msg) const
+{
+	return msg == "1400_12345" || // Nudge (player 1)
+		msg == "1400_12346"; // Nudge (player 2)
 }

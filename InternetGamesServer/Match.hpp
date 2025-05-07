@@ -50,7 +50,7 @@ public:
 
 	/** Event handling */
 	void EventSend(const PlayerSocket& caller, const std::string& xml);
-	void Chat(const StateChatTag tag);
+	void Chat(StateChatTag tag);
 
 	virtual Game GetGame() const = 0;
 	inline State GetState() const { return m_state; }
@@ -78,6 +78,8 @@ protected:
 
 protected:
 	virtual size_t GetRequiredPlayerCount() const { return 2; }
+	virtual std::pair<uint8_t, uint8_t> GetCustomChatMessagesRange() const = 0;
+	virtual bool IsValidChatNudgeMessage(const std::string& msg) const;
 
 	/** Append additional XML data to STag messages */
 	virtual void AppendToGameInitXML(XMLPrinter& printer, PlayerSocket* caller) const {}

@@ -16,6 +16,8 @@ public:
 
 protected:
 	size_t GetRequiredPlayerCount() const override { return 4; }
+	std::pair<uint8_t, uint8_t> GetCustomChatMessagesRange() const override { return { 50, 54 }; }
+	bool IsValidChatNudgeMessage(const std::string& msg) const override;
 
 	std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller) override;
 

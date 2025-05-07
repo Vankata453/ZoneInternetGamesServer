@@ -12,6 +12,8 @@ public:
 	Game GetGame() const override { return Game::BACKGAMMON; }
 
 protected:
+	std::pair<uint8_t, uint8_t> GetCustomChatMessagesRange() const override { return { 80, 82 }; }
+
 	std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller) override;
 
 private:
