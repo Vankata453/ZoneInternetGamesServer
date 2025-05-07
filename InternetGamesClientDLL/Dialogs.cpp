@@ -17,7 +17,21 @@ INT_PTR CALLBACK ProcessMessage(HWND hDialog, UINT message, WPARAM wParam, LPARA
 {
     switch (message)
     {
+        case WM_INITDIALOG:
+        {
+            RECT screenRect, dialogRect;
+            GetWindowRect(GetDesktopWindow(), &screenRect);
+            GetWindowRect(hDialog, &dialogRect);
+
+            // Move the dialog to the center of the screen
+            SetWindowPos(hDialog, nullptr,
+                (screenRect.right - dialogRect.right + dialogRect.left) / 2, // X
+                (screenRect.bottom - dialogRect.bottom + dialogRect.top) / 2, // Y
+                0, 0, SWP_NOZORDER | SWP_NOSIZE);
+            break;
+        }
         case WM_COMMAND:
+        {
             switch (LOWORD(wParam))
             {
                 case ID_SET:
@@ -47,6 +61,7 @@ INT_PTR CALLBACK ProcessMessage(HWND hDialog, UINT message, WPARAM wParam, LPARA
                 }
                 break;
             }
+        }
         default:
             return FALSE;
     }
