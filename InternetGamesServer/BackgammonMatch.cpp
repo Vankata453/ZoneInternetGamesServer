@@ -101,36 +101,31 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 		if (elDouble && elDouble->GetText()) // Player has requested double
 		{
 			if (m_doubleRequested)
-			{
 				return {};
-			}
-			try
+
+			const int doubleBy = std::stoi(elDouble->GetText());
+			if (doubleBy >= 2 && doubleBy % 2 == 0)
 			{
-				const int doubleBy = std::stoi(elDouble->GetText());
-				if (doubleBy >= 2 && doubleBy % 2 == 0)
-				{
-					m_doubleRequested = true;
+				m_doubleRequested = true;
 
-					sanitizedMoveMessage.OpenElement("Source");
-					NewElementWithText(sanitizedMoveMessage, "X", "-1");
-					NewElementWithText(sanitizedMoveMessage, "Y", "-1");
-					sanitizedMoveMessage.CloseElement("Source");
+				sanitizedMoveMessage.OpenElement("Source");
+				NewElementWithText(sanitizedMoveMessage, "X", "-1");
+				NewElementWithText(sanitizedMoveMessage, "Y", "-1");
+				sanitizedMoveMessage.CloseElement("Source");
 
-					sanitizedMoveMessage.OpenElement("Target");
-					NewElementWithText(sanitizedMoveMessage, "X", "-1");
-					NewElementWithText(sanitizedMoveMessage, "Y", "-1");
-					sanitizedMoveMessage.CloseElement("Target");
+				sanitizedMoveMessage.OpenElement("Target");
+				NewElementWithText(sanitizedMoveMessage, "X", "-1");
+				NewElementWithText(sanitizedMoveMessage, "Y", "-1");
+				sanitizedMoveMessage.CloseElement("Target");
 
-					NewElementWithText(sanitizedMoveMessage, "Double", doubleBy);
+				NewElementWithText(sanitizedMoveMessage, "Double", doubleBy);
 
-					sanitizedMoveMessage.CloseElement("Move");
-					sanitizedMoveMessage.CloseElement("Message");
-					return {
-						sanitizedMoveMessage.print()
-					};
-				}
+				sanitizedMoveMessage.CloseElement("Move");
+				sanitizedMoveMessage.CloseElement("Message");
+				return {
+					sanitizedMoveMessage.print()
+				};
 			}
-			catch (const std::exception&) {}
 		}
 		else // Player has performed a regular move
 		{
@@ -145,59 +140,55 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 				if (elSourceX && elSourceX->GetText() && elSourceY && elSourceY->GetText() &&
 					elTargetX && elTargetX->GetText() && elTargetY && elTargetY->GetText())
 				{
-					try
+					const int sourceX = std::stoi(elSourceX->GetText());
+					const int sourceY = std::stoi(elSourceY->GetText());
+					const int targetX = std::stoi(elTargetX->GetText());
+					const int targetY = std::stoi(elTargetY->GetText());
+
+					sanitizedMoveMessage.OpenElement("Source");
+					NewElementWithText(sanitizedMoveMessage, "X", sourceX);
+					NewElementWithText(sanitizedMoveMessage, "Y", sourceY);
+					sanitizedMoveMessage.CloseElement("Source");
+
+					sanitizedMoveMessage.OpenElement("Target");
+					NewElementWithText(sanitizedMoveMessage, "X", targetX);
+					NewElementWithText(sanitizedMoveMessage, "Y", targetY);
+					sanitizedMoveMessage.CloseElement("Target");
+
+					sanitizedMoveMessage.CloseElement("Move");
+					sanitizedMoveMessage.CloseElement("Message");
+
+					if (sourceX >= 0 && sourceX < 25 && targetX >= 0 && targetX < 25)
 					{
-						const int sourceX = std::stoi(elSourceX->GetText());
-						const int sourceY = std::stoi(elSourceY->GetText());
-						const int targetX = std::stoi(elTargetX->GetText());
-						const int targetY = std::stoi(elTargetY->GetText());
-
-						sanitizedMoveMessage.OpenElement("Source");
-						NewElementWithText(sanitizedMoveMessage, "X", sourceX);
-						NewElementWithText(sanitizedMoveMessage, "Y", sourceY);
-						sanitizedMoveMessage.CloseElement("Source");
-
-						sanitizedMoveMessage.OpenElement("Target");
-						NewElementWithText(sanitizedMoveMessage, "X", targetX);
-						NewElementWithText(sanitizedMoveMessage, "Y", targetY);
-						sanitizedMoveMessage.CloseElement("Target");
-
-						sanitizedMoveMessage.CloseElement("Move");
-						sanitizedMoveMessage.CloseElement("Message");
-
-						if (sourceX >= 0 && sourceX < 25 && targetX >= 0 && targetX < 25)
-						{
-							m_lastMovePlayer = caller.m_role;
-							m_lastMoveHomeTableStone = false;
-							return {
-								sanitizedMoveMessage.print()
-							};
-						}
-						if (((caller.m_role == 0 && targetX == 25) || (caller.m_role == 1 && targetX == 26)) &&
-							targetY >= 0 && targetY < 15)
-						{
-							m_lastMovePlayer = caller.m_role;
-							m_lastMoveHomeTableStone = true;
-
-							int& homeTableStones = caller.m_role == 0 ? m_homeTableStones.first : m_homeTableStones.second;
-							++homeTableStones;
-
-							if (homeTableStones >= 15) // All stones are in the player's home board
-							{
-								m_startNextGameState = StartNextGameState::ALLOWED;
-								return {
-									sanitizedMoveMessage.print(),
-									QueuedEvent(
-										StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "BearOff," + std::to_string(caller.m_role)),
-										true)
-								};
-							}
-							return {
-								sanitizedMoveMessage.print()
-							};
-						}
+						m_lastMovePlayer = caller.m_role;
+						m_lastMoveHomeTableStone = false;
+						return {
+							sanitizedMoveMessage.print()
+						};
 					}
-					catch (const std::exception&) {}
+					if (((caller.m_role == 0 && targetX == 25) || (caller.m_role == 1 && targetX == 26)) &&
+						targetY >= 0 && targetY < 15)
+					{
+						m_lastMovePlayer = caller.m_role;
+						m_lastMoveHomeTableStone = true;
+
+						int& homeTableStones = caller.m_role == 0 ? m_homeTableStones.first : m_homeTableStones.second;
+						++homeTableStones;
+
+						if (homeTableStones >= 15) // All stones are in the player's home board
+						{
+							m_startNextGameState = StartNextGameState::ALLOWED;
+							return {
+								sanitizedMoveMessage.print(),
+								QueuedEvent(
+									StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "BearOff," + std::to_string(caller.m_role)),
+									true)
+							};
+						}
+						return {
+							sanitizedMoveMessage.print()
+						};
+					}
 				}
 			}
 		}
@@ -228,9 +219,8 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 			if (!strcmp(elMethod->GetText(), "AcceptDouble")) // Player has accepted other player's double
 			{
 				if (!m_doubleRequested)
-				{
 					return {};
-				}
+
 				m_doubleRequested = false;
 				return {
 					StateSTag::ConstructMethodMessage("GameLogic", "AcceptDouble")
@@ -239,9 +229,8 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 			if (!strcmp(elMethod->GetText(), "RejectDouble")) // Player has rejected other player's double
 			{
 				if (!m_doubleRequested)
-				{
 					return {};
-				}
+
 				m_doubleRequested = false;
 				m_startNextGameState = StartNextGameState::ALLOWED;
 				return {
@@ -253,42 +242,35 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 			if (!strcmp(elMethod->GetText(), "RequestResign")) // Player has requested resign
 			{
 				if (m_resignRequested)
-				{
 					return {};
-				}
+
 				const tinyxml2::XMLElement* elParams = elEvent.FirstChildElement("Params");
 				if (elParams && elParams->GetText())
 				{
-					try
+					const int pointsOffered = std::stoi(elParams->GetText());
+					if (pointsOffered >= 0)
 					{
-						const int pointsOffered = std::stoi(elParams->GetText());
-						if (pointsOffered >= 0)
-						{
-							m_resignRequested = true;
-							return {
-								StateSTag::ConstructMethodMessage("GameLogic", "RequestResign", elParams->GetText())
-							};
-						}
+						m_resignRequested = true;
+						return {
+							StateSTag::ConstructMethodMessage("GameLogic", "RequestResign", std::to_string(pointsOffered))
+						};
 					}
-					catch (const std::exception&) {}
 				}
 			}
 			if (!strcmp(elMethod->GetText(), "AcceptResign")) // Player has accepted resign request of other player
 			{
-				if (!m_resignRequested)
+				if (m_resignRequested)
 				{
-					return {};
+					return {
+						StateSTag::ConstructMethodMessage("GameLogic", "AcceptResign")
+					};
 				}
-				return {
-					StateSTag::ConstructMethodMessage("GameLogic", "AcceptResign")
-				};
 			}
 			if (!strcmp(elMethod->GetText(), "RejectResign")) // Player has rejected resign request of other player
 			{
 				if (!m_resignRequested)
-				{
 					return {};
-				}
+
 				m_resignRequested = false;
 				return {
 					StateSTag::ConstructMethodMessage("GameLogic", "RejectResign")
@@ -328,9 +310,8 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 			if (!strcmp(elMethod->GetText(), "ResignGiven")) // Player has resigned
 			{
 				if (!m_resignRequested)
-				{
 					return {};
-				}
+
 				m_resignRequested = false;
 				m_startNextGameState = StartNextGameState::ALLOWED;
 				return {

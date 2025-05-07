@@ -25,37 +25,33 @@ CheckersMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSoc
 			if (elSourceX && elSourceX->GetText() && elSourceY && elSourceY->GetText() &&
 				elTargetX && elTargetX->GetText() && elTargetY && elTargetY->GetText())
 			{
-				try
+				const int sourceX = std::stoi(elSourceX->GetText());
+				const int sourceY = std::stoi(elSourceY->GetText());
+				const int targetX = std::stoi(elTargetX->GetText());
+				const int targetY = std::stoi(elTargetY->GetText());
+				if (sourceX >= 0 && sourceX < 8 && sourceY >= 0 && sourceY < 8 &&
+					targetX >= 0 && targetX < 8 && targetY >= 0 && targetY < 8)
 				{
-					const int sourceX = std::stoi(elSourceX->GetText());
-					const int sourceY = std::stoi(elSourceY->GetText());
-					const int targetX = std::stoi(elTargetX->GetText());
-					const int targetY = std::stoi(elTargetY->GetText());
-					if (sourceX >= 0 && sourceX < 8 && sourceY >= 0 && sourceY < 8 &&
-						targetX >= 0 && targetX < 8 && targetY >= 0 && targetY < 8)
-					{
-						XMLPrinter sanitizedMoveMessage;
-						sanitizedMoveMessage.OpenElement("Message");
-						sanitizedMoveMessage.OpenElement("Move");
+					XMLPrinter sanitizedMoveMessage;
+					sanitizedMoveMessage.OpenElement("Message");
+					sanitizedMoveMessage.OpenElement("Move");
 
-						sanitizedMoveMessage.OpenElement("Source");
-						NewElementWithText(sanitizedMoveMessage, "X", elSourceX->GetText());
-						NewElementWithText(sanitizedMoveMessage, "Y", elSourceY->GetText());
-						sanitizedMoveMessage.CloseElement("Source");
+					sanitizedMoveMessage.OpenElement("Source");
+					NewElementWithText(sanitizedMoveMessage, "X", sourceX);
+					NewElementWithText(sanitizedMoveMessage, "Y", sourceY);
+					sanitizedMoveMessage.CloseElement("Source");
 
-						sanitizedMoveMessage.OpenElement("Target");
-						NewElementWithText(sanitizedMoveMessage, "X", elTargetX->GetText());
-						NewElementWithText(sanitizedMoveMessage, "Y", elTargetY->GetText());
-						sanitizedMoveMessage.CloseElement("Target");
+					sanitizedMoveMessage.OpenElement("Target");
+					NewElementWithText(sanitizedMoveMessage, "X", targetX);
+					NewElementWithText(sanitizedMoveMessage, "Y", targetY);
+					sanitizedMoveMessage.CloseElement("Target");
 
-						sanitizedMoveMessage.CloseElement("Move");
-						sanitizedMoveMessage.CloseElement("Message");
-						return {
-							sanitizedMoveMessage.print()
-						};
-					}
+					sanitizedMoveMessage.CloseElement("Move");
+					sanitizedMoveMessage.CloseElement("Message");
+					return {
+						sanitizedMoveMessage.print()
+					};
 				}
-				catch (const std::exception&) {}
 			}
 		}
 	}
@@ -74,9 +70,8 @@ CheckersMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSoc
 			if (!strcmp(elMethod->GetText(), "OfferDraw")) // Player has offered a draw to their opponent
 			{
 				if (m_drawOfferedBy >= 0)
-				{
 					return {};
-				}
+
 				m_drawOfferedBy = caller.m_role;
 				return {
 					StateSTag::ConstructMethodMessage("GameManagement", "OfferDraw")
@@ -85,9 +80,8 @@ CheckersMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSoc
 			if (!strcmp(elMethod->GetText(), "DrawAccept")) // Player has accepted a draw request by the opponent
 			{
 				if (m_drawOfferedBy < 0 || m_drawOfferedBy == caller.m_role)
-				{
 					return {};
-				}
+
 				m_drawOfferedBy = -1;
 				m_state = STATE_GAMEOVER;
 				return {
@@ -99,9 +93,8 @@ CheckersMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSoc
 			if (!strcmp(elMethod->GetText(), "DrawReject")) // Player has rejected a draw request by their opponent
 			{
 				if (m_drawOfferedBy < 0 || m_drawOfferedBy == caller.m_role)
-				{
 					return {};
-				}
+
 				m_drawOfferedBy = -1;
 				return {
 					StateSTag::ConstructMethodMessage("GameManagement", "DrawReject")
