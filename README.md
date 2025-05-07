@@ -27,13 +27,25 @@ The current progress on individual game support is the following:
 
 Internet Backgammon, according to my testing, is fully supported.
 
+![Internet Backgammon](docs/img/README_BackgammonPreview.png)
+
 #### Internet Checkers
 
 Internet Checkers, according to my testing, is fully supported.
 
+![Internet Checkers](docs/img/README_CheckersPreview.png)
+
+> [!NOTE]
+>
+> For Internet Checkers, the server doesn't know when a game has finished with a win,
+> so that leads to the drawback of causing an "Error communicating with server" message
+> after a game has finished with a win (even though since the game has ended anyway, it's not really important).
+
 #### Internet Spades
 
 Internet Spades, according to my testing, is fully supported.
+
+![Internet Spades](docs/img/README_SpadesPreview.png)
 
 
 > [!NOTE]
@@ -46,11 +58,7 @@ Internet Spades, according to my testing, is fully supported.
 >   Since this server does not support game logic, they cannot be supported, hence the match is ended
 >   by disconnecting all players, causing an "Error communicating with server" error on their game clients.
 >
->   The server doesn't know when a game has finished with a win, so this has the drawback of causing
->   an "Error communicating with server" message after a game has finished with a win
->   (even though since the game has ended anyway, it's not really important).
->
-> * **Since the server does not support game logic, it will send over any event messages, regardless of their validity.**
+> * **Since the server does not support game logic, it will send over any valid event messages, regardless of their legitimacy.**
 >
 >   If a player were to modify event messages being sent to the server to try and cheat, it's up to the opponents' game clients to determine whether the actions are legitimate or not.
 >   Luckily, from my testing, this local validation seems to work nicely. On invalid data, the game ends with a "Corrupted data" message.
