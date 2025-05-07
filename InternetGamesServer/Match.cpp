@@ -72,7 +72,7 @@ Match::Match(PlayerSocket& player) :
 	m_guid(),
 	m_level(player.GetLevel()),
 	m_players(),
-	m_event_mutex(CreateMutex(nullptr, false, nullptr)),
+	m_eventMutex(CreateMutex(nullptr, false, nullptr)),
 	m_creationTime(std::time(nullptr)),
 	m_endTime(0)
 {
@@ -192,7 +192,7 @@ Match::EventSend(const PlayerSocket& caller, const std::string& xml)
 		return;
 
 	/* Process event */
-	switch (WaitForSingleObject(m_event_mutex, 5000))
+	switch (WaitForSingleObject(m_eventMutex, 5000))
 	{
 		case WAIT_OBJECT_0: // Acquired ownership of the event mutex
 		{
@@ -214,7 +214,7 @@ Match::EventSend(const PlayerSocket& caller, const std::string& xml)
 				}
 			}
 
-			if (!ReleaseMutex(m_event_mutex))
+			if (!ReleaseMutex(m_eventMutex))
 				throw std::runtime_error("Match::EventSend(): Couldn't release event mutex: " + GetLastError());
 			break;
 		}

@@ -124,7 +124,7 @@ SpadesMatch::CardTrick::GetWinner() const
 SpadesMatch::SpadesMatch(PlayerSocket& player) :
 	Match(player),
 	m_rng(std::random_device()()),
-	m_match_state(MatchState::BIDDING),
+	m_matchState(MatchState::BIDDING),
 	m_teamPoints({ 0, 0 }),
 	m_teamBags({ 0, 0 }),
 	m_handDealer(s_playerDistribution(m_rng)),
@@ -143,7 +143,7 @@ SpadesMatch::SpadesMatch(PlayerSocket& player) :
 void
 SpadesMatch::ResetHand()
 {
-	m_match_state = MatchState::BIDDING;
+	m_matchState = MatchState::BIDDING;
 
 	if (++m_handDealer >= 4)
 		m_handDealer = 0;
@@ -246,7 +246,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 		const tinyxml2::XMLElement* elBid = elEvent.FirstChildElement("Bid");
 		if (elBid && elBid->GetText()) // Player has bid on number of tricks they expect to make
 		{
-			if (m_match_state != MatchState::BIDDING)
+			if (m_matchState != MatchState::BIDDING)
 				return {};
 
 			const int bid = std::stoi(elBid->GetText());
@@ -320,7 +320,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 				}
 				if (!moreBidsToSend)
 				{
-					m_match_state = MatchState::PLAYING;
+					m_matchState = MatchState::PLAYING;
 					eventQueue.emplace_back(
 						StateSTag::ConstructMethodMessage("GameLogic", "StartPlay",
 							[this](XMLPrinter& printer) {
@@ -331,7 +331,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 				return eventQueue;
 			}
 		}
-		else if (m_match_state == MatchState::PLAYING && m_playerTrickTurn == caller.m_role)
+		else if (m_matchState == MatchState::PLAYING && m_playerTrickTurn == caller.m_role)
 		{
 			const tinyxml2::XMLElement* elCard = elEvent.FirstChildElement("Card");
 			if (elCard)

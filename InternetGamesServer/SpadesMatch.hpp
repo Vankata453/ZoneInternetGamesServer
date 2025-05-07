@@ -62,7 +62,7 @@ private:
 		BIDDING,
 		PLAYING
 	};
-	MatchState m_match_state;
+	MatchState m_matchState;
 
 	std::array<int, 2> m_teamPoints;
 	std::array<uint8_t, 2> m_teamBags;
