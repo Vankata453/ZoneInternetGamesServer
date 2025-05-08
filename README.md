@@ -8,6 +8,20 @@ Those games include:
 * Internet Checkers
 * Internet Spades
 
+## Connecting an Internet Game to a hosted Internet Games Server
+
+1. Ensure you have access to a hosted [Internet Games Server](#internet-games-server), either on `localhost`, your local network or via the Internet.
+2. From the [latest release of this project](https://github.com/Vankata453/ZoneInternetGamesServer/releases), under "Assets", download the "Release" package for your architecture (x64 or x86).
+3. Extract the downloaded package, containing the [Internet Games Server](#internet-games-server), custom client DLL and injector.
+> [!NOTE]
+>
+> Ensure the custom client DLL (`InternetGamesClientDLL.dll`) and the injector (`DLLInjector.exe`) are in the same directory!
+4. Start an Internet Game of your choice (preferably keep it on the initial info window).
+5. Run `DLLInjector.exe` with a [target game argument](#command-line-arguments-dll-injector) and a dialog to type a host and port to an [Internet Games Server](#internet-games-server) should appear!
+> [!TIP]
+>
+> You can create a shortcut to `DLLInjector.exe` with a [target game argument](#command-line-arguments-dll-injector) for ease!
+
 ## Includes
 
 This repository includes, or will include, the following:
@@ -63,6 +77,13 @@ Internet Spades, according to my testing, is fully supported.
 >   If a player were to modify event messages being sent to the server to try and cheat, it's up to the opponents' game clients to determine whether the actions are legitimate or not.
 >   Luckily, from my testing, this local validation seems to work nicely. On invalid data, the game ends with a "Corrupted data" message.
 
+#### Command line arguments
+
+* `-p` (`--port`): Port to host the server on. *Default: 80*
+* `-l` (`--log`): Enables socket data logging. Allows for specifying a custom folder; if not specified, the *default "InternetGamesServer_logs"* folder is used.
+* `--skip-level-matching`: Allows matching players, disregarding their chosen skill level. 
+* `--log-ping-messages`: Log empty received messages by sockets, which are used for pinging the server.
+
 ### Internet Games Client DLL + DLL Injector
 
 A DLL, which is to be injected into any of the 3 games, using the DLL Injector application.
@@ -74,6 +95,11 @@ The DLL performs the following operations:
 * Displays a dialog, where the user can enter a host and port, where an [Internet Games Server](#internet-games-server) is located, to connect to.
 * Puts a hook on the [`GetAddrInfoW`](https://learn.microsoft.com/en-us/windows/win32/api/ws2tcpip/nf-ws2tcpip-getaddrinfow) function from `ws2_32.dll`, setting appropriate arguments, as well as the host and the port, specified in the dialog.
 
+#### Command line arguments (DLL Injector)
+
+* `-b` (`--backgammon`) *OR* `-c` (`--checkers`) *OR* `-s` (`--spades`) **[REQUIRED]**: Specifies the target game to inject the client DLL into.
+* `-r` (`--repeat`): See [Using DLL Injector on multiple instances](#using-dll-injector-on-multiple-instances). *Default: 0*
+
 ## Building
 
 To build any of the projects, open up the respective project file (.vcxproj) in Visual Studio and build from there.
@@ -81,6 +107,8 @@ To build any of the projects, open up the respective project file (.vcxproj) in 
 ### Running Multiple Instances
 
 For information on how to run multiple instances of any of the Internet Games, [read this](docs/MultipleInstances.md).
+
+#### Using DLL Injector on multiple instances
 
 To use the DLL Injector on multiple instances at the same time, provide the `-r` (or `--repeat`) argument to it,
 allowing to skip a select number of previously started processes of the specified Internet Game.
