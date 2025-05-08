@@ -13,7 +13,7 @@
 #define DEFAULT_BUFLEN 2048
 
 std::string Socket::s_logsDirectory = "";
-bool Socket::s_showPingMessages = false;
+bool Socket::s_logPingMessages = false;
 
 
 // Handler for the thread of a socket
@@ -142,7 +142,7 @@ Socket::ReceiveData()
 			receivedEntries.push_back(StringSplit(std::move(receivedLine), "&")); // Split data by "&" for easier parsing in certain cases
 		}
 
-		if (!s_showPingMessages && receivedEntries.size() == 1 && receivedEntries[0].size() == 1 && receivedEntries[0][0].empty())
+		if (!s_logPingMessages && receivedEntries.size() == 1 && receivedEntries[0].size() == 1 && receivedEntries[0][0].empty())
 			return receivedEntries;
 
 		m_log << "[RECEIVED]: " << std::endl;

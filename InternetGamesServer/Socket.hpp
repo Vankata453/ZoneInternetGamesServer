@@ -10,7 +10,7 @@ class Socket final
 {
 public:
 	static std::string s_logsDirectory;
-	static bool s_showPingMessages; // DEBUG: Print empty ping messages from clients on the console
+	static bool s_logPingMessages; // DEBUG: Log empty ping messages from sockets
 
 public:
 	// Handler for the thread of a socket

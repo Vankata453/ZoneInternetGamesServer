@@ -41,9 +41,9 @@ int main(int argc, char* argv[])
 		{
 			MatchManager::s_skipLevelMatching = true;
 		}
-		else if (!strcmp(argv[i], "--show-ping-messages"))
+		else if (!strcmp(argv[i], "--log-ping-messages"))
 		{
-			Socket::s_showPingMessages = true;
+			Socket::s_logPingMessages = true;
 		}
 	}
 
