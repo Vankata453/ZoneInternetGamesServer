@@ -88,12 +88,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-	  <AdditionalIncludeDirectories>external\tinyxml2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>external\tinyxml2</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-	  <AdditionalDependencies>Ws2_32.lib;Rpcrt4.lib</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Rpcrt4.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -104,14 +104,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-	  <AdditionalIncludeDirectories>external\tinyxml2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>external\tinyxml2</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-	  <AdditionalDependencies>Ws2_32.lib;Rpcrt4.lib</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Rpcrt4.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -136,14 +136,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-	  <AdditionalIncludeDirectories>external\tinyxml2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>external\tinyxml2</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-	  <AdditionalDependencies>Ws2_32.lib;Rpcrt4.lib</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Rpcrt4.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -165,10 +165,17 @@
     <ClInclude Include="Match.hpp" />
     <ClInclude Include="MatchManager.hpp" />
     <ClInclude Include="PlayerSocket.hpp" />
+    <ClInclude Include="Resource.h" />
     <ClInclude Include="Socket.hpp" />
     <ClInclude Include="SpadesMatch.hpp" />
     <ClInclude Include="StateTags.hpp" />
     <ClInclude Include="Util.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="InternetGamesServer.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="InternetGamesServer.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
