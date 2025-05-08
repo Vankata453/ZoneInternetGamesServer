@@ -13,11 +13,21 @@ Those games include:
 1. Ensure you have access to a hosted [Internet Games Server](#internet-games-server), either on `localhost`, your local network or via the Internet.
 2. From the [latest release of this project](https://github.com/Vankata453/ZoneInternetGamesServer/releases), under "Assets", download the "Release" package for your architecture (x64 or x86).
 3. Extract the downloaded package, containing the [Internet Games Server](#internet-games-server), custom client DLL and injector.
+
 > [!NOTE]
 >
 > Ensure the custom client DLL (`InternetGamesClientDLL.dll`) and the injector (`DLLInjector.exe`) are in the same directory!
+
 4. Start an Internet Game of your choice (preferably keep it on the initial info window).
 5. Run `DLLInjector.exe` with a [target game argument](#command-line-arguments-dll-injector) and a dialog to type a host and port to an [Internet Games Server](#internet-games-server) should appear!
+
+> [!WARNING]
+>
+> `DLLInjector.exe` is likely to be flagged by antivirus software as a threat, namely Win32/DefenseEvasion.A!ml. That is normal, since DLL Injecting is behaviour
+> commonly used in malware to inject malicious code into other processes.
+>
+> DLL injecting, however, is required for preparing the Internet Games to connect to a custom server. Make sure you add `DLLInjector.exe` as an exception in your antivirus software!
+
 > [!TIP]
 >
 > You can create a shortcut to `DLLInjector.exe` with a [target game argument](#command-line-arguments-dll-injector) for ease!
