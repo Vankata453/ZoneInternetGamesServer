@@ -86,6 +86,8 @@ Match::~Match()
 {
 	for (PlayerSocket* p : m_players)
 		p->OnMatchEnded();
+
+	CloseHandle(m_eventMutex);
 }
 
 
