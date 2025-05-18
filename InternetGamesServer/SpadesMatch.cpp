@@ -5,6 +5,12 @@
 #include "PlayerSocket.hpp"
 #include "Util.hpp"
 
+#define SPADES_LOG_TEAM_POINTS 0 // DEBUG: Print data about points/bags calculation for a team when a hand ends, to the console
+
+#if SPADES_LOG_TEAM_POINTS
+#include <iostream>
+#endif
+
 static const std::uniform_int_distribution<> s_playerDistribution(0, 3);
 
 constexpr uint16_t ZPA_UNSET_CARD = 0xFFFF;
@@ -216,8 +222,7 @@ SpadesMatch::UpdateTeamPoints()
 			(m_playerBids[p2] > 0 ? m_playerTricksTaken[p2] : 0));
 		if (tricksNonNil >= contract)
 		{
-			const int tricksAll = static_cast<int>(m_playerTricksTaken[p1] + m_playerTricksTaken[p2]);
-			points += contract * 10 + tricksAll - contract; // Overtricks for points are calculated using all tricks taken, Nil or not
+			points += contract * 10;
 			bags += tricksNonNil - contract; // Only non-Nil overtricks count towards bags
 		}
 		else
@@ -225,12 +230,31 @@ SpadesMatch::UpdateTeamPoints()
 			points -= contract * 10;
 		}
 
+		const int tricksAll = static_cast<int>(m_playerTricksTaken[p1] + m_playerTricksTaken[p2]);
+		const int overtricksAll = tricksAll - contract; // Overtricks for points are calculated using all tricks taken, Nil or not
+		if (overtricksAll > 0)
+			points += overtricksAll;
+
 		// Bag penalty
 		if (bags >= 10)
 		{
 			points -= (bags / 10) * 100;
 			bags %= 10;
 		}
+
+#if SPADES_LOG_TEAM_POINTS
+		std::cout << std::dec
+			<< "Team " << (team + 1)
+			<< " Bid: " << contract
+			<< " Tricks: " << tricksAll
+			<< " TricksNonNil: " << tricksNonNil
+			<< " Overtricks: " << (tricksAll - contract)
+			<< " NilPenalty: " << (playerNilBonuses[p1] + playerNilBonuses[p2])
+			<< " BagsBefore: " << static_cast<int>(m_teamBags[team])
+			<< " BagsAfter: " << static_cast<int>(bags)
+			<< " ScoreDelta: " << points
+			<< std::endl;
+#endif
 
 		m_teamPoints[team] += points;
 		m_teamBags[team] = bags;
