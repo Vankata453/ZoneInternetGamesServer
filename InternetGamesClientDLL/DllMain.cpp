@@ -63,7 +63,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
                 return FALSE;
             }
 
+#ifndef XP_GAMES
             SetUpDisableTLS();
+#endif
             break;
         }
         case DLL_THREAD_ATTACH:
@@ -77,6 +79,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 }
 
 /** Setup functions */
+#ifndef XP_GAMES
 void SetUpDisableTLS()
 {
     HKEY regZoneCom = NULL;
@@ -107,3 +110,4 @@ void SetUpDisableTLS()
     if (regZgmprxy)
         RegCloseKey(regZgmprxy);
 }
+#endif
