@@ -158,6 +158,8 @@
     <ClCompile Include="SpadesMatch.cpp" />
     <ClCompile Include="StateTags.cpp" />
     <ClCompile Include="Util.cpp" />
+    <ClCompile Include="XP\Defines.cpp" />
+    <ClCompile Include="XP\Security.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BackgammonMatch.hpp" />
@@ -170,6 +172,9 @@
     <ClInclude Include="SpadesMatch.hpp" />
     <ClInclude Include="StateTags.hpp" />
     <ClInclude Include="Util.hpp" />
+    <ClInclude Include="XP\Defines.hpp" />
+    <ClInclude Include="XP\Protocol\Init.hpp" />
+    <ClInclude Include="XP\Security.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="InternetGamesServer.rc" />

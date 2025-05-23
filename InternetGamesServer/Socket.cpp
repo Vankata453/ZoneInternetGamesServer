@@ -6,11 +6,16 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <random>
 
 #include "PlayerSocket.hpp"
 #include "Util.hpp"
+#include "XP/Protocol/Init.hpp"
+#include "XP/Security.hpp"
 
 #define DEFAULT_BUFLEN 2048
+
+static const char* SOCKET_WIN7_HI_RESPONSE = "STADIUM/2.0\r\n";
 
 std::string Socket::s_logsDirectory = "";
 bool Socket::s_logPingMessages = false;
@@ -40,42 +45,92 @@ Socket::SocketHandler(void* socket_)
 	}
 
 	Socket socket(rawSocket, *logStream);
-	PlayerSocket player(socket);
-
-	while (true)
+	try
 	{
-		try
+		std::unique_ptr<PlayerSocket> player; // TODO: PlayerSocket base class
+
+		// Determine socket type, create PlayerSocket object and parse initial message
+		char receivedBuf[DEFAULT_BUFLEN];
+		const int receivedLen = socket.ReceiveData(receivedBuf, DEFAULT_BUFLEN);
+		if (!strcmp(receivedBuf, SOCKET_WIN7_HI_RESPONSE)) // SOCKET_WIN7
+		{
+			player = std::make_unique<PlayerSocket>(socket);
+
+			socket.SendData(SOCKET_WIN7_HI_RESPONSE, static_cast<int>(strlen(SOCKET_WIN7_HI_RESPONSE)));
+		}
+		else if (receivedLen == sizeof(XP::MsgConnectionHi)) // SOCKET_WINXP
+		{
+			XP::MsgConnectionHi hiMessage;
+			memcpy(&hiMessage, receivedBuf, receivedLen);
+			XP::DecryptMessage(&hiMessage, sizeof(hiMessage), XP::DefaultSecurityKey);
+
+			if (hiMessage.signature == XP::InternalProtocolSignature &&
+				hiMessage.protocolVersion == XP::InternalProtocolVersion &&
+				hiMessage.messageType == XP::MessageConnectionHi)
+			{
+#if LOG_DEBUG
+				std::cout << "WinXP Socket Hi Message:" << std::endl;
+				std::cout << "  Header:" << std::endl;
+				std::cout << "    signature      = 0x" << std::hex << hiMessage.signature << std::dec << std::endl;
+				std::cout << "    totalLength    = " << hiMessage.totalLength << std::endl;
+				std::cout << "    messageType    = " << hiMessage.messageType << std::endl;
+				std::cout << "    intLength      = " << hiMessage.intLength << std::endl;
+				std::cout << "  protocolVersion  = " << hiMessage.protocolVersion << std::endl;
+				std::cout << "  productSignature = 0x" << std::hex << hiMessage.productSignature << std::dec << std::endl;
+				std::cout << "  optionFlagsMask  = 0x" << std::hex << hiMessage.optionFlagsMask << std::dec << std::endl;
+				std::cout << "  optionFlags      = 0x" << std::hex << hiMessage.optionFlags << std::dec << std::endl;
+				std::cout << "  clientKey        = 0x" << std::hex << hiMessage.clientKey << std::dec << std::endl;
+				std::cout << "  machineGUID      = " << hiMessage.machineGUID << std::endl;
+#endif
+				player = std::make_unique<PlayerSocket>(socket); // TODO: Derived WinXP PlayerSocket
+
+				XP::MsgConnectionHello helloMessage;
+				helloMessage.signature = XP::InternalProtocolSignature;
+				helloMessage.totalLength = sizeof(helloMessage);
+				helloMessage.intLength = sizeof(helloMessage);
+				helloMessage.messageType = XP::MessageConnectionHello;
+
+				std::mt19937 keyRng(std::random_device{}());
+				helloMessage.key = std::uniform_int_distribution<uint32>{}(keyRng);
+				helloMessage.machineGUID = hiMessage.machineGUID;
+
+				XP::EncryptMessage(&helloMessage, sizeof(helloMessage), XP::DefaultSecurityKey);
+				socket.SendData(reinterpret_cast<char*>(&helloMessage), sizeof(helloMessage));
+			}
+			else
+			{
+				throw std::runtime_error("Invalid initial message!");
+			}
+		}
+		else
+		{
+			throw std::runtime_error("Invalid initial message!");
+		}
+
+		assert(player);
+		while (true)
 		{
 			// Receive and send back data
 			const std::vector<std::vector<std::string>> receivedData = socket.ReceiveData();
 			assert(!receivedData.empty());
 
 			for (const std::vector<std::string>& receivedLineData : receivedData)
-				socket.SendData(player.GetResponse(receivedLineData));
+				socket.SendData(player->GetResponse(receivedLineData));
 		}
-		catch (const DisconnectionRequest&)
-		{
-			std::cout << "[SOCKET] Disconnecting from " << socket.GetAddressString() << '.' << std::endl;
-
-			player.OnDisconnected();
-			break;
-		}
-		catch (const ClientDisconnected&)
-		{
-			std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
-				<< ": Client has been disconnected." << std::endl;
-
-			player.OnDisconnected();
-			break;
-		}
-		catch (const std::exception& err)
-		{
-			std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
-				<< ": " << err.what() << std::endl;
-
-			player.OnDisconnected();
-			break;
-		}
+	}
+	catch (const DisconnectionRequest&)
+	{
+		std::cout << "[SOCKET] Disconnecting from " << socket.GetAddressString() << '.' << std::endl;
+	}
+	catch (const ClientDisconnected&)
+	{
+		std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
+			<< ": Client has been disconnected." << std::endl;
+	}
+	catch (const std::exception& err)
+	{
+		std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
+			<< ": " << err.what() << std::endl;
 	}
 	return 0;
 }
@@ -118,15 +173,29 @@ Socket::Disconnect()
 }
 
 
+int
+Socket::ReceiveData(char* data, int len)
+{
+	const int receivedLen = recv(m_socket, data, len, 0);
+	if (receivedLen == 0)
+		throw ClientDisconnected();
+	else if (receivedLen < 0)
+		throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+
+	m_log << "[RECEIVED]: " << data << std::endl;
+
+	return receivedLen;
+}
+
 std::vector<std::vector<std::string>>
 Socket::ReceiveData()
 {
-	char recvbuf[DEFAULT_BUFLEN];
+	char receivedBuf[DEFAULT_BUFLEN];
 
-	HRESULT recvResult = recv(m_socket, recvbuf, DEFAULT_BUFLEN, 0);
-	if (recvResult > 0)
+	const int receivedLen = recv(m_socket, receivedBuf, DEFAULT_BUFLEN, 0);
+	if (receivedLen > 0)
 	{
-		const std::string received(recvbuf, recvResult);
+		const std::string received(receivedBuf, receivedLen);
 		std::istringstream receivedStream(received);
 
 		std::vector<std::vector<std::string>> receivedEntries;
@@ -158,15 +227,24 @@ Socket::ReceiveData()
 
 		return receivedEntries;
 	}
-	else if (recvResult == 0)
+	else if (receivedLen == 0)
 	{
 		throw ClientDisconnected();
 	}
-	else if (recvResult != 0)
-	{
-		throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
-	}
-	return {}; // Would never happen, but surpresses a warning
+	throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+}
+
+
+int
+Socket::SendData(const char* data, int len)
+{
+	const int sentLen = send(m_socket, data, len, 0);
+	if (sentLen == SOCKET_ERROR)
+		throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
+
+	m_log << "[SENT]: " << data << "\n(BYTES SENT=" << sentLen << ")\n\n" << std::endl;
+
+	return sentLen;
 }
 
 void
@@ -174,12 +252,7 @@ Socket::SendData(std::vector<std::string> data)
 {
 	for (const std::string& message : data)
 	{
-		if (message.empty()) continue;
-
-		HRESULT sendResult = send(m_socket, message.c_str(), static_cast<int>(message.length()), 0);
-		if (sendResult == SOCKET_ERROR)
-			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
-
-		m_log << "[SENT]: " << message << "\n(BYTES SENT=" << sendResult << ")\n\n" << std::endl;
+		if (!message.empty())
+			SendData(message.c_str(), static_cast<int>(message.length()));
 	}
 }

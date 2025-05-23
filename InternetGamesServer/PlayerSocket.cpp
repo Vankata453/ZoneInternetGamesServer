@@ -8,7 +8,7 @@
 
 PlayerSocket::PlayerSocket(Socket& socket) :
 	m_socket(socket),
-	m_state(STATE_NOT_INITIALIZED),
+	m_state(STATE_INITIALIZED),
 	m_guid(),
 	m_puid(),
 	m_game(Match::Game::INVALID),
@@ -16,6 +16,11 @@ PlayerSocket::PlayerSocket(Socket& socket) :
 	m_match(),
 	m_role(-1)
 {
+}
+
+PlayerSocket::~PlayerSocket()
+{
+	OnDisconnected();
 }
 
 
@@ -27,14 +32,6 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 
 	switch (m_state)
 	{
-		case STATE_NOT_INITIALIZED:
-			if (receivedData[0] == "STADIUM/2.0")
-			{
-				m_state = STATE_INITIALIZED;
-				return { "STADIUM/2.0\r\n" };
-			}
-			break;
-
 		case STATE_INITIALIZED:
 			if (receivedData.size() >= 6 && StartsWith(receivedData[0], "JOIN Session="))
 			{

@@ -12,6 +12,13 @@ public:
 	static std::string s_logsDirectory;
 	static bool s_logPingMessages; // DEBUG: Log empty ping messages from sockets
 
+	enum Type
+	{
+		UNKNOWN,
+		WIN7,
+		WINXP
+	};
+
 public:
 	// Handler for the thread of a socket
 	static DWORD WINAPI SocketHandler(void* socket);
@@ -37,7 +44,10 @@ public:
 
 	void Disconnect();
 
+	int ReceiveData(char* data, int len);
 	std::vector<std::vector<std::string>> ReceiveData();
+
+	int SendData(const char* data, int len);
 	void SendData(std::vector<std::string> data);
 
 	inline SOCKET GetRaw() const { return m_socket; }

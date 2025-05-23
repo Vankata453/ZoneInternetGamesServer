@@ -12,7 +12,6 @@ class PlayerSocket
 {
 public:
 	enum State {
-		STATE_NOT_INITIALIZED,
 		STATE_INITIALIZED,
 		STATE_JOINING,
 		STATE_WAITINGFOROPPONENTS,
@@ -21,6 +20,7 @@ public:
 
 public:
 	PlayerSocket(Socket& socket);
+	~PlayerSocket();
 
 	std::vector<std::string> GetResponse(const std::vector<std::string>& receivedData);
 

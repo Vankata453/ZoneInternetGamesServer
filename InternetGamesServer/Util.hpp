@@ -8,6 +8,9 @@
 
 #include "tinyxml2.h"
 
+/** Debug */
+#define LOG_DEBUG 0 // DEBUG: Log certain operations to console
+
 /** String utilities */
 bool StartsWith(const std::string& str, const std::string& prefix);
 std::vector<std::string> StringSplit(std::string str, const std::string& delimiter);

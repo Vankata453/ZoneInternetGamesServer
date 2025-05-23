@@ -48,6 +48,12 @@
     <ClCompile Include="StateTags.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="XP\Security.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="XP\Defines.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.hpp">
@@ -72,6 +78,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="XP\Security.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="XP\Protocol\Init.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="XP\Defines.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
