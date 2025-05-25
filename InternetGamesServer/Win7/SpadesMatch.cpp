@@ -3,7 +3,7 @@
 #include <cassert>
 
 #include "PlayerSocket.hpp"
-#include "Util.hpp"
+#include "../Util.hpp"
 
 #define SPADES_LOG_TEAM_POINTS 0 // DEBUG: Print data about points/bags calculation for a team when a hand ends, to the console
 
@@ -45,6 +45,8 @@ static inline bool IsValidZPACardValue(uint16_t value)
 		(value & 0xFF) < 13; // Rank
 }
 
+
+namespace Win7 {
 
 SpadesMatch::CardTrick::CardTrick() :
 	m_leadCard(),
@@ -486,4 +488,6 @@ SpadesMatch::IsValidChatNudgeMessage(const std::string& msg) const
 			msg == "1400_12347") || // Nudge (player 3)
 		(((m_matchState == MatchState::BIDDING && m_nextBidPlayer == 3) || m_playerTrickTurn == 3) &&
 			msg == "1400_12348"); // Nudge (player 4)
+}
+
 }

@@ -7,7 +7,9 @@
 #include <sstream>
 
 #include "PlayerSocket.hpp"
-#include "Util.hpp"
+#include "../Util.hpp"
+
+namespace Win7 {
 
 Match::Game
 Match::GameFromString(const std::string& str)
@@ -68,12 +70,11 @@ Match::QueuedEvent::QueuedEvent(const std::string& xml_, const std::string& xmlS
 #define MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE 0 // DEBUG: If a player leaves a match, do not disconnect other players.
 
 Match::Match(PlayerSocket& player) :
+	::Match<PlayerSocket>(player),
 	m_state(STATE_WAITINGFORPLAYERS),
 	m_guid(),
 	m_level(player.GetLevel()),
-	m_players(),
 	m_eventMutex(CreateMutex(nullptr, false, nullptr)),
-	m_creationTime(std::time(nullptr)),
 	m_endTime(0)
 {
 	// Generate a unique GUID for the match
@@ -97,8 +98,7 @@ Match::JoinPlayer(PlayerSocket& player)
 	if (m_state != STATE_WAITINGFORPLAYERS)
 		return;
 
-	// Add to players array
-	m_players.push_back(&player);
+	AddPlayer(player);
 
 	// Switch state, if enough players have joined
 	if (m_players.size() == GetRequiredPlayerCount())
@@ -108,9 +108,7 @@ Match::JoinPlayer(PlayerSocket& player)
 void
 Match::DisconnectedPlayer(PlayerSocket& player)
 {
-	// Remove from players array
-	if (!m_players.empty())
-		m_players.erase(std::remove(m_players.begin(), m_players.end(), &player), m_players.end());
+	RemovePlayer(player);
 
 	// End the match on no players, marking it as to-be-removed from MatchManager
 	if (m_players.empty())
@@ -343,4 +341,6 @@ Match::IsValidChatNudgeMessage(const std::string& msg) const
 {
 	return msg == "1400_12345" || // Nudge (player 1)
 		msg == "1400_12346"; // Nudge (player 2)
+}
+
 }

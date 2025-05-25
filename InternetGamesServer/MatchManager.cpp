@@ -1,13 +1,15 @@
 #include "MatchManager.hpp"
 
+#include <cassert>
 #include <iostream>
 #include <stdexcept>
 #include <synchapi.h>
 
-#include "BackgammonMatch.hpp"
-#include "CheckersMatch.hpp"
-#include "SpadesMatch.hpp"
 #include "Util.hpp"
+#include "Win7/BackgammonMatch.hpp"
+#include "Win7/CheckersMatch.hpp"
+#include "Win7/PlayerSocket.hpp"
+#include "Win7/SpadesMatch.hpp"
 
 MatchManager MatchManager::s_instance;
 
@@ -28,7 +30,8 @@ bool MatchManager::s_skipLevelMatching = false;
 
 MatchManager::MatchManager() :
 	m_mutex(CreateMutex(nullptr, false, nullptr)),
-	m_matches()
+	m_matches_win7(),
+	m_matches_winxp()
 {
 	if (!m_mutex)
 		throw std::runtime_error("MatchManager: Couldn't create mutex: " + GetLastError());
@@ -46,22 +49,23 @@ MatchManager::Update()
 	switch (WaitForSingleObject(m_mutex, 5000))
 	{
 		case WAIT_OBJECT_0: // Acquired ownership of the mutex
-			for (auto it = m_matches.begin(); it != m_matches.end();)
+			for (auto it = m_matches_win7.begin(); it != m_matches_win7.end();)
 			{
 				const auto& match = *it;
 
 				// Close ended matches
-				if (match->GetState() == Match::STATE_ENDED)
+				if (match->GetState() == Win7::Match::STATE_ENDED)
 				{
-					std::cout << "[MATCH MANAGER] Closing ended " << Match::GameToNameString(match->GetGame())
+					std::cout << "[MATCH MANAGER] Closing ended " << Win7::Match::GameToNameString(match->GetGame())
 						<< " match " << match->GetGUID() << "!" << std::endl;
-					it = m_matches.erase(it);
+					it = m_matches_win7.erase(it);
 					continue;
 				}
 
 				match->Update();
 				++it;
 			}
+			// TODO: WinXP match support
 
 			if (!ReleaseMutex(m_mutex))
 				throw std::runtime_error("MatchManager::Update(): Couldn't release mutex: " + GetLastError());
@@ -73,16 +77,16 @@ MatchManager::Update()
 }
 
 
-Match*
-MatchManager::FindLobby(PlayerSocket& player)
+Win7::Match*
+MatchManager::FindLobby(Win7::PlayerSocket& player)
 {
-	if (player.GetLevel() == Match::Level::INVALID)
+	if (player.GetLevel() == Win7::Match::Level::INVALID)
 		throw std::runtime_error("Cannot find lobby for player: Invalid level!");
 
-	Match* targetMatch = nullptr;
-	for (const auto& match : m_matches)
+	Win7::Match* targetMatch = nullptr;
+	for (const auto& match : m_matches_win7)
 	{
-		if (match->GetState() == Match::STATE_WAITINGFORPLAYERS &&
+		if (match->GetState() == Win7::Match::STATE_WAITINGFORPLAYERS &&
 			match->GetGame() == player.GetGame() &&
 			(s_skipLevelMatching || match->GetLevel() == player.GetLevel()))
 		{
@@ -94,21 +98,28 @@ MatchManager::FindLobby(PlayerSocket& player)
 	{
 		targetMatch->JoinPlayer(player);
 		std::cout << "[MATCH MANAGER] Added " << player.GetAddressString()
-			<< " to existing " << Match::GameToNameString(targetMatch->GetGame())
+			<< " to existing " << Win7::Match::GameToNameString(targetMatch->GetGame())
 			<< " match " << targetMatch->GetGUID() << '.' << std::endl;
 		return targetMatch;
 	}
 
 	// No free lobby found - create a new one
-	Match* match = CreateLobby(player);
+	Win7::Match* match = CreateLobby(player);
 	std::cout << "[MATCH MANAGER] Added " << player.GetAddressString()
-		<< " to new " << Match::GameToNameString(match->GetGame())
+		<< " to new " << Win7::Match::GameToNameString(match->GetGame())
 		<< " match " << match->GetGUID() << '.' << std::endl;
 	return match;
 }
 
-Match*
-MatchManager::CreateLobby(PlayerSocket& player)
+WinXP::Match*
+MatchManager::FindLobby(WinXP::PlayerSocket& player)
+{
+	return nullptr; // TODO: WinXP match support
+}
+
+
+Win7::Match*
+MatchManager::CreateLobby(Win7::PlayerSocket& player)
 {
 	switch (WaitForSingleObject(m_mutex, 5000))
 	{
@@ -116,16 +127,16 @@ MatchManager::CreateLobby(PlayerSocket& player)
 		{
 			switch (player.GetGame())
 			{
-				case Match::Game::BACKGAMMON:
-					m_matches.push_back(std::make_unique<BackgammonMatch>(player));
+				case Win7::Match::Game::BACKGAMMON:
+					m_matches_win7.push_back(std::make_unique<Win7::BackgammonMatch>(player));
 					break;
 
-				case Match::Game::CHECKERS:
-					m_matches.push_back(std::make_unique<CheckersMatch>(player));
+				case Win7::Match::Game::CHECKERS:
+					m_matches_win7.push_back(std::make_unique<Win7::CheckersMatch>(player));
 					break;
 
-				case Match::Game::SPADES:
-					m_matches.push_back(std::make_unique<SpadesMatch>(player));
+				case Win7::Match::Game::SPADES:
+					m_matches_win7.push_back(std::make_unique<Win7::SpadesMatch>(player));
 					break;
 
 				default:
@@ -135,11 +146,17 @@ MatchManager::CreateLobby(PlayerSocket& player)
 			if (!ReleaseMutex(m_mutex))
 				throw std::runtime_error("MatchManager::CreateLobby(): Couldn't release mutex: " + GetLastError());
 
-			return m_matches.back().get();
+			return m_matches_win7.back().get();
 		}
 
 		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
 			throw std::runtime_error("MatchManager::CreateLobby(): Got ownership of an abandoned mutex: " + GetLastError());
 	}
 	return nullptr; // Would never happen, but suppresses a warning
+}
+
+WinXP::Match*
+MatchManager::CreateLobby(WinXP::PlayerSocket& player)
+{
+	return nullptr; // TODO: WinXP match support
 }

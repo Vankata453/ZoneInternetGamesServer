@@ -4,7 +4,7 @@
 
 #include <winsock.h>
 
-namespace XP {
+namespace WinXP {
 
 void CryptMessage(char* data, int len, uint32 key)
 {

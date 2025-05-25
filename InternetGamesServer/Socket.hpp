@@ -3,6 +3,7 @@
 #include <winsock2.h>
 
 #include <string>
+#include <sstream>
 #include <vector>
 
 /** SOCKET wrapper featuring general socket handling functions */
@@ -47,8 +48,65 @@ public:
 	int ReceiveData(char* data, int len);
 	std::vector<std::vector<std::string>> ReceiveData();
 
+	template<class T>
+	int ReceiveData(T& data)
+	{
+		const int receivedLen = recv(m_socket, reinterpret_cast<char*>(&data), sizeof(T), 0);
+		if (receivedLen == 0)
+			throw ClientDisconnected();
+		else if (receivedLen < 0)
+			throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+
+		m_log << "[RECEIVED]: " << data << '\n' << std::endl;
+
+		return receivedLen;
+	}
+	template<class T, typename Key>
+	int ReceiveData(T& data, void(*decryptor)(void*, int, Key), Key decryptKey)
+	{
+		const int receivedLen = recv(m_socket, reinterpret_cast<char*>(&data), sizeof(T), 0);
+		if (receivedLen == 0)
+			throw ClientDisconnected();
+		else if (receivedLen < 0)
+			throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+
+		decryptor(&data, sizeof(T), decryptKey);
+
+		m_log << "[RECEIVED]: " << data << '\n' << std::endl;
+
+		return receivedLen;
+	}
+
 	int SendData(const char* data, int len);
 	void SendData(std::vector<std::string> data);
+
+	template<class T>
+	int SendData(const T& data)
+	{
+		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), sizeof(T), 0);
+		if (sentLen == SOCKET_ERROR)
+			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
+
+		m_log << "[SENT]: " << data << "\n(BYTES SENT=" << sizeof(T) << ")\n\n" << std::endl;
+
+		return sentLen;
+	}
+	template<class T, typename Key>
+	int SendData(T data, void(*encryptor)(void*, int, Key), Key encryptKey)
+	{
+		std::ostringstream logBuf;
+		logBuf << "[SENT]: " << data;
+
+		encryptor(&data, sizeof(T), encryptKey);
+
+		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), sizeof(T), 0);
+		if (sentLen == SOCKET_ERROR)
+			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
+
+		m_log << logBuf.str() << "\n(BYTES SENT=" << sizeof(T) << ")\n\n" << std::endl;
+
+		return sentLen;
+	}
 
 	inline SOCKET GetRaw() const { return m_socket; }
 	inline std::string GetAddressString() const { return GetAddressString(m_socket); }

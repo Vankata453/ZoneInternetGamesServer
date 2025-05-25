@@ -6,12 +6,12 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
-#include <random>
 
-#include "PlayerSocket.hpp"
 #include "Util.hpp"
-#include "XP/Protocol/Init.hpp"
-#include "XP/Security.hpp"
+#include "Win7/PlayerSocket.hpp"
+#include "WinXP/PlayerSocket.hpp"
+#include "WinXP/Protocol/Init.hpp"
+#include "WinXP/Security.hpp"
 
 #define DEFAULT_BUFLEN 2048
 
@@ -47,91 +47,66 @@ Socket::SocketHandler(void* socket_)
 	Socket socket(rawSocket, *logStream);
 	try
 	{
-		std::unique_ptr<PlayerSocket> player; // TODO: PlayerSocket base class
-
-		// Determine socket type, create PlayerSocket object and parse initial message
-		char receivedBuf[DEFAULT_BUFLEN];
-		const int receivedLen = socket.ReceiveData(receivedBuf, DEFAULT_BUFLEN);
-		if (!strcmp(receivedBuf, SOCKET_WIN7_HI_RESPONSE)) // SOCKET_WIN7
+		std::unique_ptr<PlayerSocket> player;
 		{
-			player = std::make_unique<PlayerSocket>(socket);
-
-			socket.SendData(SOCKET_WIN7_HI_RESPONSE, static_cast<int>(strlen(SOCKET_WIN7_HI_RESPONSE)));
-		}
-		else if (receivedLen == sizeof(XP::MsgConnectionHi)) // SOCKET_WINXP
-		{
-			XP::MsgConnectionHi hiMessage;
-			memcpy(&hiMessage, receivedBuf, receivedLen);
-			XP::DecryptMessage(&hiMessage, sizeof(hiMessage), XP::DefaultSecurityKey);
-
-			if (hiMessage.signature == XP::InternalProtocolSignature &&
-				hiMessage.protocolVersion == XP::InternalProtocolVersion &&
-				hiMessage.messageType == XP::MessageConnectionHi)
+			// Determine socket type, create PlayerSocket object and parse initial message
+			char receivedBuf[DEFAULT_BUFLEN];
+			const int receivedLen = socket.ReceiveData(receivedBuf, DEFAULT_BUFLEN);
+			if (!strncmp(receivedBuf, SOCKET_WIN7_HI_RESPONSE, receivedLen)) // WIN7
 			{
-#if LOG_DEBUG
-				std::cout << "WinXP Socket Hi Message:" << std::endl;
-				std::cout << "  Header:" << std::endl;
-				std::cout << "    signature      = 0x" << std::hex << hiMessage.signature << std::dec << std::endl;
-				std::cout << "    totalLength    = " << hiMessage.totalLength << std::endl;
-				std::cout << "    messageType    = " << hiMessage.messageType << std::endl;
-				std::cout << "    intLength      = " << hiMessage.intLength << std::endl;
-				std::cout << "  protocolVersion  = " << hiMessage.protocolVersion << std::endl;
-				std::cout << "  productSignature = 0x" << std::hex << hiMessage.productSignature << std::dec << std::endl;
-				std::cout << "  optionFlagsMask  = 0x" << std::hex << hiMessage.optionFlagsMask << std::dec << std::endl;
-				std::cout << "  optionFlags      = 0x" << std::hex << hiMessage.optionFlags << std::dec << std::endl;
-				std::cout << "  clientKey        = 0x" << std::hex << hiMessage.clientKey << std::dec << std::endl;
-				std::cout << "  machineGUID      = " << hiMessage.machineGUID << std::endl;
-#endif
-				player = std::make_unique<PlayerSocket>(socket); // TODO: Derived WinXP PlayerSocket
+				player = std::make_unique<Win7::PlayerSocket>(socket);
 
-				XP::MsgConnectionHello helloMessage;
-				helloMessage.signature = XP::InternalProtocolSignature;
-				helloMessage.totalLength = sizeof(helloMessage);
-				helloMessage.intLength = sizeof(helloMessage);
-				helloMessage.messageType = XP::MessageConnectionHello;
+				socket.SendData(SOCKET_WIN7_HI_RESPONSE, static_cast<int>(strlen(SOCKET_WIN7_HI_RESPONSE)));
+			}
+			else if (receivedLen == sizeof(WinXP::MsgConnectionHi)) // WINXP
+			{
+				WinXP::MsgConnectionHi hiMessage;
+				memcpy(&hiMessage, receivedBuf, receivedLen);
+				WinXP::DecryptMessage(&hiMessage, sizeof(hiMessage), WinXP::DefaultSecurityKey);
 
-				std::mt19937 keyRng(std::random_device{}());
-				helloMessage.key = std::uniform_int_distribution<uint32>{}(keyRng);
-				helloMessage.machineGUID = hiMessage.machineGUID;
+				if (hiMessage.signature == WinXP::InternalProtocolSignature &&
+					hiMessage.protocolVersion == WinXP::InternalProtocolVersion &&
+					hiMessage.messageType == WinXP::MessageConnectionHi)
+				{
+					*logStream << "[INITIAL MESSAGE]: " << hiMessage << '\n' << std::endl;
 
-				XP::EncryptMessage(&helloMessage, sizeof(helloMessage), XP::DefaultSecurityKey);
-				socket.SendData(reinterpret_cast<char*>(&helloMessage), sizeof(helloMessage));
+					auto xpPlayer = std::make_unique<WinXP::PlayerSocket>(socket, hiMessage);
+
+					socket.SendData(xpPlayer->ConstructHelloMessage(), WinXP::EncryptMessage, WinXP::DefaultSecurityKey);
+
+					player = std::move(xpPlayer);
+				}
+				else
+				{
+					throw std::runtime_error("Invalid initial message!");
+				}
 			}
 			else
 			{
 				throw std::runtime_error("Invalid initial message!");
 			}
 		}
-		else
-		{
-			throw std::runtime_error("Invalid initial message!");
-		}
 
 		assert(player);
-		while (true)
-		{
-			// Receive and send back data
-			const std::vector<std::vector<std::string>> receivedData = socket.ReceiveData();
-			assert(!receivedData.empty());
-
-			for (const std::vector<std::string>& receivedLineData : receivedData)
-				socket.SendData(player->GetResponse(receivedLineData));
-		}
+		player->ProcessMessages();
 	}
 	catch (const DisconnectionRequest&)
 	{
-		std::cout << "[SOCKET] Disconnecting from " << socket.GetAddressString() << '.' << std::endl;
+		// Will be logged after this statement
 	}
 	catch (const ClientDisconnected&)
 	{
 		std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
 			<< ": Client has been disconnected." << std::endl;
+		return 0;
 	}
 	catch (const std::exception& err)
 	{
 		std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
-			<< ": " << err.what() << std::endl;
+			<< ": " << err.what() << std::endl;;
+		return 0;
 	}
+	std::cout << "[SOCKET] Disconnecting from " << socket.GetAddressString() << '.' << std::endl;
 	return 0;
 }
 
@@ -182,7 +157,9 @@ Socket::ReceiveData(char* data, int len)
 	else if (receivedLen < 0)
 		throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
 
-	m_log << "[RECEIVED]: " << data << std::endl;
+	m_log << "[RECEIVED]: ";
+	m_log.write(data, receivedLen);
+	m_log << '\n' << std::endl;
 
 	return receivedLen;
 }
@@ -242,7 +219,9 @@ Socket::SendData(const char* data, int len)
 	if (sentLen == SOCKET_ERROR)
 		throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
 
-	m_log << "[SENT]: " << data << "\n(BYTES SENT=" << sentLen << ")\n\n" << std::endl;
+	m_log << "[SENT]: ";
+	m_log.write(data, sentLen);
+	m_log << "\n(BYTES SENT=" << sentLen << ")\n\n" << std::endl;
 
 	return sentLen;
 }

@@ -9,6 +9,8 @@ namespace tinyxml2 {
 	class XMLElement;
 }
 
+namespace Win7 {
+
 /** A tag, sent as a part of "arTags" in a "StateMessage" */
 class StateTag
 {
@@ -57,3 +59,5 @@ public:
 	std::string fontColor;
 	std::string fontCharSet;
 };
+
+}

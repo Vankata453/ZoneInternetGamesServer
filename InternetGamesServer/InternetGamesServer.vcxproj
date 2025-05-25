@@ -121,6 +121,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>external\tinyxml2</AdditionalIncludeDirectories>
+      <ObjectFileName>$(IntDir)%(RelativeDir)%(Filename).obj</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,34 +148,41 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BackgammonMatch.cpp" />
-    <ClCompile Include="CheckersMatch.cpp" />
+    <ClCompile Include="Win7\BackgammonMatch.cpp" />
+    <ClCompile Include="Win7\CheckersMatch.cpp" />
     <ClCompile Include="external\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Match.cpp" />
+    <ClCompile Include="Win7\Match.cpp" />
     <ClCompile Include="MatchManager.cpp" />
     <ClCompile Include="PlayerSocket.cpp" />
     <ClCompile Include="Socket.cpp" />
-    <ClCompile Include="SpadesMatch.cpp" />
-    <ClCompile Include="StateTags.cpp" />
+    <ClCompile Include="Win7\SpadesMatch.cpp" />
+    <ClCompile Include="Win7\StateTags.cpp" />
     <ClCompile Include="Util.cpp" />
-    <ClCompile Include="XP\Defines.cpp" />
-    <ClCompile Include="XP\Security.cpp" />
+    <ClCompile Include="Win7\PlayerSocket.cpp" />
+    <ClCompile Include="WinXP\Defines.cpp" />
+    <ClCompile Include="WinXP\Match.cpp" />
+    <ClCompile Include="WinXP\PlayerSocket.cpp" />
+    <ClCompile Include="WinXP\Security.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BackgammonMatch.hpp" />
-    <ClInclude Include="CheckersMatch.hpp" />
     <ClInclude Include="Match.hpp" />
+    <ClInclude Include="Win7\BackgammonMatch.hpp" />
+    <ClInclude Include="Win7\CheckersMatch.hpp" />
+    <ClInclude Include="Win7\Match.hpp" />
     <ClInclude Include="MatchManager.hpp" />
     <ClInclude Include="PlayerSocket.hpp" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Socket.hpp" />
-    <ClInclude Include="SpadesMatch.hpp" />
-    <ClInclude Include="StateTags.hpp" />
+    <ClInclude Include="Win7\SpadesMatch.hpp" />
+    <ClInclude Include="Win7\StateTags.hpp" />
     <ClInclude Include="Util.hpp" />
-    <ClInclude Include="XP\Defines.hpp" />
-    <ClInclude Include="XP\Protocol\Init.hpp" />
-    <ClInclude Include="XP\Security.hpp" />
+    <ClInclude Include="Win7\PlayerSocket.hpp" />
+    <ClInclude Include="WinXP\Defines.hpp" />
+    <ClInclude Include="WinXP\Match.hpp" />
+    <ClInclude Include="WinXP\PlayerSocket.hpp" />
+    <ClInclude Include="WinXP\Protocol\Init.hpp" />
+    <ClInclude Include="WinXP\Security.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="InternetGamesServer.rc" />

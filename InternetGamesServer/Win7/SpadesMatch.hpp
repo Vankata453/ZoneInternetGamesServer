@@ -5,6 +5,8 @@
 #include <array>
 #include <random>
 
+namespace Win7 {
+
 class SpadesMatch final : public Match
 {
 public:
@@ -83,3 +85,5 @@ private:
 	SpadesMatch(const SpadesMatch&) = delete;
 	SpadesMatch operator=(const SpadesMatch&) = delete;
 };
+
+}

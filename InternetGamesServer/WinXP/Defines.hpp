@@ -3,7 +3,7 @@
 typedef unsigned short uint16;
 typedef unsigned long uint32;
 
-namespace XP {
+namespace WinXP {
 
 extern const uint32 DefaultSecurityKey;
 extern const uint32 InternalProtocolSignature;

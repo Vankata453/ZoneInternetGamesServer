@@ -1,6 +1,6 @@
 #include "Defines.hpp"
 
-namespace XP {
+namespace WinXP {
 
 const uint32 DefaultSecurityKey = 0xF8273645;
 const uint32 InternalProtocolSignature = 'LiNk';

@@ -4,6 +4,8 @@
 
 #include <random>
 
+namespace Win7 {
+
 class BackgammonMatch final : public Match
 {
 public:
@@ -42,4 +44,6 @@ private:
 private:
 	BackgammonMatch(const BackgammonMatch&) = delete;
 	BackgammonMatch operator=(const BackgammonMatch&) = delete;
+};
+
 };
