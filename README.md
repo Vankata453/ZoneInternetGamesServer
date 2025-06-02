@@ -1,6 +1,6 @@
-# Zone Internet Games Server
+# Zone Internet Games Server (LAN)
 
-This project aims to bring back the functionality of the Internet Games, included in Windows 7, the servers for which were officially shut down on January 22nd, 2020.
+This project aims to bring back the functionality of the Internet Games, included in Windows 7, the servers for which were officially shut down on January 22nd, 2020. This is an LAN version that allows you to play with friends.
 
 Those games include:
 
@@ -93,6 +93,8 @@ Internet Spades, according to my testing, is fully supported.
 * `-l` (`--log`): Enables socket data logging. Allows for specifying a custom folder; if not specified, the *default "InternetGamesServer_logs"* folder is used.
 * `--skip-level-matching`: Allows matching players, disregarding their chosen skill level. 
 * `--log-ping-messages`: Log empty received messages by sockets, which are used for pinging the server.
+* * `--log-ping-messages`: Log empty received messages by sockets, which are used for pinging the server.
+* * `-ip`: IP to host the server on. *Default: 0.0.0.0*. 
 
 ### Internet Games Client DLL + DLL Injector
 
