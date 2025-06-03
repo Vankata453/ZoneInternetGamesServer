@@ -37,6 +37,7 @@ public:
 		ClientDisconnected() throw() {}
 	};
 
+	static char* GetAddressString(IN_ADDR address);
 	static std::string GetAddressString(SOCKET socket, const char portSeparator = ':');
 
 public:
@@ -49,9 +50,12 @@ public:
 	std::vector<std::vector<std::string>> ReceiveData();
 
 	template<class T>
-	int ReceiveData(T& data)
+	int ReceiveData(T& data, int len = sizeof(T))
 	{
-		const int receivedLen = recv(m_socket, reinterpret_cast<char*>(&data), sizeof(T), 0);
+		if (len == 0)
+			return 0;
+
+		const int receivedLen = recv(m_socket, reinterpret_cast<char*>(&data), len, 0);
 		if (receivedLen == 0)
 			throw ClientDisconnected();
 		else if (receivedLen < 0)
@@ -62,15 +66,18 @@ public:
 		return receivedLen;
 	}
 	template<class T, typename Key>
-	int ReceiveData(T& data, void(*decryptor)(void*, int, Key), Key decryptKey)
+	int ReceiveData(T& data, void(*decryptor)(void*, int, Key), Key decryptKey, int len = sizeof(T))
 	{
-		const int receivedLen = recv(m_socket, reinterpret_cast<char*>(&data), sizeof(T), 0);
+		if (len == 0)
+			return 0;
+
+		const int receivedLen = recv(m_socket, reinterpret_cast<char*>(&data), len, 0);
 		if (receivedLen == 0)
 			throw ClientDisconnected();
 		else if (receivedLen < 0)
 			throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
 
-		decryptor(&data, sizeof(T), decryptKey);
+		decryptor(&data, len, decryptKey);
 
 		m_log << "[RECEIVED]: " << data << '\n' << std::endl;
 
@@ -81,29 +88,29 @@ public:
 	void SendData(std::vector<std::string> data);
 
 	template<class T>
-	int SendData(const T& data)
+	int SendData(const T& data, int len = sizeof(T))
 	{
-		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), sizeof(T), 0);
+		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), len, 0);
 		if (sentLen == SOCKET_ERROR)
 			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
 
-		m_log << "[SENT]: " << data << "\n(BYTES SENT=" << sizeof(T) << ")\n\n" << std::endl;
+		m_log << "[SENT]: " << data << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
 
 		return sentLen;
 	}
 	template<class T, typename Key>
-	int SendData(T data, void(*encryptor)(void*, int, Key), Key encryptKey)
+	int SendData(T data, void(*encryptor)(void*, int, Key), Key encryptKey, int len = sizeof(T))
 	{
 		std::ostringstream logBuf;
 		logBuf << "[SENT]: " << data;
 
-		encryptor(&data, sizeof(T), encryptKey);
+		encryptor(&data, len, encryptKey);
 
-		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), sizeof(T), 0);
+		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), len, 0);
 		if (sentLen == SOCKET_ERROR)
 			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
 
-		m_log << logBuf.str() << "\n(BYTES SENT=" << sizeof(T) << ")\n\n" << std::endl;
+		m_log << logBuf.str() << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
 
 		return sentLen;
 	}

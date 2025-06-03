@@ -160,7 +160,6 @@
     <ClCompile Include="Win7\StateTags.cpp" />
     <ClCompile Include="Util.cpp" />
     <ClCompile Include="Win7\PlayerSocket.cpp" />
-    <ClCompile Include="WinXP\Defines.cpp" />
     <ClCompile Include="WinXP\Match.cpp" />
     <ClCompile Include="WinXP\PlayerSocket.cpp" />
     <ClCompile Include="WinXP\Security.cpp" />
@@ -182,6 +181,7 @@
     <ClInclude Include="WinXP\Match.hpp" />
     <ClInclude Include="WinXP\PlayerSocket.hpp" />
     <ClInclude Include="WinXP\Protocol\Init.hpp" />
+    <ClInclude Include="WinXP\Protocol\Proxy.hpp" />
     <ClInclude Include="WinXP\Security.hpp" />
   </ItemGroup>
   <ItemGroup>

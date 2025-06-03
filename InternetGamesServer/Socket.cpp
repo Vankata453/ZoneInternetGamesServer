@@ -62,17 +62,16 @@ Socket::SocketHandler(void* socket_)
 			{
 				WinXP::MsgConnectionHi hiMessage;
 				memcpy(&hiMessage, receivedBuf, receivedLen);
-				WinXP::DecryptMessage(&hiMessage, sizeof(hiMessage), WinXP::DefaultSecurityKey);
+				WinXP::DecryptMessage(&hiMessage, sizeof(hiMessage), XPDefaultSecurityKey);
 
-				if (hiMessage.signature == WinXP::InternalProtocolSignature &&
-					hiMessage.protocolVersion == WinXP::InternalProtocolVersion &&
-					hiMessage.messageType == WinXP::MessageConnectionHi)
+				if (WinXP::ValidateInternalMessage<WinXP::MessageConnectionHi>(hiMessage) &&
+					hiMessage.protocolVersion == XPInternalProtocolVersion)
 				{
 					*logStream << "[INITIAL MESSAGE]: " << hiMessage << '\n' << std::endl;
 
 					auto xpPlayer = std::make_unique<WinXP::PlayerSocket>(socket, hiMessage);
 
-					socket.SendData(xpPlayer->ConstructHelloMessage(), WinXP::EncryptMessage, WinXP::DefaultSecurityKey);
+					socket.SendData(xpPlayer->ConstructHelloMessage(), WinXP::EncryptMessage, XPDefaultSecurityKey);
 
 					player = std::move(xpPlayer);
 				}
@@ -110,6 +109,12 @@ Socket::SocketHandler(void* socket_)
 	return 0;
 }
 
+
+char*
+Socket::GetAddressString(IN_ADDR address)
+{
+	return inet_ntoa(address);
+}
 
 std::string
 Socket::GetAddressString(SOCKET socket, const char portSeparator)
@@ -151,6 +156,9 @@ Socket::Disconnect()
 int
 Socket::ReceiveData(char* data, int len)
 {
+	if (len == 0)
+		return 0;
+
 	const int receivedLen = recv(m_socket, data, len, 0);
 	if (receivedLen == 0)
 		throw ClientDisconnected();

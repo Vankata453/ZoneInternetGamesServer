@@ -51,9 +51,6 @@
     <ClCompile Include="WinXP\Security.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WinXP\Defines.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Win7\PlayerSocket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -108,6 +105,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Match.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Protocol\Proxy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

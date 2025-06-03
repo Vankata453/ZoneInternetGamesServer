@@ -7,12 +7,16 @@ namespace WinXP {
 Match::Game
 Match::GameFromString(const std::string& str)
 {
-	if (str == "wnbk")
+	if (str == "BCKGZM")
 		return Game::BACKGAMMON;
-	else if (str == "wnck")
+	else if (str == "CHKRZM")
 		return Game::CHECKERS;
-	else if (str == "wnsp")
+	else if (str == "SHVLZM")
 		return Game::SPADES;
+	else if (str == "HRTZZM")
+		return Game::HEARTS;
+	else if (str == "RVSEZM")
+		return Game::REVERSI;
 
 	return Game::INVALID;
 }
@@ -28,6 +32,10 @@ Match::GameToNameString(Match::Game game)
 			return "Checkers";
 		case Game::SPADES:
 			return "Spades";
+		case Game::HEARTS:
+			return "Hearts";
+		case Game::REVERSI:
+			return "Reversi";
 		default:
 			return "Invalid";
 	}
