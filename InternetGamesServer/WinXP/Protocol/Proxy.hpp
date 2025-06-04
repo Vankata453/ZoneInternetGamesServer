@@ -137,7 +137,13 @@ struct MsgProxyHelloCollection final
 {
 	MsgProxyHello hello;
 	MsgProxySettings settings;
-	MsgProxyServiceInfo serviceInfo;
+	MsgProxyServiceInfo basicServiceInfo;
+};
+
+struct MsgProxyServiceInfoCollection final
+{
+	MsgProxyServiceInfo serviceInfo; // Has set "reason" and actually triggers a state change in the client
+	MsgProxyServiceInfo basicServiceInfo;
 };
 
 }
@@ -227,7 +233,14 @@ static std::ostream& operator<<(std::ostream& out, const MsgProxyHelloCollection
 	return out
 		<< m.hello << std::endl
 		<< m.settings << std::endl
-		<< m.serviceInfo;
+		<< m.basicServiceInfo;
+}
+
+static std::ostream& operator<<(std::ostream& out, const MsgProxyServiceInfoCollection& m)
+{
+	return out
+		<< m.serviceInfo << std::endl
+		<< m.basicServiceInfo;
 }
 
 }

@@ -15,6 +15,7 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	m_game(Match::Game::INVALID),
 	m_machineGUID(hiMessage.machineGUID),
 	m_securityKey(),
+	m_sequenceID(0),
 	m_serviceName(),
 	m_match()
 {
@@ -101,15 +102,20 @@ PlayerSocket::AwaitProxyHiMessages()
 void
 PlayerSocket::SendProxyHelloMessages()
 {
-	Util::MsgProxyHelloCollection msg;
-	msg.settings.chat = MsgProxySettings::CHAT_FULL;
-	msg.settings.statistics = MsgProxySettings::STATS_ALL;
-	msg.serviceInfo.reason = MsgProxyServiceInfo::SERVICE_CONNECT;
-	msg.serviceInfo.flags = MsgProxyServiceInfo::SERVICE_AVAILABLE | MsgProxyServiceInfo::SERVICE_LOCAL;
-	msg.serviceInfo.minutesRemaining = 0;
-	memcpy(msg.serviceInfo.serviceName, m_serviceName, sizeof(m_serviceName));
+	Util::MsgProxyHelloCollection msgsHello;
+	msgsHello.settings.chat = MsgProxySettings::CHAT_FULL;
+	msgsHello.settings.statistics = MsgProxySettings::STATS_ALL;
+	msgsHello.basicServiceInfo.flags = MsgProxyServiceInfo::SERVICE_AVAILABLE | MsgProxyServiceInfo::SERVICE_LOCAL;
+	msgsHello.basicServiceInfo.minutesRemaining = 0;
+	memcpy(msgsHello.basicServiceInfo.serviceName, m_serviceName, sizeof(m_serviceName));
 
-	SendGenericMessage<3>(std::move(msg));
+	Util::MsgProxyServiceInfoCollection msgsServiceInfo;
+	msgsServiceInfo.serviceInfo = msgsHello.basicServiceInfo;
+	msgsServiceInfo.serviceInfo.reason = MsgProxyServiceInfo::SERVICE_CONNECT;
+	msgsServiceInfo.basicServiceInfo = msgsHello.basicServiceInfo;
+
+	SendGenericMessage<3>(std::move(msgsHello));
+	SendGenericMessage<2>(std::move(msgsServiceInfo));
 }
 
 

@@ -59,7 +59,7 @@ private:
 			m_socket.ReceiveData(dummyFooter);
 		}
 
-		if (msgBaseGeneric.totalLength != sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + sizeof(T) + sizeof(MsgFooterGeneric))
+		if (msgBaseGeneric.totalLength != sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + msgBaseApp.dataLength + sizeof(MsgFooterGeneric))
 			throw std::runtime_error("MsgBaseGeneric: totalLength is invalid!");
 
 		if (msgBaseApp.signature != XPInternalProtocolSignatureApp || msgBaseApp.messageType != Type)
@@ -101,6 +101,7 @@ private:
 
 		MsgBaseGeneric msgBaseGeneric;
 		msgBaseGeneric.totalLength = sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + len + sizeof(MsgFooterGeneric);
+		msgBaseGeneric.sequenceID = m_sequenceID++;
 		msgBaseGeneric.checksum = GenerateChecksum({
 				{ &msgBaseApp, sizeof(msgBaseApp) },
 				{ &data, len }
@@ -124,6 +125,7 @@ private:
 	Match::Game m_game;
 	GUID m_machineGUID;
 	uint32 m_securityKey;
+	uint32 m_sequenceID;
 
 	char m_serviceName[16];
 
