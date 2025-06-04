@@ -93,8 +93,8 @@ Internet Spades, according to my testing, is fully supported.
 * `-l` (`--log`): Enables socket data logging. Allows for specifying a custom folder; if not specified, the *default "InternetGamesServer_logs"* folder is used.
 * `--skip-level-matching`: Allows matching players, disregarding their chosen skill level. 
 * `--log-ping-messages`: Log empty received messages by sockets, which are used for pinging the server.
-* * `--log-ping-messages`: Log empty received messages by sockets, which are used for pinging the server.
-* * `-ip`: IP to host the server on. *Default: 0.0.0.0*. 
+*  `--log-ping-messages`: Log empty received messages by sockets, which are used for pinging the server.
+*  `-ip`: IP to host the server on. *Default: 0.0.0.0*. 
 
 ### Internet Games Client DLL + DLL Injector
 
