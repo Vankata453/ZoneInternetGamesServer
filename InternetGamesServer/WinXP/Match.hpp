@@ -20,6 +20,19 @@ public:
 	static Game GameFromString(const std::string& str);
 	static std::string GameToNameString(Game game);
 
+	enum class SkillLevel {
+		INVALID = -1,
+		BEGINNER,
+		INTERMEDIATE,
+		EXPERT
+	};
+
+	enum State {
+		STATE_WAITINGFORPLAYERS,
+		STATE_PENDINGSTART,
+		STATE_PLAYING
+	};
+
 public:
 	Match(PlayerSocket& player);
 	~Match() override;
@@ -29,6 +42,15 @@ public:
 
 	/** Update match logic */
 	virtual void Update() override;
+
+	virtual Game GetGame() const = 0;
+	inline State GetState() const { return m_state; }
+	inline SkillLevel GetSkillLevel() const { return m_skillLevel; }
+
+protected:
+	State m_state;
+
+	const SkillLevel m_skillLevel;
 
 private:
 	Match(const Match&) = delete;

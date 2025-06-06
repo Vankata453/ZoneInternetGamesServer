@@ -132,7 +132,7 @@ Socket::GetAddressString(SOCKET socket, const char portSeparator)
 
 Socket::Socket(SOCKET socket, std::ostream& log) :
 	m_socket(socket),
-	m_log(log)
+	m_log(std::cout)
 {}
 
 Socket::~Socket()

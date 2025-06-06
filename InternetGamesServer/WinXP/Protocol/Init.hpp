@@ -53,7 +53,7 @@ struct MsgFooterGeneric final
 
 struct MsgBaseApplication final
 {
-	uint32 signature = XPInternalProtocolSignatureApp;
+	uint32 signature = 0;
 	uint32 channel = 0;
 	uint32 messageType = 0;
 	uint32 dataLength = 0;

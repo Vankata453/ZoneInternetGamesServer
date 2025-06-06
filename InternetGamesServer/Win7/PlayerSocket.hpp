@@ -58,7 +58,7 @@ private:
 
 public:
 	// Variables, set by the match
-	int m_role;
+	const int m_role;
 
 private:
 	PlayerSocket(const PlayerSocket&) = delete;

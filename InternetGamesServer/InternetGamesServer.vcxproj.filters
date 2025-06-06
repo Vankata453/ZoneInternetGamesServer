@@ -60,6 +60,9 @@
     <ClCompile Include="WinXP\PlayerSocket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="WinXP\BackgammonMatch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.hpp">
@@ -108,6 +111,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="WinXP\Protocol\Proxy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Protocol\Game.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\BackgammonMatch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

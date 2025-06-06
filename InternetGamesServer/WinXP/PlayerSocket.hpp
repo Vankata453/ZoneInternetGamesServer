@@ -25,12 +25,13 @@ public:
 	void ProcessMessages() override;
 
 	/** Event handling */
-	void OnGameStart();
+	void OnGameStart(const std::vector<PlayerSocket*>& matchPlayers);
 	void OnDisconnected();
 
 	Socket::Type GetType() const override { return Socket::WIN7; }
 	inline State GetState() const { return m_state; }
 	inline Match::Game GetGame() const { return m_game; }
+	inline Match::SkillLevel GetSkillLevel() const { return m_config.skillLevel; }
 	inline uint32 GetSecurityKey() const { return m_securityKey; }
 
 	MsgConnectionHello ConstructHelloMessage() const;
@@ -62,8 +63,10 @@ private:
 		if (msgBaseGeneric.totalLength != sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + msgBaseApp.dataLength + sizeof(MsgFooterGeneric))
 			throw std::runtime_error("MsgBaseGeneric: totalLength is invalid!");
 
-		if (msgBaseApp.signature != XPInternalProtocolSignatureApp || msgBaseApp.messageType != Type)
-			throw std::runtime_error("MsgBaseApplication: Message is invalid!");
+		if (msgBaseApp.signature != (m_inLobby ? XPProxyProtocolSignature : XPInternalProtocolSignatureApp))
+			throw std::runtime_error("MsgBaseApplication: Invalid protocol signature!");
+		if (msgBaseApp.messageType != Type)
+			throw std::runtime_error("MsgBaseApplication: Incorrect message type! Expected: " + std::to_string(Type));
 		if (msgBaseApp.dataLength != sizeof(T))
 			throw std::runtime_error("MsgBaseApplication: Data is of incorrect size! Expected: " + std::to_string(sizeof(T)));
 
@@ -90,12 +93,14 @@ private:
 
 	/* Awaiting messages */
 	void AwaitProxyHiMessages();
+	void AwaitClientConfig();
 
 	/* Sending utilities */
 	template<uint32 Type, typename T>
 	void SendGenericMessage(T data, int len = sizeof(T))
 	{
 		MsgBaseApplication msgBaseApp;
+		msgBaseApp.signature = (m_inLobby ? XPProxyProtocolSignature : XPInternalProtocolSignatureApp);
 		msgBaseApp.messageType = Type;
 		msgBaseApp.dataLength = len;
 
@@ -110,26 +115,42 @@ private:
 		MsgFooterGeneric msgFooterGeneric;
 		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
 
-		m_socket.SendData(msgBaseGeneric, EncryptMessage, m_securityKey);
-		m_socket.SendData(msgBaseApp, EncryptMessage, m_securityKey);
-		m_socket.SendData(data, EncryptMessage, m_securityKey, len);
+		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(data), EncryptMessage, m_securityKey, len);
 		m_socket.SendData(msgFooterGeneric);
 	}
 
 	/* Sending messages */
 	void SendProxyHelloMessages();
+	void SendServerStatus();
+
+private:
+	struct Config final
+	{
+		LCID userLanguage = 0;
+		LONG offsetUTC = 0;
+		Match::SkillLevel skillLevel = Match::SkillLevel::INVALID;
+		bool chatEnabled = false;
+	};
 
 private:
 	State m_state;
 
 	Match::Game m_game;
 	GUID m_machineGUID;
-	uint32 m_securityKey;
+	const uint32 m_securityKey;
 	uint32 m_sequenceID;
+	bool m_inLobby;
 
 	char m_serviceName[16];
+	Config m_config;
 
 	Match* m_match;
+
+public:
+	// Variables, set by the match
+	const int m_ID;
 
 private:
 	PlayerSocket(const PlayerSocket&) = delete;

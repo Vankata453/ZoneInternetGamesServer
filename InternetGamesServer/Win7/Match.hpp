@@ -54,7 +54,6 @@ public:
 
 	virtual Game GetGame() const = 0;
 	inline State GetState() const { return m_state; }
-	inline REFGUID GetGUID() const { return m_guid; }
 	inline Level GetLevel() const { return m_level; }
 
 	/** Construct XML messages */
@@ -89,7 +88,6 @@ protected:
 protected:
 	State m_state;
 
-	GUID m_guid;
 	const Level m_level;
 
 private:
