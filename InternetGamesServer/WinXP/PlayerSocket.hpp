@@ -123,7 +123,6 @@ private:
 
 	/* Sending messages */
 	void SendProxyHelloMessages();
-	void SendServerStatus();
 
 private:
 	struct Config final

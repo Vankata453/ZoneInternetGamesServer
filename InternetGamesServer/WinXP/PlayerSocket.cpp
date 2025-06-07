@@ -47,7 +47,7 @@ PlayerSocket::ProcessMessages()
 				m_inLobby = true;
 
 				AwaitClientConfig();
-				SendServerStatus();
+				SendGenericMessage<MessageServerStatus>(MsgServerStatus());
 
 				m_match = MatchManager::Get().FindLobby(*this);
 				m_state = STATE_WAITINGFOROPPONENTS;
@@ -75,8 +75,6 @@ PlayerSocket::OnGameStart(const std::vector<PlayerSocket*>& matchPlayers)
 
 	const int16 totalPlayerCount = static_cast<int16>(m_match->GetRequiredPlayerCount());
 	MsgGameStart msgGameStart;
-	msgGameStart.gameID = 1; // TODO
-	msgGameStart.seat = m_ID;
 	msgGameStart.totalSeats = totalPlayerCount;
 
 	assert(matchPlayers.size() == totalPlayerCount);
@@ -226,15 +224,6 @@ PlayerSocket::SendProxyHelloMessages()
 
 	SendGenericMessage<3>(std::move(msgsHello));
 	SendGenericMessage<2>(std::move(msgsServiceInfo));
-}
-
-void
-PlayerSocket::SendServerStatus()
-{
-	MsgServerStatus msg;
-	msg.playersWaiting = 1; // TODO
-
-	SendGenericMessage<MessageServerStatus>(std::move(msg));
 }
 
 
