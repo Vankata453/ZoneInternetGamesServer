@@ -2,6 +2,7 @@
 
 #include <winsock2.h>
 
+#include <cassert>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -46,12 +47,13 @@ public:
 
 	void Disconnect();
 
+	/** Receive data */
 	int ReceiveData(char* data, int len);
 	std::vector<std::vector<std::string>> ReceiveData();
-
 	template<class T>
 	int ReceiveData(T& data, int len = sizeof(T))
 	{
+		assert(len <= sizeof(T));
 		if (len == 0)
 			return 0;
 
@@ -61,13 +63,14 @@ public:
 		else if (receivedLen < 0)
 			throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
 
-		m_log << "[RECEIVED]: " << data << '\n' << std::endl;
+		m_log << "[RECEIVED]: " << data << "\n\n" << std::endl;
 
 		return receivedLen;
 	}
 	template<class T, typename Key>
 	int ReceiveData(T& data, void(*decryptor)(void*, int, Key), Key decryptKey, int len = sizeof(T))
 	{
+		assert(len <= sizeof(T));
 		if (len == 0)
 			return 0;
 
@@ -79,17 +82,43 @@ public:
 
 		decryptor(&data, len, decryptKey);
 
-		m_log << "[RECEIVED]: " << data << '\n' << std::endl;
+		m_log << "[RECEIVED]: " << data << "\n\n" << std::endl;
+
+		return receivedLen;
+	}
+	template<class T, typename Key>
+	int ReceiveData(T& data, void(T::*converter)(), void(*decryptor)(void*, int, Key), Key decryptKey,
+		char* dataRaw = nullptr, int len = sizeof(T))
+	{
+		assert(len <= sizeof(T));
+		if (len == 0)
+			return 0;
+
+		const int receivedLen = recv(m_socket, reinterpret_cast<char*>(&data), len, 0);
+		if (receivedLen == 0)
+			throw ClientDisconnected();
+		else if (receivedLen < 0)
+			throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+
+		decryptor(&data, len, decryptKey);
+
+		if (dataRaw)
+			std::memcpy(dataRaw, &data, len);
+		(data.*converter)();
+
+		m_log << "[RECEIVED]: " << data << "\n\n" << std::endl;
 
 		return receivedLen;
 	}
 
+	/** Send data */
 	int SendData(const char* data, int len);
 	void SendData(std::vector<std::string> data);
-
 	template<class T>
 	int SendData(const T& data, int len = sizeof(T))
 	{
+		assert(len <= sizeof(T));
+
 		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), len, 0);
 		if (sentLen == SOCKET_ERROR)
 			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
@@ -101,9 +130,30 @@ public:
 	template<class T, typename Key>
 	int SendData(T data, void(*encryptor)(void*, int, Key), Key encryptKey, int len = sizeof(T))
 	{
+		assert(len <= sizeof(T));
+
 		std::ostringstream logBuf;
 		logBuf << "[SENT]: " << data;
 
+		encryptor(&data, len, encryptKey);
+
+		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), len, 0);
+		if (sentLen == SOCKET_ERROR)
+			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
+
+		m_log << logBuf.str() << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
+
+		return sentLen;
+	}
+	template<class T, typename Key>
+	int SendData(T data, void(T::*converter)(), void(*encryptor)(void*, int, Key), Key encryptKey, int len = sizeof(T))
+	{
+		assert(len <= sizeof(T));
+
+		std::ostringstream logBuf;
+		logBuf << "[SENT]: " << data;
+
+		(data.*converter)();
 		encryptor(&data, len, encryptKey);
 
 		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), len, 0);

@@ -8,6 +8,8 @@ namespace WinXP {
 
 enum
 {
+	MessageGameMessage = 9,
+
 	MessageUserInfoResponse = 23,
 
 	MessageClientConfig = 30,
@@ -57,6 +59,21 @@ struct MsgGameStart final
 };
 
 
+struct MsgGameMessage final
+{
+	uint32 gameID = 0;
+	uint32 type = 0;
+	uint16 length = 0;
+	int16 _unused = 0;
+};
+
+struct MsgChatSwitch final
+{
+	uint32 userID = 0;
+	bool chatEnabled = false;
+};
+
+
 static std::ostream& operator<<(std::ostream& out, const MsgClientConfig& m)
 {
 	out << "MsgClientConfig:";
@@ -100,6 +117,23 @@ static std::ostream& operator<<(std::ostream& out, const MsgGameStart& m)
 			<< "  skill = " << m.users[i].skill;
 	}
 	return out;
+}
+
+static std::ostream& operator<<(std::ostream& out, const MsgGameMessage& m)
+{
+	out << "MsgGameMessage:";
+	return out
+		<< "  gameID = " << m.gameID
+		<< "  type = " << m.type
+		<< "  length = " << m.length;
+}
+
+static std::ostream& operator<<(std::ostream& out, const MsgChatSwitch& m)
+{
+	out << "MsgChatSwitch:";
+	return out
+		<< "  userID = " << m.userID
+		<< "  chatEnabled = " << m.chatEnabled;
 }
 
 }

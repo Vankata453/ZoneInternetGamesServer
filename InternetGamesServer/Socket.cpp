@@ -61,7 +61,7 @@ Socket::SocketHandler(void* socket_)
 			else if (receivedLen == sizeof(WinXP::MsgConnectionHi)) // WINXP
 			{
 				WinXP::MsgConnectionHi hiMessage;
-				memcpy(&hiMessage, receivedBuf, receivedLen);
+				std::memcpy(&hiMessage, receivedBuf, receivedLen);
 				WinXP::DecryptMessage(&hiMessage, sizeof(hiMessage), XPDefaultSecurityKey);
 
 				if (WinXP::ValidateInternalMessage<WinXP::MessageConnectionHi>(hiMessage) &&
@@ -132,7 +132,7 @@ Socket::GetAddressString(SOCKET socket, const char portSeparator)
 
 Socket::Socket(SOCKET socket, std::ostream& log) :
 	m_socket(socket),
-	m_log(std::cout)
+	m_log(log)
 {}
 
 Socket::~Socket()
@@ -167,7 +167,7 @@ Socket::ReceiveData(char* data, int len)
 
 	m_log << "[RECEIVED]: ";
 	m_log.write(data, receivedLen);
-	m_log << '\n' << std::endl;
+	m_log << "\n\n" << std::endl;
 
 	return receivedLen;
 }

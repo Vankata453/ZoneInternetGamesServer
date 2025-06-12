@@ -1,12 +1,13 @@
 #include "PlayerSocket.hpp"
 
+#include <array>
 #include <cassert>
 #include <random>
 #include <stdexcept>
 #include <sstream>
 
 #include "../../MatchManager.hpp"
-#include "Protocol/Game.hpp"
+#include "Protocol/Backgammon.hpp"
 #include "Protocol/Proxy.hpp"
 
 namespace WinXP {
@@ -19,6 +20,8 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	m_securityKey(),
 	m_sequenceID(0),
 	m_inLobby(false),
+	m_incomingGenericMsg(),
+	m_incomingGameMsg(),
 	m_serviceName(),
 	m_match(),
 	m_ID(-1)
@@ -38,6 +41,13 @@ PlayerSocket::ProcessMessages()
 {
 	while (true)
 	{
+		AwaitGenericMessageHeader();
+		if (m_incomingGenericMsg.GetType() == MessageConnectionKeepAlive)
+		{
+			AwaitIncomingGenericFooter();
+			continue;
+		}
+
 		switch (m_state)
 		{
 			case STATE_INITIALIZED:
@@ -46,6 +56,11 @@ PlayerSocket::ProcessMessages()
 				SendProxyHelloMessages();
 				m_inLobby = true;
 
+				m_state = STATE_UNCONFIGURED;
+				break;
+			}
+			case STATE_UNCONFIGURED:
+			{
 				AwaitClientConfig();
 				SendGenericMessage<MessageServerStatus>(MsgServerStatus());
 
@@ -55,6 +70,41 @@ PlayerSocket::ProcessMessages()
 			}
 			case STATE_PLAYING:
 			{
+				switch (m_incomingGenericMsg.GetType())
+				{
+					case MessageGameMessage:
+					{
+						AwaitIncomingGameMessageHeader();
+						switch (m_incomingGameMsg.GetType())
+						{
+							// TODO
+							case Backgammon::MessageCheckIn:
+							{
+								AwaitIncomingGameMessage<Backgammon::MsgCheckIn, Backgammon::MessageCheckIn>();
+								break;
+							}
+							case Backgammon::MessageChatMessage:
+							{
+								AwaitIncomingGameMessage<Backgammon::MsgChatMessage, Backgammon::MessageChatMessage, 128>();
+								break;
+							}
+						}
+						break;
+					}
+					case MessageChatSwitch:
+					{
+						const MsgChatSwitch msgChatSwitch = AwaitIncomingGenericMessage<MsgChatSwitch, MessageChatSwitch>();
+						if (msgChatSwitch.userID != m_ID)
+							throw std::runtime_error("MsgChatSwitch: Incorrect user ID!");
+
+						if (m_config.chatEnabled == msgChatSwitch.chatEnabled)
+							break;
+						m_config.chatEnabled = msgChatSwitch.chatEnabled;
+
+						m_match->ProcessMessage(msgChatSwitch);
+						break;
+					}
+				}
 				break;
 			}
 		}
@@ -110,9 +160,61 @@ PlayerSocket::OnDisconnected()
 
 
 void
+PlayerSocket::AwaitGenericMessageHeader()
+{
+	assert(!m_incomingGenericMsg.valid && !m_incomingGameMsg.valid);
+
+	m_socket.ReceiveData(m_incomingGenericMsg.base, DecryptMessage, m_securityKey);
+	if (!ValidateInternalMessageNoTotalLength<MessageConnectionGeneric>(m_incomingGenericMsg.base))
+		throw std::runtime_error("MsgBaseGeneric: Message is invalid!");
+
+	m_socket.ReceiveData(m_incomingGenericMsg.info, DecryptMessage, m_securityKey);
+
+	m_incomingGenericMsg.valid = true;
+}
+
+void
+PlayerSocket::AwaitIncomingGameMessageHeader()
+{
+	assert(m_incomingGenericMsg.valid && !m_incomingGameMsg.valid);
+	assert(m_inLobby);
+
+	const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
+	const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
+
+	if (msgBaseGeneric.totalLength != ROUND_DATA_LENGTH(sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + msgBaseApp.dataLength + sizeof(MsgFooterGeneric)))
+		throw std::runtime_error("MsgBaseGeneric: totalLength is invalid!");
+
+	if (msgBaseApp.signature != XPProxyProtocolSignature)
+		throw std::runtime_error("MsgBaseApplication: Invalid protocol signature!");
+	if (msgBaseApp.messageType != MessageGameMessage)
+		throw std::runtime_error("MsgBaseApplication: Incorrect message type! Expected: Game message");
+	if (msgBaseApp.dataLength < sizeof(MsgGameMessage))
+		throw std::runtime_error("MsgBaseApplication: Data is of incorrect size! Expected: equal or more than " + std::to_string(sizeof(MsgGameMessage)));
+
+	m_socket.ReceiveData(m_incomingGameMsg.info, DecryptMessage, m_securityKey);
+
+	m_incomingGameMsg.valid = true;
+}
+
+void
+PlayerSocket::AwaitIncomingGenericFooter()
+{
+	MsgFooterGeneric msgFooterGeneric;
+	m_socket.ReceiveData(msgFooterGeneric);
+	if (msgFooterGeneric.status == MsgFooterGeneric::STATUS_CANCELLED)
+		throw std::runtime_error("MsgFooterGeneric: Status is CANCELLED!");
+	else if (msgFooterGeneric.status != MsgFooterGeneric::STATUS_OK)
+		throw std::runtime_error("MsgFooterGeneric: Status is not OK! - " + std::to_string(msgFooterGeneric.status));
+
+	m_incomingGenericMsg.valid = false;
+}
+
+
+void
 PlayerSocket::AwaitProxyHiMessages()
 {
-	Util::MsgProxyHiCollection msg = AwaitGenericMessage<Util::MsgProxyHiCollection, 3>();
+	Util::MsgProxyHiCollection msg = AwaitIncomingGenericMessage<Util::MsgProxyHiCollection, 3>();
 	if (!ValidateProxyMessage<MessageProxyHi>(msg.hi))
 		throw std::runtime_error("MsgProxyHi: Message is invalid!");
 	if (!ValidateProxyMessage<MessageProxyID>(msg.ID))
@@ -137,7 +239,7 @@ PlayerSocket::AwaitProxyHiMessages()
 void
 PlayerSocket::AwaitClientConfig()
 {
-	MsgClientConfig msg = AwaitGenericMessage<MsgClientConfig, MessageClientConfig>();
+	MsgClientConfig msg = AwaitIncomingGenericMessage<MsgClientConfig, MessageClientConfig>();
 	if (msg.protocolSignature != XPRoomProtocolSignature)
 		throw std::runtime_error("MsgClientConfig: Invalid protocol signature!");
 	if (msg.protocolVersion != XPRoomClientVersion)
@@ -215,7 +317,7 @@ PlayerSocket::SendProxyHelloMessages()
 	msgsHello.settings.statistics = MsgProxySettings::STATS_ALL;
 	msgsHello.basicServiceInfo.flags = MsgProxyServiceInfo::SERVICE_AVAILABLE | MsgProxyServiceInfo::SERVICE_LOCAL;
 	msgsHello.basicServiceInfo.minutesRemaining = 0;
-	memcpy(msgsHello.basicServiceInfo.serviceName, m_serviceName, sizeof(m_serviceName));
+	std::memcpy(msgsHello.basicServiceInfo.serviceName, m_serviceName, sizeof(m_serviceName));
 
 	Util::MsgProxyServiceInfoCollection msgsServiceInfo;
 	msgsServiceInfo.serviceInfo = msgsHello.basicServiceInfo;

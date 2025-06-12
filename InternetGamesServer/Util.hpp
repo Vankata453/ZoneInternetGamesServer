@@ -91,5 +91,23 @@ inline void NewElementWithText(XMLPrinter& printer, const std::string& name, T v
 /** Random generation */
 std::vector<int> GenerateUniqueRandomNums(int start, int end);
 
-// GUID printing
+/** Printing */
 std::ostream& operator<<(std::ostream& os, REFGUID guid);
+template<size_t Size>
+struct CharArray
+{
+	char raw[Size];
+	int len = 0;
+
+	constexpr size_t GetSize() { return Size; }
+
+};
+template<size_t Size>
+std::ostream& operator<<(std::ostream& os, const CharArray<Size>& arr)
+{
+	os.write(arr.raw, arr.len);
+	return os;
+}
+
+/** Macros */
+#define ROUND_DATA_LENGTH_UINT32(len) ((len + 3) & ~0x3)

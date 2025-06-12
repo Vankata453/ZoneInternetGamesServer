@@ -4,6 +4,7 @@
 
 #include "Defines.hpp"
 #include "Match.hpp"
+#include "Protocol/Game.hpp"
 #include "Protocol/Init.hpp"
 #include "Security.hpp"
 
@@ -14,6 +15,7 @@ class PlayerSocket final : public ::PlayerSocket
 public:
 	enum State {
 		STATE_INITIALIZED,
+		STATE_UNCONFIGURED,
 		STATE_WAITINGFOROPPONENTS,
 		STATE_PLAYING
 	};
@@ -27,6 +29,16 @@ public:
 	/** Event handling */
 	void OnGameStart(const std::vector<PlayerSocket*>& matchPlayers);
 	void OnDisconnected();
+	template<uint32 Type, typename T>
+	void OnMatchGenericMessage(const T& msg, int len = sizeof(T))
+	{
+		SendGenericMessage<Type>(msg, len);
+	}
+	template<uint32 Type, typename T>
+	void OnMatchGameMessage(const T& msg, int len = sizeof(T))
+	{
+		SendGameMessage<Type>(msg, len);
+	}
 
 	Socket::Type GetType() const override { return Socket::WIN7; }
 	inline State GetState() const { return m_state; }
@@ -38,29 +50,16 @@ public:
 
 private:
 	/* Awaiting utilities */
+	void AwaitGenericMessageHeader();
 	template<typename T, uint32 Type>
-	T AwaitGenericMessage()
+	T AwaitIncomingGenericMessage()
 	{
-		MsgBaseGeneric msgBaseGeneric;
-		MsgBaseApplication msgBaseApp;
-		while (true)
-		{
-			m_socket.ReceiveData(msgBaseGeneric, DecryptMessage, m_securityKey);
-			if (!ValidateInternalMessageNoTotalLength<MessageConnectionGeneric>(msgBaseGeneric))
-				throw std::runtime_error("MsgBaseGeneric: Message is invalid!");
+		assert(m_incomingGenericMsg.valid && !m_incomingGameMsg.valid);
 
-			// Wait for a message which is not keep alive
-			m_socket.ReceiveData(msgBaseApp, DecryptMessage, m_securityKey);
-			if (msgBaseApp.messageType != MessageConnectionKeepAlive)
-				break;
+		const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
+		const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
 
-			// TODO: Handle ping messages
-
-			MsgFooterGeneric dummyFooter;
-			m_socket.ReceiveData(dummyFooter);
-		}
-
-		if (msgBaseGeneric.totalLength != sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + msgBaseApp.dataLength + sizeof(MsgFooterGeneric))
+		if (msgBaseGeneric.totalLength != ROUND_DATA_LENGTH(sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + msgBaseApp.dataLength + sizeof(MsgFooterGeneric)))
 			throw std::runtime_error("MsgBaseGeneric: totalLength is invalid!");
 
 		if (msgBaseApp.signature != (m_inLobby ? XPProxyProtocolSignature : XPInternalProtocolSignatureApp))
@@ -71,25 +70,110 @@ private:
 			throw std::runtime_error("MsgBaseApplication: Data is of incorrect size! Expected: " + std::to_string(sizeof(T)));
 
 		T msgApp;
-		m_socket.ReceiveData(msgApp, DecryptMessage, m_securityKey, sizeof(T));
+		m_socket.ReceiveData(msgApp, DecryptMessage, m_securityKey);
 
-		MsgFooterGeneric msgFooterGeneric;
-		m_socket.ReceiveData(msgFooterGeneric);
-		if (msgFooterGeneric.status == MsgFooterGeneric::STATUS_CANCELLED)
-			throw std::runtime_error("MsgFooterGeneric: Status is CANCELLED!");
-		else if (msgFooterGeneric.status != MsgFooterGeneric::STATUS_OK)
-			throw std::runtime_error("MsgFooterGeneric: Status is not OK! - " + std::to_string(msgFooterGeneric.status));
+		AwaitIncomingGenericFooter();
 
 		// Validate checksum
 		const uint32 checksum = GenerateChecksum({
 				{ &msgBaseApp, sizeof(msgBaseApp) },
-				{ &msgApp, sizeof(T) }
+				{ &msgApp, sizeof(msgApp) }
 			});
 		if (checksum != msgBaseGeneric.checksum)
 			throw std::runtime_error("MsgBaseGeneric: Checksums don't match! Generated: " + std::to_string(checksum));
 
 		return msgApp;
 	}
+	void AwaitIncomingGameMessageHeader();
+	template<typename T, uint32 Type>
+	T AwaitIncomingGameMessage()
+	{
+		assert(m_incomingGenericMsg.valid && m_incomingGameMsg.valid);
+
+		const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
+		const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
+		const MsgGameMessage& msgGameMessage = m_incomingGameMsg.info;
+
+		if (msgGameMessage.length != msgBaseApp.dataLength - sizeof(msgGameMessage))
+			throw std::runtime_error("MsgGameMessage: length is invalid!");
+		if (msgGameMessage.length != sizeof(T))
+			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(sizeof(T)));
+		if (msgGameMessage.type != Type)
+			throw std::runtime_error("MsgGameMessage: Incorrect message type! Expected: " + std::to_string(Type));
+
+		T msgGame;
+		char msgGameRaw[sizeof(T)];
+		m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
+
+		AwaitIncomingGenericFooter();
+		m_incomingGameMsg.valid = false;
+
+		// Validate checksum
+		const uint32 checksum = GenerateChecksum({
+				{ &msgBaseApp, sizeof(msgBaseApp) },
+				{ &msgGameMessage, sizeof(msgGameMessage) },
+				{ msgGameRaw, sizeof(msgGameRaw) }
+			});
+		if (checksum != msgBaseGeneric.checksum)
+			throw std::runtime_error("MsgBaseGeneric: Checksums don't match! Generated: " + std::to_string(checksum));
+
+		return msgGame;
+	}
+	template<typename T, uint32 Type, uint16 MessageLen> // Another arbitrary message right after T
+	std::pair<T, CharArray<MessageLen>> AwaitIncomingGameMessage()
+	{
+		assert(m_incomingGenericMsg.valid && m_incomingGameMsg.valid);
+
+		const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
+		const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
+		const MsgGameMessage& msgGameMessage = m_incomingGameMsg.info;
+
+		if (msgGameMessage.length != msgBaseApp.dataLength - sizeof(msgGameMessage))
+			throw std::runtime_error("MsgGameMessage: length is invalid!");
+		if (msgGameMessage.type != Type)
+			throw std::runtime_error("MsgGameMessage: Incorrect message type! Expected: " + std::to_string(Type));
+
+		T msgGame;
+		char msgGameRaw[sizeof(T)];
+		m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
+
+		if (msgGameMessage.length != sizeof(T) + msgGame.messageLength)
+			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(sizeof(T) + msgGame.messageLength));
+		if (msgGame.messageLength > MessageLen)
+			throw std::runtime_error("MsgGameMessage: Child message is too long! Expected less or equal than: " + std::to_string(MessageLen));
+
+		const int msgLength = static_cast<int>(msgGame.messageLength);
+
+		// First, receive the full message, including additional data due to uint32 rounding.
+		// Must be in one buffer as to not split DWORD blocks for checksum generation.
+		CharArray<MessageLen + sizeof(uint32)> msgGameSecondFull;
+		msgGameSecondFull.len = ROUND_DATA_LENGTH_UINT32(msgLength);
+		m_socket.ReceiveData(msgGameSecondFull, DecryptMessage, m_securityKey, ROUND_DATA_LENGTH_UINT32(msgLength));
+
+		AwaitIncomingGenericFooter();
+		m_incomingGameMsg.valid = false;
+
+		// Validate checksum
+		const uint32 checksum = GenerateChecksum({
+				{ &msgBaseApp, sizeof(msgBaseApp) },
+				{ &msgGameMessage, sizeof(msgGameMessage) },
+				{ msgGameRaw, sizeof(msgGameRaw) },
+				{ msgGameSecondFull.raw, ROUND_DATA_LENGTH_UINT32(msgLength) }
+			});
+		if (checksum != msgBaseGeneric.checksum)
+			throw std::runtime_error("MsgBaseGeneric: Checksums don't match! Generated: " + std::to_string(checksum));
+
+		// Move the actual message data to the array we're about to return
+		CharArray<MessageLen> msgGameSecond;
+		msgGameSecond.len = msgLength;
+		std::memmove(msgGameSecond.raw, msgGameSecondFull.raw, msgLength);
+
+		return {
+			std::move(msgGame),
+			std::move(msgGameSecond)
+		};
+	}
+	void AwaitIncomingGenericFooter();
 
 	/* Awaiting messages */
 	void AwaitProxyHiMessages();
@@ -120,11 +204,58 @@ private:
 		m_socket.SendData(std::move(data), EncryptMessage, m_securityKey, len);
 		m_socket.SendData(msgFooterGeneric);
 	}
+	template<uint32 Type, typename T>
+	void SendGameMessage(T data, int len = sizeof(T))
+	{
+		assert(m_inLobby);
+
+		MsgBaseApplication msgBaseApp;
+		msgBaseApp.signature = XPProxyProtocolSignature;
+		msgBaseApp.messageType = MessageGameMessage;
+		msgBaseApp.dataLength = sizeof(MsgGameMessage) + len;
+
+		MsgGameMessage msgGameMessage;
+		msgGameMessage.type = Type;
+		msgGameMessage.length = len;
+
+		MsgBaseGeneric msgBaseGeneric;
+		msgBaseGeneric.totalLength = sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + sizeof(MsgGameMessage) + len + sizeof(MsgFooterGeneric);
+		msgBaseGeneric.sequenceID = m_sequenceID++;
+		msgBaseGeneric.checksum = GenerateChecksum({
+				{ &msgBaseApp, sizeof(msgBaseApp) },
+				{ &data, len }
+			});
+
+		MsgFooterGeneric msgFooterGeneric;
+		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
+
+		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(data), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey, len);
+		m_socket.SendData(msgFooterGeneric);
+	}
 
 	/* Sending messages */
 	void SendProxyHelloMessages();
 
 private:
+	struct IncomingGenericMessage final
+	{
+		bool valid = false;
+		MsgBaseGeneric base;
+		MsgBaseApplication info;
+
+		inline uint32 GetType() const { return info.messageType; }
+	};
+	struct IncomingGameMessage final
+	{
+		bool valid = false;
+		MsgGameMessage info;
+
+		inline uint32 GetType() const { return info.type; }
+	};
+
 	struct Config final
 	{
 		LCID userLanguage = 0;
@@ -141,6 +272,9 @@ private:
 	const uint32 m_securityKey;
 	uint32 m_sequenceID;
 	bool m_inLobby;
+
+	IncomingGenericMessage m_incomingGenericMsg;
+	IncomingGameMessage m_incomingGameMsg;
 
 	char m_serviceName[16];
 	Config m_config;

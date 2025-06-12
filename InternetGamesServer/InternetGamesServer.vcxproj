@@ -183,8 +183,10 @@
     <ClInclude Include="Win7\PlayerSocket.hpp" />
     <ClInclude Include="WinXP\BackgammonMatch.hpp" />
     <ClInclude Include="WinXP\Defines.hpp" />
+    <ClInclude Include="WinXP\Endian.hpp" />
     <ClInclude Include="WinXP\Match.hpp" />
     <ClInclude Include="WinXP\PlayerSocket.hpp" />
+    <ClInclude Include="WinXP\Protocol\Backgammon.hpp" />
     <ClInclude Include="WinXP\Protocol\Game.hpp" />
     <ClInclude Include="WinXP\Protocol\Init.hpp" />
     <ClInclude Include="WinXP\Protocol\Proxy.hpp" />

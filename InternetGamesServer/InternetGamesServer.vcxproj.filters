@@ -119,6 +119,12 @@
     <ClInclude Include="WinXP\BackgammonMatch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WinXP\Protocol\Backgammon.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Endian.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MatchManager.hpp">

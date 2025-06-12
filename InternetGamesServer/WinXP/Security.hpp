@@ -5,11 +5,22 @@
 #include <initializer_list>
 #include <utility>
 
+#include <winsock.h>
+
 namespace WinXP {
 
-void EncryptMessage(void* data, int len, uint32 key);
-void DecryptMessage(void* data, int len, uint32 key);
+void CryptMessage(void* data, int len, uint32 key);
 
-uint32 GenerateChecksum(std::initializer_list<std::pair<void*, int>> dataBuffers);
+inline void EncryptMessage(void* data, int len, uint32 key)
+{
+	CryptMessage(data, len, htonl(key));
+}
+inline void DecryptMessage(void* data, int len, uint32 key)
+{
+	CryptMessage(data, len, ntohl(key));
+}
+
+
+uint32 GenerateChecksum(std::initializer_list<std::pair<const void*, int>> dataBuffers);
 
 };

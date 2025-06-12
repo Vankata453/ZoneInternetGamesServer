@@ -2,6 +2,8 @@
 
 #include "../Match.hpp"
 
+#include "Protocol/Game.hpp"
+
 namespace WinXP {
 
 class PlayerSocket;
@@ -46,6 +48,30 @@ public:
 	virtual Game GetGame() const = 0;
 	inline State GetState() const { return m_state; }
 	inline SkillLevel GetSkillLevel() const { return m_skillLevel; }
+
+	/** Processing messages */
+	void ProcessMessage(const MsgChatSwitch& msg);
+
+private:
+	/* Sending utilities */
+	template<uint32 Type, typename T>
+	void BroadcastGenericMessage(const T& msg, int excludePlayerID = -1, int len = sizeof(T))
+	{
+		for (PlayerSocket* player : m_players)
+		{
+			if (player->m_ID != excludePlayerID)
+				player->OnMatchGenericMessage<Type>(msg, len);
+		}
+	}
+	template<uint32 Type, typename T>
+	void BroadcastGameMessage(const T& msg, int excludePlayerID = -1, int len = sizeof(T))
+	{
+		for (PlayerSocket* player : m_players)
+		{
+			if (player->m_ID != excludePlayerID)
+				player->OnMatchGameMessage<Type>(msg, len);
+		}
+	}
 
 protected:
 	State m_state;

@@ -95,7 +95,7 @@ Match::Update()
 			{
 				// Distribute unique IDs for each player, starting from 0
 				const int playerCount = static_cast<int>(m_players.size());
-				const std::vector<int> ids = GenerateUniqueRandomNums(0, playerCount - 1);
+				const std::vector<int> ids = GenerateUniqueRandomNums(1, playerCount);
 				for (int i = 0; i < playerCount; i++)
 					const_cast<int&>(m_players[i]->m_ID) = ids[i];
 
@@ -111,6 +111,13 @@ Match::Update()
 		default:
 			break;
 	}
+}
+
+
+void
+Match::ProcessMessage(const MsgChatSwitch& msg)
+{
+	BroadcastGenericMessage<MessageChatSwitch>(msg);
 }
 
 }
