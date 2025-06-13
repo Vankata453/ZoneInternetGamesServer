@@ -29,15 +29,30 @@ public:
 	/** Event handling */
 	void OnGameStart(const std::vector<PlayerSocket*>& matchPlayers);
 	void OnDisconnected();
-	template<uint32 Type, typename T>
-	void OnMatchGenericMessage(const T& msg, int len = sizeof(T))
+	template<typename T, uint32 Type>
+	T OnMatchAwaitGameMessage()
 	{
-		SendGenericMessage<Type>(msg, len);
+		return AwaitIncomingGameMessage<T, Type>();
+	}
+	template<typename T, uint32 Type, uint16 MessageLen>
+	std::pair<T, CharArray<MessageLen>> OnMatchAwaitGameMessage()
+	{
+		return AwaitIncomingGameMessage<T, Type, MessageLen>();
 	}
 	template<uint32 Type, typename T>
-	void OnMatchGameMessage(const T& msg, int len = sizeof(T))
+	void OnMatchGenericMessage(const T& msgApp, int len = sizeof(T))
 	{
-		SendGameMessage<Type>(msg, len);
+		SendGenericMessage<Type>(msgApp, len);
+	}
+	template<uint32 Type, typename T>
+	void OnMatchGameMessage(const T& msgGame, int len = sizeof(T))
+	{
+		SendGameMessage<Type>(msgGame, len);
+	}
+	template<uint32 Type, typename T, uint16 MessageLen> // Another arbitrary message right after T
+	void OnMatchGameMessage(const T& msgGame, const CharArray<MessageLen>& msgGameSecond)
+	{
+		SendGameMessage<Type>(msgGame, msgGameSecond);
 	}
 
 	Socket::Type GetType() const override { return Socket::WIN7; }
@@ -59,7 +74,7 @@ private:
 		const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
 		const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
 
-		if (msgBaseGeneric.totalLength != ROUND_DATA_LENGTH(sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + msgBaseApp.dataLength + sizeof(MsgFooterGeneric)))
+		if (msgBaseGeneric.totalLength != sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + ROUND_DATA_LENGTH_UINT32(msgBaseApp.dataLength) + sizeof(MsgFooterGeneric))
 			throw std::runtime_error("MsgBaseGeneric: totalLength is invalid!");
 
 		if (msgBaseApp.signature != (m_inLobby ? XPProxyProtocolSignature : XPInternalProtocolSignatureApp))
@@ -148,7 +163,7 @@ private:
 		// Must be in one buffer as to not split DWORD blocks for checksum generation.
 		CharArray<MessageLen + sizeof(uint32)> msgGameSecondFull;
 		msgGameSecondFull.len = ROUND_DATA_LENGTH_UINT32(msgLength);
-		m_socket.ReceiveData(msgGameSecondFull, DecryptMessage, m_securityKey, ROUND_DATA_LENGTH_UINT32(msgLength));
+		m_socket.ReceiveData(msgGameSecondFull, DecryptMessage, m_securityKey, msgGameSecondFull.len);
 
 		AwaitIncomingGenericFooter();
 		m_incomingGameMsg.valid = false;
@@ -158,7 +173,7 @@ private:
 				{ &msgBaseApp, sizeof(msgBaseApp) },
 				{ &msgGameMessage, sizeof(msgGameMessage) },
 				{ msgGameRaw, sizeof(msgGameRaw) },
-				{ msgGameSecondFull.raw, ROUND_DATA_LENGTH_UINT32(msgLength) }
+				{ msgGameSecondFull.raw, msgGameSecondFull.len }
 			});
 		if (checksum != msgBaseGeneric.checksum)
 			throw std::runtime_error("MsgBaseGeneric: Checksums don't match! Generated: " + std::to_string(checksum));
@@ -181,7 +196,7 @@ private:
 
 	/* Sending utilities */
 	template<uint32 Type, typename T>
-	void SendGenericMessage(T data, int len = sizeof(T))
+	void SendGenericMessage(T msgApp, int len = sizeof(T))
 	{
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = (m_inLobby ? XPProxyProtocolSignature : XPInternalProtocolSignatureApp);
@@ -193,7 +208,7 @@ private:
 		msgBaseGeneric.sequenceID = m_sequenceID++;
 		msgBaseGeneric.checksum = GenerateChecksum({
 				{ &msgBaseApp, sizeof(msgBaseApp) },
-				{ &data, len }
+				{ &msgApp, len }
 			});
 
 		MsgFooterGeneric msgFooterGeneric;
@@ -201,11 +216,11 @@ private:
 
 		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
 		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(data), EncryptMessage, m_securityKey, len);
+		m_socket.SendData(std::move(msgApp), EncryptMessage, m_securityKey, len);
 		m_socket.SendData(msgFooterGeneric);
 	}
 	template<uint32 Type, typename T>
-	void SendGameMessage(T data, int len = sizeof(T))
+	void SendGameMessage(T msgGame, int len = sizeof(T))
 	{
 		assert(m_inLobby);
 
@@ -218,12 +233,17 @@ private:
 		msgGameMessage.type = Type;
 		msgGameMessage.length = len;
 
+		// Convert T to network endian so we can properly calculate the checksum.
+		T msgGameNetworkEndian = msgGame;
+		msgGameNetworkEndian.ConvertToNetworkEndian();
+
 		MsgBaseGeneric msgBaseGeneric;
 		msgBaseGeneric.totalLength = sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + sizeof(MsgGameMessage) + len + sizeof(MsgFooterGeneric);
 		msgBaseGeneric.sequenceID = m_sequenceID++;
 		msgBaseGeneric.checksum = GenerateChecksum({
 				{ &msgBaseApp, sizeof(msgBaseApp) },
-				{ &data, len }
+				{ &msgGameMessage, sizeof(msgGameMessage) },
+				{ &msgGameNetworkEndian, len }
 			});
 
 		MsgFooterGeneric msgFooterGeneric;
@@ -232,7 +252,51 @@ private:
 		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
 		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
 		m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(data), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey, len);
+		m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey, len);
+		m_socket.SendData(msgFooterGeneric);
+	}
+	template<uint32 Type, typename T, uint16 MessageLen> // Another arbitrary message right after T
+	void SendGameMessage(T msgGame, const CharArray<MessageLen>& msgGameSecond)
+	{
+		assert(m_inLobby);
+
+		MsgBaseApplication msgBaseApp;
+		msgBaseApp.signature = XPProxyProtocolSignature;
+		msgBaseApp.messageType = MessageGameMessage;
+		msgBaseApp.dataLength = sizeof(MsgGameMessage) + sizeof(msgGame) + msgGameSecond.len;
+
+		MsgGameMessage msgGameMessage;
+		msgGameMessage.type = Type;
+		msgGameMessage.length = sizeof(msgGame) + msgGameSecond.len;
+
+		// Copy the message data to an array which has additional space for padding due to uint32 rounding.
+		// Must be in one buffer as to not split DWORD blocks for checksum generation.
+		CharArray<MessageLen + sizeof(uint32)> msgGameSecondFull;
+		msgGameSecondFull.len = ROUND_DATA_LENGTH_UINT32(msgGameSecond.len);
+		std::memcpy(msgGameSecondFull.raw, msgGameSecond.raw, msgGameSecond.len);
+
+		// Convert T to network endian so we can properly calculate the checksum.
+		T msgGameNetworkEndian = msgGame;
+		msgGameNetworkEndian.ConvertToNetworkEndian();
+
+		MsgBaseGeneric msgBaseGeneric;
+		msgBaseGeneric.totalLength = sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + sizeof(MsgGameMessage) + sizeof(msgGame) + msgGameSecondFull.len + sizeof(MsgFooterGeneric);
+		msgBaseGeneric.sequenceID = m_sequenceID++;
+		msgBaseGeneric.checksum = GenerateChecksum({
+				{ &msgBaseApp, sizeof(msgBaseApp) },
+				{ &msgGameMessage, sizeof(msgGameMessage) },
+				{ &msgGameNetworkEndian, sizeof(msgGameNetworkEndian) },
+				{ msgGameSecondFull.raw, msgGameSecondFull.len }
+			});
+
+		MsgFooterGeneric msgFooterGeneric;
+		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
+
+		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(msgGameSecondFull), EncryptMessage, m_securityKey, msgGameSecondFull.len);
 		m_socket.SendData(msgFooterGeneric);
 	}
 

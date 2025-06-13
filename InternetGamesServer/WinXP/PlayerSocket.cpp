@@ -7,7 +7,6 @@
 #include <sstream>
 
 #include "../../MatchManager.hpp"
-#include "Protocol/Backgammon.hpp"
 #include "Protocol/Proxy.hpp"
 
 namespace WinXP {
@@ -75,20 +74,7 @@ PlayerSocket::ProcessMessages()
 					case MessageGameMessage:
 					{
 						AwaitIncomingGameMessageHeader();
-						switch (m_incomingGameMsg.GetType())
-						{
-							// TODO
-							case Backgammon::MessageCheckIn:
-							{
-								AwaitIncomingGameMessage<Backgammon::MsgCheckIn, Backgammon::MessageCheckIn>();
-								break;
-							}
-							case Backgammon::MessageChatMessage:
-							{
-								AwaitIncomingGameMessage<Backgammon::MsgChatMessage, Backgammon::MessageChatMessage, 128>();
-								break;
-							}
-						}
+						m_match->ProcessIncomingGameMessage(*this, m_incomingGameMsg.GetType());
 						break;
 					}
 					case MessageChatSwitch:
@@ -104,6 +90,8 @@ PlayerSocket::ProcessMessages()
 						m_match->ProcessMessage(msgChatSwitch);
 						break;
 					}
+					default:
+						throw std::runtime_error("PlayerSocket::ProcessMessages(): Generic message of unknown type received: " + std::to_string(m_incomingGenericMsg.GetType()));
 				}
 				break;
 			}
@@ -182,7 +170,7 @@ PlayerSocket::AwaitIncomingGameMessageHeader()
 	const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
 	const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
 
-	if (msgBaseGeneric.totalLength != ROUND_DATA_LENGTH(sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + msgBaseApp.dataLength + sizeof(MsgFooterGeneric)))
+	if (msgBaseGeneric.totalLength != sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + ROUND_DATA_LENGTH_UINT32(msgBaseApp.dataLength) + sizeof(MsgFooterGeneric))
 		throw std::runtime_error("MsgBaseGeneric: totalLength is invalid!");
 
 	if (msgBaseApp.signature != XPProxyProtocolSignature)

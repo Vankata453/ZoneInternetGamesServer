@@ -3,6 +3,7 @@
 #include "../Match.hpp"
 
 #include "Protocol/Game.hpp"
+#include "../Util.hpp"
 
 namespace WinXP {
 
@@ -51,27 +52,40 @@ public:
 
 	/** Processing messages */
 	void ProcessMessage(const MsgChatSwitch& msg);
+	virtual void ProcessIncomingGameMessage(PlayerSocket& player, uint32 type) = 0;
 
-private:
-	/* Sending utilities */
+protected:
+	/** Sending utilities */
 	template<uint32 Type, typename T>
-	void BroadcastGenericMessage(const T& msg, int excludePlayerID = -1, int len = sizeof(T))
+	void BroadcastGenericMessage(const T& msgApp, int excludePlayerID = -1, int len = sizeof(T))
 	{
 		for (PlayerSocket* player : m_players)
 		{
 			if (player->m_ID != excludePlayerID)
-				player->OnMatchGenericMessage<Type>(msg, len);
+				player->OnMatchGenericMessage<Type>(msgApp, len);
 		}
 	}
 	template<uint32 Type, typename T>
-	void BroadcastGameMessage(const T& msg, int excludePlayerID = -1, int len = sizeof(T))
+	void BroadcastGameMessage(const T& msgGame, int excludePlayerID = -1, int len = sizeof(T))
 	{
 		for (PlayerSocket* player : m_players)
 		{
 			if (player->m_ID != excludePlayerID)
-				player->OnMatchGameMessage<Type>(msg, len);
+				player->OnMatchGameMessage<Type>(msgGame, len);
 		}
 	}
+	template<uint32 Type, typename T, uint16 MessageLen> // Another arbitrary message right after T
+	void BroadcastGameMessage(const T& msgGame, const CharArray<MessageLen>& msgGameSecond, int excludePlayerID = -1)
+	{
+		for (PlayerSocket* player : m_players)
+		{
+			if (player->m_ID != excludePlayerID)
+				player->OnMatchGameMessage<Type>(msgGame, msgGameSecond);
+		}
+	}
+
+	/** Other utilities */
+	static bool ValidateCommonChatMessage(const WCHAR* chatMsg);
 
 protected:
 	State m_state;

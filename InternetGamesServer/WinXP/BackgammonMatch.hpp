@@ -11,6 +11,9 @@ public:
 
 	Game GetGame() const override { return Game::BACKGAMMON; }
 
+	/** Processing messages */
+	void ProcessIncomingGameMessage(PlayerSocket& player, uint32 type) override;
+
 private:
 	BackgammonMatch(const BackgammonMatch&) = delete;
 	BackgammonMatch operator=(const BackgammonMatch&) = delete;

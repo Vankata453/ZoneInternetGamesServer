@@ -96,7 +96,7 @@ std::ostream& operator<<(std::ostream& os, REFGUID guid);
 template<size_t Size>
 struct CharArray
 {
-	char raw[Size];
+	char raw[Size] = {};
 	int len = 0;
 
 	constexpr size_t GetSize() { return Size; }
@@ -110,4 +110,11 @@ std::ostream& operator<<(std::ostream& os, const CharArray<Size>& arr)
 }
 
 /** Macros */
+
+#define CHARSTR_EQUAL(lhs, rhs) strcmp(lhs, rhs) == 0
+#define CHARSTR_NOT_EQUAL(lhs, rhs) strcmp(lhs, rhs) != 0
+
+#define WCHARSTR_EQUAL(lhs, rhs) wcscmp(lhs, rhs) == 0
+#define WCHARSTR_NOT_EQUAL(lhs, rhs) wcscmp(lhs, rhs) != 0
+
 #define ROUND_DATA_LENGTH_UINT32(len) ((len + 3) & ~0x3)
