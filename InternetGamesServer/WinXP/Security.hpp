@@ -21,6 +21,6 @@ inline void DecryptMessage(void* data, int len, uint32 key)
 }
 
 
-uint32 GenerateChecksum(std::initializer_list<std::pair<const void*, int>> dataBuffers);
+uint32 GenerateChecksum(std::initializer_list<std::pair<const void*, size_t>> dataBuffers);
 
 };

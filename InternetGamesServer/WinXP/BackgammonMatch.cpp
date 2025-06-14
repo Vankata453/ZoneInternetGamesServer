@@ -29,7 +29,7 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 				throw std::runtime_error("Backgammon::MsgChatMessage: Incorrect user ID!");
 
 			const WCHAR* chatMsgRaw = reinterpret_cast<const WCHAR*>(msgChat.second.raw);
-			const int chatMsgLen = msgChat.second.len / sizeof(WCHAR) - 1;
+			const int chatMsgLen = msgChat.second.GetLength() / sizeof(WCHAR) - 1;
 			if (chatMsgLen <= 1)
 				throw std::runtime_error("Backgammon::MsgChatMessage: Empty chat message!");
 			if (chatMsgRaw[chatMsgLen - 1] != L'\0')

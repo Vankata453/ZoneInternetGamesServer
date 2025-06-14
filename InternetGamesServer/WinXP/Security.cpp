@@ -16,16 +16,16 @@ void CryptMessage(void* data, int len, uint32 key)
 }
 
 
-uint32 GenerateChecksum(std::initializer_list<std::pair<const void*, int>> dataBuffers)
+uint32 GenerateChecksum(std::initializer_list<std::pair<const void*, size_t>> dataBuffers)
 {
 	uint32 checksum = htonl(0x12344321);
-	for (const std::pair<const void*, int>& dataBuffer : dataBuffers)
+	for (const auto& dataBuffer : dataBuffers)
 	{
 		assert(dataBuffer.second % sizeof(uint32) == 0);
 
-		const int dwordLen = dataBuffer.second / 4;
+		const size_t dwordLen = dataBuffer.second / 4;
 		const uint32* dwordPtr = reinterpret_cast<const uint32*>(dataBuffer.first);
-		for (int i = 0; i < dwordLen; i++)
+		for (size_t i = 0; i < dwordLen; i++)
 			checksum ^= *dwordPtr++;
 	}
 	return ntohl(checksum);

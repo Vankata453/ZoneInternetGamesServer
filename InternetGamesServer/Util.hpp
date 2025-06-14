@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cassert>
 #include <ostream>
 #include <vector>
 
@@ -93,19 +94,29 @@ std::vector<int> GenerateUniqueRandomNums(int start, int end);
 
 /** Printing */
 std::ostream& operator<<(std::ostream& os, REFGUID guid);
+
+/** Other utility classes */
 template<size_t Size>
-struct CharArray
+struct CharArray final
 {
 	char raw[Size] = {};
-	int len = 0;
 
 	constexpr size_t GetSize() { return Size; }
 
+	inline int GetLength() const { return len; }
+	inline void SetLength(int newLen)
+	{
+		assert(newLen <= Size);
+		len = newLen;
+	}
+
+private:
+	int len = 0;
 };
 template<size_t Size>
 std::ostream& operator<<(std::ostream& os, const CharArray<Size>& arr)
 {
-	os.write(arr.raw, arr.len);
+	os.write(arr.raw, arr.GetLength());
 	return os;
 }
 

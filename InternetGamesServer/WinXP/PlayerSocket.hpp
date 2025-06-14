@@ -162,8 +162,8 @@ private:
 		// First, receive the full message, including additional data due to uint32 rounding.
 		// Must be in one buffer as to not split DWORD blocks for checksum generation.
 		CharArray<MessageLen + sizeof(uint32)> msgGameSecondFull;
-		msgGameSecondFull.len = ROUND_DATA_LENGTH_UINT32(msgLength);
-		m_socket.ReceiveData(msgGameSecondFull, DecryptMessage, m_securityKey, msgGameSecondFull.len);
+		msgGameSecondFull.SetLength(ROUND_DATA_LENGTH_UINT32(msgLength));
+		m_socket.ReceiveData(msgGameSecondFull, DecryptMessage, m_securityKey, msgGameSecondFull.GetLength());
 
 		AwaitIncomingGenericFooter();
 		m_incomingGameMsg.valid = false;
@@ -173,14 +173,14 @@ private:
 				{ &msgBaseApp, sizeof(msgBaseApp) },
 				{ &msgGameMessage, sizeof(msgGameMessage) },
 				{ msgGameRaw, sizeof(msgGameRaw) },
-				{ msgGameSecondFull.raw, msgGameSecondFull.len }
+				{ msgGameSecondFull.raw, msgGameSecondFull.GetLength() }
 			});
 		if (checksum != msgBaseGeneric.checksum)
 			throw std::runtime_error("MsgBaseGeneric: Checksums don't match! Generated: " + std::to_string(checksum));
 
 		// Move the actual message data to the array we're about to return
 		CharArray<MessageLen> msgGameSecond;
-		msgGameSecond.len = msgLength;
+		msgGameSecond.SetLength(msgLength);
 		std::memmove(msgGameSecond.raw, msgGameSecondFull.raw, msgLength);
 
 		return {
@@ -263,30 +263,31 @@ private:
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = XPProxyProtocolSignature;
 		msgBaseApp.messageType = MessageGameMessage;
-		msgBaseApp.dataLength = sizeof(MsgGameMessage) + sizeof(msgGame) + msgGameSecond.len;
+		msgBaseApp.dataLength = sizeof(MsgGameMessage) + sizeof(msgGame) + msgGameSecond.GetLength();
 
 		MsgGameMessage msgGameMessage;
 		msgGameMessage.type = Type;
-		msgGameMessage.length = sizeof(msgGame) + msgGameSecond.len;
+		assert(sizeof(msgGame) + msgGameSecond.GetLength() <= UINT16_MAX);
+		msgGameMessage.length = static_cast<uint16>(sizeof(msgGame) + msgGameSecond.GetLength());
 
 		// Copy the message data to an array which has additional space for padding due to uint32 rounding.
 		// Must be in one buffer as to not split DWORD blocks for checksum generation.
 		CharArray<MessageLen + sizeof(uint32)> msgGameSecondFull;
-		msgGameSecondFull.len = ROUND_DATA_LENGTH_UINT32(msgGameSecond.len);
-		std::memcpy(msgGameSecondFull.raw, msgGameSecond.raw, msgGameSecond.len);
+		msgGameSecondFull.SetLength(ROUND_DATA_LENGTH_UINT32(msgGameSecond.GetLength()));
+		std::memcpy(msgGameSecondFull.raw, msgGameSecond.raw, msgGameSecond.GetLength());
 
 		// Convert T to network endian so we can properly calculate the checksum.
 		T msgGameNetworkEndian = msgGame;
 		msgGameNetworkEndian.ConvertToNetworkEndian();
 
 		MsgBaseGeneric msgBaseGeneric;
-		msgBaseGeneric.totalLength = sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + sizeof(MsgGameMessage) + sizeof(msgGame) + msgGameSecondFull.len + sizeof(MsgFooterGeneric);
+		msgBaseGeneric.totalLength = sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + sizeof(MsgGameMessage) + sizeof(msgGame) + msgGameSecondFull.GetLength() + sizeof(MsgFooterGeneric);
 		msgBaseGeneric.sequenceID = m_sequenceID++;
 		msgBaseGeneric.checksum = GenerateChecksum({
 				{ &msgBaseApp, sizeof(msgBaseApp) },
 				{ &msgGameMessage, sizeof(msgGameMessage) },
 				{ &msgGameNetworkEndian, sizeof(msgGameNetworkEndian) },
-				{ msgGameSecondFull.raw, msgGameSecondFull.len }
+				{ msgGameSecondFull.raw, msgGameSecondFull.GetLength() }
 			});
 
 		MsgFooterGeneric msgFooterGeneric;
@@ -296,7 +297,7 @@ private:
 		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
 		m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
 		m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgGameSecondFull), EncryptMessage, m_securityKey, msgGameSecondFull.len);
+		m_socket.SendData(std::move(msgGameSecondFull), EncryptMessage, m_securityKey, msgGameSecondFull.GetLength());
 		m_socket.SendData(msgFooterGeneric);
 	}
 
