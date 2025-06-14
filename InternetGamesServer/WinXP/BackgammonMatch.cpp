@@ -28,16 +28,18 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 			if (msgChat.first.userID != player.m_ID)
 				throw std::runtime_error("Backgammon::MsgChatMessage: Incorrect user ID!");
 
-			if (msgChat.second.len == 0)
+			const WCHAR* chatMsgRaw = reinterpret_cast<const WCHAR*>(msgChat.second.raw);
+			const int chatMsgLen = msgChat.second.len / sizeof(WCHAR) - 1;
+			if (chatMsgLen <= 1)
 				throw std::runtime_error("Backgammon::MsgChatMessage: Empty chat message!");
-			if (msgChat.second.raw[msgChat.second.len - 1] != '\0')
+			if (chatMsgRaw[chatMsgLen - 1] != L'\0')
 				throw std::runtime_error("Backgammon::MsgChatMessage: Non-null-terminated chat message!");
 
-			const WCHAR* chatMsg = reinterpret_cast<const WCHAR*>(msgChat.second.raw);
+			const std::wstring chatMsg(chatMsgRaw, chatMsgLen - 1);
 			if (!ValidateCommonChatMessage(chatMsg) &&
-				WCHARSTR_NOT_EQUAL(chatMsg, L"/80 Nice move\0") &&
-				WCHARSTR_NOT_EQUAL(chatMsg, L"/81 Nice roll\0") &&
-				WCHARSTR_NOT_EQUAL(chatMsg, L"/82 Not again!\0"))
+				chatMsg != L"/80 Nice move" &&
+				chatMsg != L"/81 Nice roll" &&
+				chatMsg != L"/82 Not again!")
 			{
 				throw std::runtime_error("Backgammon::MsgChatMessage: Invalid chat message!");
 			}

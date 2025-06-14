@@ -122,20 +122,20 @@ Match::ProcessMessage(const MsgChatSwitch& msg)
 
 
 bool
-Match::ValidateCommonChatMessage(const WCHAR* chatMsg)
+Match::ValidateCommonChatMessage(const std::wstring& chatMsg)
 {
-	return WCHARSTR_EQUAL(chatMsg, L"/1 Nice try\0") || WCHARSTR_EQUAL(chatMsg, L"/2 Good job\0") ||
-		WCHARSTR_EQUAL(chatMsg, L"/3 Good game\0") || WCHARSTR_EQUAL(chatMsg, L"/4 Good luck!\0") ||
-		WCHARSTR_EQUAL(chatMsg, L"/5 It's your turn\0") || WCHARSTR_EQUAL(chatMsg, L"/6 I'm thinking...\0") ||
-		WCHARSTR_EQUAL(chatMsg, L"/7 Play again?\0") || WCHARSTR_EQUAL(chatMsg, L"/8 Yes\0") ||
-		WCHARSTR_EQUAL(chatMsg, L"/9 No\0") || WCHARSTR_EQUAL(chatMsg, L"/10 Hello\0") ||
-		WCHARSTR_EQUAL(chatMsg, L"/11 Goodbye\0") || WCHARSTR_EQUAL(chatMsg, L"/12 Thank you\0") ||
-		WCHARSTR_EQUAL(chatMsg, L"/13 You're welcome\0") || WCHARSTR_EQUAL(chatMsg, L"/14 It was luck\0") ||
-		WCHARSTR_EQUAL(chatMsg, L"/15 Be right back...\0") || WCHARSTR_EQUAL(chatMsg, L"/16 Okay, I'm back\0") ||
-		WCHARSTR_EQUAL(chatMsg, L"/17 Are you still there?\0") || WCHARSTR_EQUAL(chatMsg, L"/18 Sorry, I have to go now\0") ||
-		WCHARSTR_EQUAL(chatMsg, L"/19 I'm going to play at zone.com\0") || WCHARSTR_EQUAL(chatMsg, L"/20 :-)\0") ||
-		WCHARSTR_EQUAL(chatMsg, L"/21 :-(\0") || WCHARSTR_EQUAL(chatMsg, L"/22 Uh oh...\0") ||
-		WCHARSTR_EQUAL(chatMsg, L"/23 Oops!\0") || WCHARSTR_EQUAL(chatMsg, L"/24 Ouch!\0");
+	return chatMsg == L"/1 Nice try" || chatMsg == L"/2 Good job" ||
+		chatMsg == L"/3 Good game" || chatMsg == L"/4 Good luck!" ||
+		chatMsg == L"/5 It's your turn" || chatMsg == L"/6 I'm thinking..." ||
+		chatMsg == L"/7 Play again?" || chatMsg == L"/8 Yes" ||
+		chatMsg == L"/9 No" || chatMsg == L"/10 Hello" ||
+		chatMsg == L"/11 Goodbye" || chatMsg == L"/12 Thank you" ||
+		chatMsg == L"/13 You're welcome" || chatMsg == L"/14 It was luck" ||
+		chatMsg == L"/15 Be right back..." || chatMsg == L"/16 Okay, I'm back" ||
+		chatMsg == L"/17 Are you still there?" || chatMsg == L"/18 Sorry, I have to go now" ||
+		chatMsg == L"/19 I'm going to play at zone.com" || chatMsg == L"/20 :-)" ||
+		chatMsg == L"/21 :-(" || chatMsg == L"/22 Uh oh..." ||
+		chatMsg == L"/23 Oops!" || chatMsg == L"/24 Ouch!";
 }
 
 }
