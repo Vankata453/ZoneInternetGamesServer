@@ -49,6 +49,7 @@ public:
 	virtual Game GetGame() const = 0;
 	inline State GetState() const { return m_state; }
 	inline SkillLevel GetSkillLevel() const { return m_skillLevel; }
+	inline uint32 GetGameID() const { return m_guid.Data1; }
 
 	/** Processing messages */
 	void ProcessMessage(const MsgChatSwitch& msg);
@@ -57,29 +58,29 @@ public:
 protected:
 	/** Sending utilities */
 	template<uint32 Type, typename T>
-	void BroadcastGenericMessage(const T& msgApp, int excludePlayerID = -1, int len = sizeof(T))
+	void BroadcastGenericMessage(const T& msgApp, int excludePlayerSeat = -1, int len = sizeof(T))
 	{
 		for (PlayerSocket* player : m_players)
 		{
-			if (player->m_ID != excludePlayerID)
+			if (player->m_seat != excludePlayerSeat)
 				player->OnMatchGenericMessage<Type>(msgApp, len);
 		}
 	}
 	template<uint32 Type, typename T>
-	void BroadcastGameMessage(const T& msgGame, int excludePlayerID = -1, int len = sizeof(T))
+	void BroadcastGameMessage(const T& msgGame, int excludePlayerSeat = -1, int len = sizeof(T))
 	{
 		for (PlayerSocket* player : m_players)
 		{
-			if (player->m_ID != excludePlayerID)
+			if (player->m_seat != excludePlayerSeat)
 				player->OnMatchGameMessage<Type>(msgGame, len);
 		}
 	}
-	template<uint32 Type, typename T, uint16 MessageLen> // Another arbitrary message right after T
-	void BroadcastGameMessage(const T& msgGame, const CharArray<MessageLen>& msgGameSecond, int excludePlayerID = -1)
+	template<uint32 Type, typename T, typename M, uint16 MessageLen> // Trailing data array after T
+	void BroadcastGameMessage(const T& msgGame, const Array<M, MessageLen>& msgGameSecond, int excludePlayerSeat = -1)
 	{
 		for (PlayerSocket* player : m_players)
 		{
-			if (player->m_ID != excludePlayerID)
+			if (player->m_seat != excludePlayerSeat)
 				player->OnMatchGameMessage<Type>(msgGame, msgGameSecond);
 		}
 	}

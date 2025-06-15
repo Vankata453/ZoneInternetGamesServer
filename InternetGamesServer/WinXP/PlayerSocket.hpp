@@ -34,10 +34,10 @@ public:
 	{
 		return AwaitIncomingGameMessage<T, Type>();
 	}
-	template<typename T, uint32 Type, uint16 MessageLen>
-	std::pair<T, CharArray<MessageLen>> OnMatchAwaitGameMessage()
+	template<typename T, uint32 Type, typename M, uint16 MessageLen> // Trailing data array after T
+	std::pair<T, Array<M, MessageLen>> OnMatchAwaitGameMessage()
 	{
-		return AwaitIncomingGameMessage<T, Type, MessageLen>();
+		return AwaitIncomingGameMessage<T, Type, M, MessageLen>();
 	}
 	template<uint32 Type, typename T>
 	void OnMatchGenericMessage(const T& msgApp, int len = sizeof(T))
@@ -49,13 +49,14 @@ public:
 	{
 		SendGameMessage<Type>(msgGame, len);
 	}
-	template<uint32 Type, typename T, uint16 MessageLen> // Another arbitrary message right after T
-	void OnMatchGameMessage(const T& msgGame, const CharArray<MessageLen>& msgGameSecond)
+	template<uint32 Type, typename T, typename M, uint16 MessageLen> // Trailing data array after T
+	void OnMatchGameMessage(T msgGame, const Array<M, MessageLen>& msgGameSecond)
 	{
 		SendGameMessage<Type>(msgGame, msgGameSecond);
 	}
 
 	Socket::Type GetType() const override { return Socket::WIN7; }
+	inline uint32 GetID() const { return m_ID; }
 	inline State GetState() const { return m_state; }
 	inline Match::Game GetGame() const { return m_game; }
 	inline Match::SkillLevel GetSkillLevel() const { return m_config.skillLevel; }
@@ -109,6 +110,8 @@ private:
 		const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
 		const MsgGameMessage& msgGameMessage = m_incomingGameMsg.info;
 
+		if (msgGameMessage.gameID != m_match->GetGameID())
+			throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
 		if (msgGameMessage.length != msgBaseApp.dataLength - sizeof(msgGameMessage))
 			throw std::runtime_error("MsgGameMessage: length is invalid!");
 		if (msgGameMessage.length != sizeof(T))
@@ -134,8 +137,9 @@ private:
 
 		return msgGame;
 	}
-	template<typename T, uint32 Type, uint16 MessageLen> // Another arbitrary message right after T
-	std::pair<T, CharArray<MessageLen>> AwaitIncomingGameMessage()
+	template<typename T, uint32 Type, typename M, uint16 MessageLen> // Trailing data array after T
+	typename std::enable_if_t<(sizeof(M) % sizeof(uint32) == 0), std::pair<T, Array<M, MessageLen>>>
+	AwaitIncomingGameMessage()
 	{
 		assert(m_incomingGenericMsg.valid && m_incomingGameMsg.valid);
 
@@ -143,6 +147,8 @@ private:
 		const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
 		const MsgGameMessage& msgGameMessage = m_incomingGameMsg.info;
 
+		if (msgGameMessage.gameID != m_match->GetGameID())
+			throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
 		if (msgGameMessage.length != msgBaseApp.dataLength - sizeof(msgGameMessage))
 			throw std::runtime_error("MsgGameMessage: length is invalid!");
 		if (msgGameMessage.type != Type)
@@ -152,18 +158,68 @@ private:
 		char msgGameRaw[sizeof(T)];
 		m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
 
-		if (msgGameMessage.length != sizeof(T) + msgGame.messageLength)
-			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(sizeof(T) + msgGame.messageLength));
+		if (msgGameMessage.length != sizeof(T) + msgGame.messageLength * sizeof(M))
+			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(sizeof(T) + msgGame.messageLength * sizeof(M)));
 		if (msgGame.messageLength > MessageLen)
 			throw std::runtime_error("MsgGameMessage: Child message is too long! Expected less or equal than: " + std::to_string(MessageLen));
 
-		const int msgLength = static_cast<int>(msgGame.messageLength);
+		const int rawMsgLength = static_cast<int>(msgGame.messageLength * sizeof(M));
+
+		Array<M, MessageLen> msgGameSecond;
+		msgGameSecond.SetLength(static_cast<int>(msgGame.messageLength));
+		m_socket.ReceiveData(msgGameSecond, DecryptMessage, m_securityKey, rawMsgLength);
+
+		AwaitIncomingGenericFooter();
+		m_incomingGameMsg.valid = false;
+
+		// Validate checksum
+		const uint32 checksum = GenerateChecksum({
+				{ &msgBaseApp, sizeof(msgBaseApp) },
+				{ &msgGameMessage, sizeof(msgGameMessage) },
+				{ msgGameRaw, sizeof(msgGameRaw) },
+				{ msgGameSecond.raw, rawMsgLength }
+			});
+		if (checksum != msgBaseGeneric.checksum)
+			throw std::runtime_error("MsgBaseGeneric: Checksums don't match! Generated: " + std::to_string(checksum));
+
+		return {
+			std::move(msgGame),
+			std::move(msgGameSecond)
+		};
+	}
+	template<typename T, uint32 Type, typename M, uint16 MessageLen> // Trailing data array after T
+	typename std::enable_if_t<(sizeof(M) % sizeof(uint32) != 0), std::pair<T, Array<M, MessageLen>>>
+	AwaitIncomingGameMessage()
+	{
+		assert(m_incomingGenericMsg.valid && m_incomingGameMsg.valid);
+
+		const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
+		const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
+		const MsgGameMessage& msgGameMessage = m_incomingGameMsg.info;
+
+		if (msgGameMessage.gameID != m_match->GetGameID())
+			throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
+		if (msgGameMessage.length != msgBaseApp.dataLength - sizeof(msgGameMessage))
+			throw std::runtime_error("MsgGameMessage: length is invalid!");
+		if (msgGameMessage.type != Type)
+			throw std::runtime_error("MsgGameMessage: Incorrect message type! Expected: " + std::to_string(Type));
+
+		T msgGame;
+		char msgGameRaw[sizeof(T)];
+		m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
+
+		if (msgGameMessage.length != sizeof(T) + msgGame.messageLength * sizeof(M))
+			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(sizeof(T) + msgGame.messageLength * sizeof(M)));
+		if (msgGame.messageLength > MessageLen)
+			throw std::runtime_error("MsgGameMessage: Child message is too long! Expected less or equal than: " + std::to_string(MessageLen));
+
+		const int rawMsgLengthRounded = ROUND_DATA_LENGTH_UINT32(static_cast<int>(msgGame.messageLength));
 
 		// First, receive the full message, including additional data due to uint32 rounding.
 		// Must be in one buffer as to not split DWORD blocks for checksum generation.
-		CharArray<MessageLen + sizeof(uint32)> msgGameSecondFull;
-		msgGameSecondFull.SetLength(ROUND_DATA_LENGTH_UINT32(msgLength));
-		m_socket.ReceiveData(msgGameSecondFull, DecryptMessage, m_securityKey, msgGameSecondFull.GetLength());
+		Array<char, MessageLen * sizeof(M) + sizeof(uint32)> msgGameSecondFull;
+		msgGameSecondFull.SetLength(rawMsgLengthRounded);
+		m_socket.ReceiveData(msgGameSecondFull, DecryptMessage, m_securityKey, rawMsgLengthRounded);
 
 		AwaitIncomingGenericFooter();
 		m_incomingGameMsg.valid = false;
@@ -178,8 +234,10 @@ private:
 		if (checksum != msgBaseGeneric.checksum)
 			throw std::runtime_error("MsgBaseGeneric: Checksums don't match! Generated: " + std::to_string(checksum));
 
+		const int msgLength = static_cast<int>(msgGame.messageLength);
+
 		// Move the actual message data to the array we're about to return
-		CharArray<MessageLen> msgGameSecond;
+		Array<M, MessageLen> msgGameSecond;
 		msgGameSecond.SetLength(msgLength);
 		std::memmove(msgGameSecond.raw, msgGameSecondFull.raw, msgLength);
 
@@ -230,6 +288,7 @@ private:
 		msgBaseApp.dataLength = sizeof(MsgGameMessage) + len;
 
 		MsgGameMessage msgGameMessage;
+		msgGameMessage.gameID = m_match->GetGameID();
 		msgGameMessage.type = Type;
 		msgGameMessage.length = len;
 
@@ -255,33 +314,84 @@ private:
 		m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey, len);
 		m_socket.SendData(msgFooterGeneric);
 	}
-	template<uint32 Type, typename T, uint16 MessageLen> // Another arbitrary message right after T
-	void SendGameMessage(T msgGame, const CharArray<MessageLen>& msgGameSecond)
+	template<uint32 Type, typename T, typename M, uint16 MessageLen> // Trailing data array after T
+	typename std::enable_if_t<(sizeof(M) % sizeof(uint32) == 0), void>
+	SendGameMessage(T msgGame, Array<M, MessageLen> msgGameSecond)
 	{
 		assert(m_inLobby);
 
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = XPProxyProtocolSignature;
 		msgBaseApp.messageType = MessageGameMessage;
-		msgBaseApp.dataLength = sizeof(MsgGameMessage) + sizeof(msgGame) + msgGameSecond.GetLength();
+		msgBaseApp.dataLength = sizeof(MsgGameMessage) + sizeof(msgGame) + static_cast<uint32>(msgGameSecond.GetLength()) * sizeof(M);
 
 		MsgGameMessage msgGameMessage;
+		msgGameMessage.gameID = m_match->GetGameID();
 		msgGameMessage.type = Type;
-		assert(sizeof(msgGame) + msgGameSecond.GetLength() <= UINT16_MAX);
-		msgGameMessage.length = static_cast<uint16>(sizeof(msgGame) + msgGameSecond.GetLength());
+		assert(sizeof(msgGame) + msgGameSecond.GetLength() * sizeof(M) <= UINT16_MAX);
+		msgGameMessage.length = static_cast<uint16>(sizeof(msgGame) + msgGameSecond.GetLength() * sizeof(M));
 
-		// Copy the message data to an array which has additional space for padding due to uint32 rounding.
-		// Must be in one buffer as to not split DWORD blocks for checksum generation.
-		CharArray<MessageLen + sizeof(uint32)> msgGameSecondFull;
-		msgGameSecondFull.SetLength(ROUND_DATA_LENGTH_UINT32(msgGameSecond.GetLength()));
-		std::memcpy(msgGameSecondFull.raw, msgGameSecond.raw, msgGameSecond.GetLength());
+		assert(msgGame.messageLength == msgGameSecond.GetLength());
+
+		const int rawMsgLength = static_cast<int>(msgGameSecond.GetLength() * sizeof(M));
 
 		// Convert T to network endian so we can properly calculate the checksum.
 		T msgGameNetworkEndian = msgGame;
 		msgGameNetworkEndian.ConvertToNetworkEndian();
 
 		MsgBaseGeneric msgBaseGeneric;
-		msgBaseGeneric.totalLength = sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + sizeof(MsgGameMessage) + sizeof(msgGame) + msgGameSecondFull.GetLength() + sizeof(MsgFooterGeneric);
+		msgBaseGeneric.totalLength = sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + sizeof(MsgGameMessage) + sizeof(msgGame) + static_cast<uint32>(msgGameSecond.GetLength()) * sizeof(M) + sizeof(MsgFooterGeneric);
+		msgBaseGeneric.sequenceID = m_sequenceID++;
+		msgBaseGeneric.checksum = GenerateChecksum({
+				{ &msgBaseApp, sizeof(msgBaseApp) },
+				{ &msgGameMessage, sizeof(msgGameMessage) },
+				{ &msgGameNetworkEndian, sizeof(msgGameNetworkEndian) },
+				{ msgGameSecond.raw, rawMsgLength }
+			});
+
+		MsgFooterGeneric msgFooterGeneric;
+		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
+
+		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey);
+		m_socket.SendData(std::move(msgGameSecond), EncryptMessage, m_securityKey, rawMsgLength);
+		m_socket.SendData(msgFooterGeneric);
+	}
+	template<uint32 Type, typename T, typename M, uint16 MessageLen> // Trailing data array after T
+	typename std::enable_if_t<(sizeof(M) % sizeof(uint32) != 0), void>
+	SendGameMessage(T msgGame, const Array<M, MessageLen>& msgGameSecond)
+	{
+		assert(m_inLobby);
+
+		MsgBaseApplication msgBaseApp;
+		msgBaseApp.signature = XPProxyProtocolSignature;
+		msgBaseApp.messageType = MessageGameMessage;
+		msgBaseApp.dataLength = sizeof(MsgGameMessage) + sizeof(msgGame) + static_cast<uint32>(msgGameSecond.GetLength()) * sizeof(M);
+
+		MsgGameMessage msgGameMessage;
+		msgGameMessage.gameID = m_match->GetGameID();
+		msgGameMessage.type = Type;
+		assert(sizeof(msgGame) + msgGameSecond.GetLength() * sizeof(M) <= UINT16_MAX);
+		msgGameMessage.length = static_cast<uint16>(sizeof(msgGame) + msgGameSecond.GetLength() * sizeof(M));
+
+		assert(msgGame.messageLength == msgGameSecond.GetLength());
+
+		const int rawMsgLengthRounded = ROUND_DATA_LENGTH_UINT32(static_cast<int>(msgGameSecond.GetLength() * sizeof(M)));
+
+		// Copy the message data to an array which has additional space for padding due to uint32 rounding.
+		// Must be in one buffer as to not split DWORD blocks for checksum generation.
+		Array<char, MessageLen * sizeof(M) + sizeof(uint32)> msgGameSecondFull;
+		msgGameSecondFull.SetLength(rawMsgLengthRounded);
+		std::memcpy(msgGameSecondFull.raw, msgGameSecond.raw, rawMsgLengthRounded);
+
+		// Convert T to network endian so we can properly calculate the checksum.
+		T msgGameNetworkEndian = msgGame;
+		msgGameNetworkEndian.ConvertToNetworkEndian();
+
+		MsgBaseGeneric msgBaseGeneric;
+		msgBaseGeneric.totalLength = sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + sizeof(MsgGameMessage) + sizeof(msgGame) + static_cast<uint32>(msgGameSecondFull.GetLength()) + sizeof(MsgFooterGeneric);
 		msgBaseGeneric.sequenceID = m_sequenceID++;
 		msgBaseGeneric.checksum = GenerateChecksum({
 				{ &msgBaseApp, sizeof(msgBaseApp) },
@@ -297,7 +407,7 @@ private:
 		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
 		m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
 		m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgGameSecondFull), EncryptMessage, m_securityKey, msgGameSecondFull.GetLength());
+		m_socket.SendData(std::move(msgGameSecondFull), EncryptMessage, m_securityKey, rawMsgLengthRounded);
 		m_socket.SendData(msgFooterGeneric);
 	}
 
@@ -332,8 +442,9 @@ private:
 private:
 	State m_state;
 
+	const uint32 m_ID;
 	Match::Game m_game;
-	GUID m_machineGUID;
+	const GUID m_machineGUID;
 	const uint32 m_securityKey;
 	uint32 m_sequenceID;
 	bool m_inLobby;
@@ -348,7 +459,7 @@ private:
 
 public:
 	// Variables, set by the match
-	const int m_ID;
+	const int16 m_seat;
 
 private:
 	PlayerSocket(const PlayerSocket&) = delete;

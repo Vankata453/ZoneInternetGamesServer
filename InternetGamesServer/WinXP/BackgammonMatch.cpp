@@ -5,6 +5,11 @@
 
 namespace WinXP {
 
+#define XPBackgammonProtocolSignature 0x42434B47
+#define XPBackgammonProtocolVersion 3
+#define XPBackgammonClientVersion 65536
+
+
 BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
 	Match(player)
 {}
@@ -19,17 +24,46 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 	{
 		case MessageCheckIn:
 		{
-			player.OnMatchAwaitGameMessage<MsgCheckIn, MessageCheckIn>(); // TODO
+			const MsgCheckIn msgCheckIn = player.OnMatchAwaitGameMessage<MsgCheckIn, MessageCheckIn>();
+			if (msgCheckIn.protocolSignature != XPBackgammonProtocolSignature)
+				throw std::runtime_error("Backgammon::MsgCheckIn: Invalid protocol signature!");
+			if (msgCheckIn.protocolVersion != XPBackgammonProtocolVersion)
+				throw std::runtime_error("Backgammon::MsgCheckIn: Incorrect protocol version!");
+			if (msgCheckIn.clientVersion != XPBackgammonClientVersion)
+				throw std::runtime_error("Backgammon::MsgCheckIn: Incorrect client version!");
+			if (msgCheckIn.playerID != player.GetID())
+				throw std::runtime_error("Backgammon::MsgCheckIn: Incorrect player ID!");
+			if (msgCheckIn.seat != player.m_seat)
+				throw std::runtime_error("Backgammon::MsgCheckIn: Incorrect player seat!");
+			if (msgCheckIn.playerType != 1)
+				throw std::runtime_error("Backgammon::MsgCheckIn: Incorrect player type!");
+
+			BroadcastGameMessage<MessageCheckIn>(msgCheckIn);
+			break;
+		}
+		case MessageGameTransaction:
+		{
+			const std::pair<MsgGameTransaction, Array<MsgGameTransaction::Transaction, 8>> msgTransaction =
+				player.OnMatchAwaitGameMessage<MsgGameTransaction, MessageGameTransaction, MsgGameTransaction::Transaction, 8>();
+			if (msgTransaction.first.userID != player.GetID())
+				throw std::runtime_error("MsgGameTransaction: Incorrect user ID!");
+			if (msgTransaction.first.seat != player.m_seat)
+				throw std::runtime_error("MsgGameTransaction: Incorrect seat!");
+
+			// TODO: Transaction type validation?
+
+			BroadcastGameMessage<MessageGameTransaction>(msgTransaction.first, msgTransaction.second, player.m_seat);
 			break;
 		}
 		case MessageChatMessage:
 		{
-			const std::pair<MsgChatMessage, CharArray<128>> msgChat = player.OnMatchAwaitGameMessage<MsgChatMessage, MessageChatMessage, 128>();
-			if (msgChat.first.userID != player.m_ID)
+			const std::pair<MsgChatMessage, Array<char, 128>> msgChat =
+				player.OnMatchAwaitGameMessage<MsgChatMessage, MessageChatMessage, char, 128>();
+			if (msgChat.first.userID != player.GetID())
 				throw std::runtime_error("Backgammon::MsgChatMessage: Incorrect user ID!");
 
 			const WCHAR* chatMsgRaw = reinterpret_cast<const WCHAR*>(msgChat.second.raw);
-			const int chatMsgLen = msgChat.second.GetLength() / sizeof(WCHAR) - 1;
+			const size_t chatMsgLen = msgChat.second.GetLength() / sizeof(WCHAR) - 1;
 			if (chatMsgLen <= 1)
 				throw std::runtime_error("Backgammon::MsgChatMessage: Empty chat message!");
 			if (chatMsgRaw[chatMsgLen - 1] != L'\0')

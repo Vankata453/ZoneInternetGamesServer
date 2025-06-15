@@ -96,28 +96,35 @@ std::vector<int> GenerateUniqueRandomNums(int start, int end);
 std::ostream& operator<<(std::ostream& os, REFGUID guid);
 
 /** Other utility classes */
-template<size_t Size>
-struct CharArray final
+template<typename T, size_t Size>
+struct Array final
 {
-	char raw[Size] = {};
+	T raw[Size] = {};
 
 	constexpr size_t GetSize() { return Size; }
 
-	inline int GetLength() const { return len; }
-	inline void SetLength(int newLen)
+	inline size_t GetLength() const { return len; }
+	inline void SetLength(size_t newLen)
 	{
 		assert(newLen <= Size);
 		len = newLen;
 	}
 
 private:
-	int len = 0;
+	size_t len = 0;
 };
-template<size_t Size>
-std::ostream& operator<<(std::ostream& os, const CharArray<Size>& arr)
+template<typename T, size_t Size>
+std::ostream& operator<<(std::ostream& os, const Array<T, Size>& arr)
 {
-	os.write(arr.raw, arr.GetLength());
-	return os;
+	os << '[';
+	if (arr.GetLength() <= 0)
+		return os;
+
+	os << arr.raw[0];
+	for (size_t i = 1; i < arr.GetLength(); ++i)
+		os << ", " << arr.raw[i];
+
+	return os << ']';
 }
 
 /** Macros */

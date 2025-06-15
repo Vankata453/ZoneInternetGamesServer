@@ -74,6 +74,26 @@ struct MsgChatSwitch final
 };
 
 
+struct MsgGameTransaction final
+{
+	int userID = 0;
+	int seat = 0;
+	int messageLength = 0;
+	int tag = 0;
+
+	struct Transaction final
+	{
+		int tag = 0;
+		int index = 0;
+		int value = 0;
+	};
+	// Transaction[]
+
+	void ConvertToHostEndian() {}
+	void ConvertToNetworkEndian() {}
+};
+
+
 static std::ostream& operator<<(std::ostream& out, const MsgClientConfig& m)
 {
 	out << "MsgClientConfig:";
@@ -134,6 +154,25 @@ static std::ostream& operator<<(std::ostream& out, const MsgChatSwitch& m)
 	return out
 		<< "  userID = " << m.userID
 		<< "  chatEnabled = " << m.chatEnabled;
+}
+
+static std::ostream& operator<<(std::ostream& out, const MsgGameTransaction& m)
+{
+	out << "MsgGameTransaction:";
+	return out
+		<< "  userID = " << m.userID
+		<< "  seat = " << m.seat
+		<< "  messageLength = " << m.messageLength
+		<< "  tag = " << m.tag;
+}
+
+static std::ostream& operator<<(std::ostream& out, const MsgGameTransaction::Transaction& m)
+{
+	out << "Transaction:";
+	return out
+		<< "  tag = " << m.tag
+		<< "  index = " << m.index
+		<< "  value = " << m.value;
 }
 
 }

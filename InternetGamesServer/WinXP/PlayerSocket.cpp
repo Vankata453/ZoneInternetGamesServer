@@ -14,6 +14,7 @@ namespace WinXP {
 PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	::PlayerSocket(socket),
 	m_state(STATE_INITIALIZED),
+	m_ID(),
 	m_game(Match::Game::INVALID),
 	m_machineGUID(hiMessage.machineGUID),
 	m_securityKey(),
@@ -23,10 +24,11 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	m_incomingGameMsg(),
 	m_serviceName(),
 	m_match(),
-	m_ID(-1)
+	m_seat(-1)
 {
-	std::mt19937 keyRng(std::random_device{}());
-	const_cast<uint32&>(m_securityKey) = std::uniform_int_distribution<uint32>{}(keyRng);
+	std::mt19937 rng(std::random_device{}());
+	const_cast<uint32&>(m_ID) = std::uniform_int_distribution<uint32>{}(rng);
+	const_cast<uint32&>(m_securityKey) = std::uniform_int_distribution<uint32>{}(rng);
 }
 
 PlayerSocket::~PlayerSocket()
@@ -109,10 +111,12 @@ PlayerSocket::OnGameStart(const std::vector<PlayerSocket*>& matchPlayers)
 	MsgUserInfoResponse msgUserInfo;
 	msgUserInfo.ID = m_ID;
 	msgUserInfo.language = m_config.userLanguage;
-	snprintf(msgUserInfo.username, sizeof(msgUserInfo.username), "Player %d", m_ID);
+	snprintf(msgUserInfo.username, sizeof(msgUserInfo.username), "Player %d", m_seat);
 
 	const int16 totalPlayerCount = static_cast<int16>(m_match->GetRequiredPlayerCount());
 	MsgGameStart msgGameStart;
+	msgGameStart.gameID = m_match->GetGameID();
+	msgGameStart.seat = m_seat;
 	msgGameStart.totalSeats = totalPlayerCount;
 
 	assert(matchPlayers.size() == totalPlayerCount);
@@ -121,7 +125,7 @@ PlayerSocket::OnGameStart(const std::vector<PlayerSocket*>& matchPlayers)
 		MsgGameStart::User& user = msgGameStart.users[i];
 		const Config& config = matchPlayers[i]->m_config;
 
-		user.ID = matchPlayers[i]->m_ID;
+		user.ID = matchPlayers[i]->GetID();
 		user.language = config.userLanguage;
 		user.chatEnabled = config.chatEnabled;
 		user.skill = static_cast<int16>(config.skillLevel);

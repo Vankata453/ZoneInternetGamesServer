@@ -95,9 +95,9 @@ Match::Update()
 			{
 				// Distribute unique IDs for each player, starting from 0
 				const int playerCount = static_cast<int>(m_players.size());
-				const std::vector<int> ids = GenerateUniqueRandomNums(2, playerCount + 1);
+				const std::vector<int> seats = GenerateUniqueRandomNums(0, playerCount - 1);
 				for (int i = 0; i < playerCount; i++)
-					const_cast<int&>(m_players[i]->m_ID) = ids[i];
+					const_cast<int16&>(m_players[i]->m_seat) = seats[i];
 
 				for (PlayerSocket* p : m_players)
 					p->OnGameStart(m_players);

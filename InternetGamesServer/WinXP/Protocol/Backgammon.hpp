@@ -12,6 +12,7 @@ namespace Backgammon {
 enum
 {
 	MessageChatMessage = 256,
+	MessageGameTransaction,
 	MessageCheckIn = 1024
 };
 
@@ -50,6 +51,7 @@ struct MsgChatMessage final
 	uint32 userID = 0;
 	int16 seat = 0;
 	uint16 messageLength = 0;
+	// char[]
 
 	void ConvertToHostEndian()
 	{
