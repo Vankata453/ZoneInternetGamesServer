@@ -12,7 +12,8 @@ namespace Backgammon {
 enum
 {
 	MessageChatMessage = 256,
-	MessageGameTransaction,
+	MessageStateTransaction,
+	MessageNewMatch = 264,
 	MessageCheckIn = 1024
 };
 

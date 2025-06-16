@@ -190,6 +190,34 @@ PlayerSocket::AwaitIncomingGameMessageHeader()
 }
 
 void
+PlayerSocket::AwaitIncomingEmptyGameMessage(uint32 type)
+{
+	assert(m_incomingGenericMsg.valid && m_incomingGameMsg.valid);
+
+	const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
+	const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
+	const MsgGameMessage& msgGameMessage = m_incomingGameMsg.info;
+
+	if (msgGameMessage.gameID != m_match->GetGameID())
+		throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
+	if (msgGameMessage.length != 0)
+		throw std::runtime_error("MsgGameMessage: length is invalid: Expected empty message!");
+	if (msgGameMessage.type != type)
+		throw std::runtime_error("MsgGameMessage: Incorrect message type! Expected: " + std::to_string(type));
+
+	AwaitIncomingGenericFooter();
+	m_incomingGameMsg.valid = false;
+
+	// Validate checksum
+	const uint32 checksum = GenerateChecksum({
+			{ &msgBaseApp, sizeof(msgBaseApp) },
+			{ &msgGameMessage, sizeof(msgGameMessage) }
+		});
+	if (checksum != msgBaseGeneric.checksum)
+		throw std::runtime_error("MsgBaseGeneric: Checksums don't match! Generated: " + std::to_string(checksum));
+}
+
+void
 PlayerSocket::AwaitIncomingGenericFooter()
 {
 	MsgFooterGeneric msgFooterGeneric;

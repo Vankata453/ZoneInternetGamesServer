@@ -85,7 +85,7 @@ protected:
 		}
 	}
 
-	/** Other utilities */
+	/** Other static utilities */
 	static bool ValidateCommonChatMessage(const std::wstring& chatMsg);
 
 protected:

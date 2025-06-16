@@ -74,7 +74,7 @@ struct MsgChatSwitch final
 };
 
 
-struct MsgGameTransaction final
+struct MsgStateTransaction final
 {
 	int userID = 0;
 	int seat = 0;
@@ -156,9 +156,9 @@ static std::ostream& operator<<(std::ostream& out, const MsgChatSwitch& m)
 		<< "  chatEnabled = " << m.chatEnabled;
 }
 
-static std::ostream& operator<<(std::ostream& out, const MsgGameTransaction& m)
+static std::ostream& operator<<(std::ostream& out, const MsgStateTransaction& m)
 {
-	out << "MsgGameTransaction:";
+	out << "MsgStateTransaction:";
 	return out
 		<< "  userID = " << m.userID
 		<< "  seat = " << m.seat
@@ -166,7 +166,7 @@ static std::ostream& operator<<(std::ostream& out, const MsgGameTransaction& m)
 		<< "  tag = " << m.tag;
 }
 
-static std::ostream& operator<<(std::ostream& out, const MsgGameTransaction::Transaction& m)
+static std::ostream& operator<<(std::ostream& out, const MsgStateTransaction::Transaction& m)
 {
 	out << "Transaction:";
 	return out

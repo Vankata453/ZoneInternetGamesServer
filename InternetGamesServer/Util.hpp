@@ -110,6 +110,9 @@ struct Array final
 		len = newLen;
 	}
 
+	inline T& operator[](int idx) { return raw[idx]; }
+	inline const T& operator[](int idx) const { return raw[idx]; }
+
 private:
 	size_t len = 0;
 };

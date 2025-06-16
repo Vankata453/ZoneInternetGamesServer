@@ -29,6 +29,11 @@ public:
 	/** Event handling */
 	void OnGameStart(const std::vector<PlayerSocket*>& matchPlayers);
 	void OnDisconnected();
+
+	inline void OnMatchAwaitEmptyGameMessage(uint32 type)
+	{
+		AwaitIncomingEmptyGameMessage(type);
+	}
 	template<typename T, uint32 Type>
 	T OnMatchAwaitGameMessage()
 	{
@@ -101,6 +106,7 @@ private:
 		return msgApp;
 	}
 	void AwaitIncomingGameMessageHeader();
+	void AwaitIncomingEmptyGameMessage(uint32 type);
 	template<typename T, uint32 Type>
 	T AwaitIncomingGameMessage()
 	{
