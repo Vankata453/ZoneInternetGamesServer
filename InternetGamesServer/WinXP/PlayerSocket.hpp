@@ -75,6 +75,8 @@ private:
 	template<typename T, uint32 Type>
 	T AwaitIncomingGenericMessage()
 	{
+		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
+
 		assert(m_incomingGenericMsg.valid && !m_incomingGameMsg.valid);
 
 		const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
@@ -87,8 +89,8 @@ private:
 			throw std::runtime_error("MsgBaseApplication: Invalid protocol signature!");
 		if (msgBaseApp.messageType != Type)
 			throw std::runtime_error("MsgBaseApplication: Incorrect message type! Expected: " + std::to_string(Type));
-		if (msgBaseApp.dataLength != sizeof(T))
-			throw std::runtime_error("MsgBaseApplication: Data is of incorrect size! Expected: " + std::to_string(sizeof(T)));
+		if (msgBaseApp.dataLength != AdjustedSize<T>)
+			throw std::runtime_error("MsgBaseApplication: Data is of incorrect size! Expected: " + std::to_string(AdjustedSize<T>));
 
 		T msgApp;
 		m_socket.ReceiveData(msgApp, DecryptMessage, m_securityKey);
@@ -110,6 +112,8 @@ private:
 	template<typename T, uint32 Type>
 	T AwaitIncomingGameMessage()
 	{
+		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
+
 		assert(m_incomingGenericMsg.valid && m_incomingGameMsg.valid);
 
 		const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
@@ -120,8 +124,8 @@ private:
 			throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
 		if (msgGameMessage.length != msgBaseApp.dataLength - sizeof(msgGameMessage))
 			throw std::runtime_error("MsgGameMessage: length is invalid!");
-		if (msgGameMessage.length != sizeof(T))
-			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(sizeof(T)));
+		if (msgGameMessage.length != AdjustedSize<T>)
+			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(AdjustedSize<T>));
 		if (msgGameMessage.type != Type)
 			throw std::runtime_error("MsgGameMessage: Incorrect message type! Expected: " + std::to_string(Type));
 
@@ -147,6 +151,8 @@ private:
 	typename std::enable_if_t<(sizeof(M) % sizeof(uint32) == 0), std::pair<T, Array<M, MessageLen>>>
 	AwaitIncomingGameMessage()
 	{
+		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
+
 		assert(m_incomingGenericMsg.valid && m_incomingGameMsg.valid);
 
 		const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
@@ -164,8 +170,8 @@ private:
 		char msgGameRaw[sizeof(T)];
 		m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
 
-		if (msgGameMessage.length != sizeof(T) + msgGame.messageLength * sizeof(M))
-			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(sizeof(T) + msgGame.messageLength * sizeof(M)));
+		if (msgGameMessage.length != AdjustedSize<T> + msgGame.messageLength * sizeof(M))
+			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(AdjustedSize<T> + msgGame.messageLength * sizeof(M)));
 		if (msgGame.messageLength > MessageLen)
 			throw std::runtime_error("MsgGameMessage: Child message is too long! Expected less or equal than: " + std::to_string(MessageLen));
 
@@ -197,6 +203,8 @@ private:
 	typename std::enable_if_t<(sizeof(M) % sizeof(uint32) != 0), std::pair<T, Array<M, MessageLen>>>
 	AwaitIncomingGameMessage()
 	{
+		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
+
 		assert(m_incomingGenericMsg.valid && m_incomingGameMsg.valid);
 
 		const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
@@ -214,8 +222,8 @@ private:
 		char msgGameRaw[sizeof(T)];
 		m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
 
-		if (msgGameMessage.length != sizeof(T) + msgGame.messageLength * sizeof(M))
-			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(sizeof(T) + msgGame.messageLength * sizeof(M)));
+		if (msgGameMessage.length != AdjustedSize<T> + msgGame.messageLength * sizeof(M))
+			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(AdjustedSize<T> + msgGame.messageLength * sizeof(M)));
 		if (msgGame.messageLength > MessageLen)
 			throw std::runtime_error("MsgGameMessage: Child message is too long! Expected less or equal than: " + std::to_string(MessageLen));
 
@@ -223,7 +231,7 @@ private:
 
 		// First, receive the full message, including additional data due to uint32 rounding.
 		// Must be in one buffer as to not split DWORD blocks for checksum generation.
-		Array<char, MessageLen * sizeof(M) + sizeof(uint32)> msgGameSecondFull;
+		Array<char, ROUND_DATA_LENGTH_UINT32(MessageLen * sizeof(M))> msgGameSecondFull;
 		msgGameSecondFull.SetLength(rawMsgLengthRounded);
 		m_socket.ReceiveData(msgGameSecondFull, DecryptMessage, m_securityKey, rawMsgLengthRounded);
 
@@ -260,8 +268,11 @@ private:
 
 	/* Sending utilities */
 	template<uint32 Type, typename T>
-	void SendGenericMessage(T msgApp, int len = sizeof(T))
+	void SendGenericMessage(T msgApp, int len = AdjustedSize<T>)
 	{
+		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
+		assert(len % sizeof(uint32) == 0);
+
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = (m_inLobby ? XPProxyProtocolSignature : XPInternalProtocolSignatureApp);
 		msgBaseApp.messageType = Type;
@@ -284,8 +295,11 @@ private:
 		m_socket.SendData(msgFooterGeneric);
 	}
 	template<uint32 Type, typename T>
-	void SendGameMessage(T msgGame, int len = sizeof(T))
+	void SendGameMessage(T msgGame, int len = AdjustedSize<T>)
 	{
+		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
+		assert(len % sizeof(uint32) == 0);
+
 		assert(m_inLobby);
 
 		MsgBaseApplication msgBaseApp;
@@ -324,18 +338,20 @@ private:
 	typename std::enable_if_t<(sizeof(M) % sizeof(uint32) == 0), void>
 	SendGameMessage(T msgGame, Array<M, MessageLen> msgGameSecond)
 	{
+		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
+
 		assert(m_inLobby);
 
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = XPProxyProtocolSignature;
 		msgBaseApp.messageType = MessageGameMessage;
-		msgBaseApp.dataLength = sizeof(MsgGameMessage) + sizeof(msgGame) + static_cast<uint32>(msgGameSecond.GetLength()) * sizeof(M);
+		msgBaseApp.dataLength = static_cast<uint32>(sizeof(MsgGameMessage) + AdjustedSize<T> + msgGameSecond.GetLength() * sizeof(M));
 
 		MsgGameMessage msgGameMessage;
 		msgGameMessage.gameID = m_match->GetGameID();
 		msgGameMessage.type = Type;
-		assert(sizeof(msgGame) + msgGameSecond.GetLength() * sizeof(M) <= UINT16_MAX);
-		msgGameMessage.length = static_cast<uint16>(sizeof(msgGame) + msgGameSecond.GetLength() * sizeof(M));
+		assert(AdjustedSize<T> + msgGameSecond.GetLength() * sizeof(M) <= UINT16_MAX);
+		msgGameMessage.length = static_cast<uint16>(AdjustedSize<T> + msgGameSecond.GetLength() * sizeof(M));
 
 		assert(msgGame.messageLength == msgGameSecond.GetLength());
 
@@ -369,18 +385,20 @@ private:
 	typename std::enable_if_t<(sizeof(M) % sizeof(uint32) != 0), void>
 	SendGameMessage(T msgGame, const Array<M, MessageLen>& msgGameSecond)
 	{
+		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
+
 		assert(m_inLobby);
 
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = XPProxyProtocolSignature;
 		msgBaseApp.messageType = MessageGameMessage;
-		msgBaseApp.dataLength = sizeof(MsgGameMessage) + sizeof(msgGame) + static_cast<uint32>(msgGameSecond.GetLength()) * sizeof(M);
+		msgBaseApp.dataLength = static_cast<uint32>(sizeof(MsgGameMessage) + AdjustedSize<T> + msgGameSecond.GetLength() * sizeof(M));
 
 		MsgGameMessage msgGameMessage;
 		msgGameMessage.gameID = m_match->GetGameID();
 		msgGameMessage.type = Type;
-		assert(sizeof(msgGame) + msgGameSecond.GetLength() * sizeof(M) <= UINT16_MAX);
-		msgGameMessage.length = static_cast<uint16>(sizeof(msgGame) + msgGameSecond.GetLength() * sizeof(M));
+		assert(AdjustedSize<T> + msgGameSecond.GetLength() * sizeof(M) <= UINT16_MAX);
+		msgGameMessage.length = static_cast<uint16>(AdjustedSize<T> + msgGameSecond.GetLength() * sizeof(M));
 
 		assert(msgGame.messageLength == msgGameSecond.GetLength());
 
@@ -388,7 +406,7 @@ private:
 
 		// Copy the message data to an array which has additional space for padding due to uint32 rounding.
 		// Must be in one buffer as to not split DWORD blocks for checksum generation.
-		Array<char, MessageLen * sizeof(M) + sizeof(uint32)> msgGameSecondFull;
+		Array<char, ROUND_DATA_LENGTH_UINT32(MessageLen * sizeof(M))> msgGameSecondFull;
 		msgGameSecondFull.SetLength(rawMsgLengthRounded);
 		std::memcpy(msgGameSecondFull.raw, msgGameSecond.raw, rawMsgLengthRounded);
 

@@ -130,5 +130,35 @@ std::ostream& operator<<(std::ostream& os, const Array<T, Size>& arr)
 	return os << ']';
 }
 
+/** Struct padding */
+#define STRUCT_PADDING(x) private: char _struct_padding_bytes[x];
+
+template<typename T>
+struct HasPaddingSize final
+{
+private:
+	template<typename U>
+	static auto test(int) -> decltype(U::_struct_padding_bytes, std::true_type()) {}
+
+	template<typename>
+	static std::false_type test(...) {}
+
+public:
+	static constexpr bool value = decltype(test<T>(0))::value;
+};
+template<typename T, bool HasPadding = HasPaddingSize<T>::value>
+struct AdjustedSizeHelper final
+{
+	static constexpr size_t value = sizeof(T);
+};
+template<typename T>
+struct AdjustedSizeHelper<T, true> final
+{
+	static constexpr size_t value = sizeof(T) - sizeof(T::_struct_padding_bytes);
+};
+
+template<typename T>
+static constexpr size_t AdjustedSize = AdjustedSizeHelper<T>::value;
+
 /** Macros */
 #define ROUND_DATA_LENGTH_UINT32(len) ((len + 3) & ~0x3)
