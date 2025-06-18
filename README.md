@@ -128,4 +128,12 @@ For example, to inject the DLL into a second instance of the same game, provide 
 
 ## Credits
 
+
+## Fixes if you get the following errors, install VS 2019 with some C++ components.
+![vs](https://github.com/user-attachments/assets/6662758e-b9bd-4679-b394-5228f7beecc0)
+
+
+
+
+
 * [codereversing.com](https://www.codereversing.com/archives/138) for providing some logs and tons of helpful information, regarding reverse-engineering the Internet Games.
