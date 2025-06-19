@@ -60,28 +60,67 @@ protected:
 	template<uint32 Type, typename T>
 	void BroadcastGenericMessage(const T& msgApp, int excludePlayerSeat = -1, int len = sizeof(T))
 	{
-		for (PlayerSocket* player : m_players)
+		switch (WaitForSingleObject(m_broadcastMutex, 5000))
 		{
-			if (player->m_seat != excludePlayerSeat)
-				player->OnMatchGenericMessage<Type>(msgApp, len);
+			case WAIT_OBJECT_0: // Acquired ownership of the broadcast mutex
+			{
+				for (PlayerSocket* player : m_players)
+				{
+					if (player->m_seat != excludePlayerSeat)
+						player->OnMatchGenericMessage<Type>(msgApp, len);
+				}
+
+				if (!ReleaseMutex(m_broadcastMutex))
+					throw std::runtime_error("Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + GetLastError());
+				break;
+			}
+
+			case WAIT_ABANDONED: // Acquired ownership of an abandoned broadcast mutex
+				throw std::runtime_error("Match::BroadcastGenericMessage(): Got ownership of an abandoned broadcast mutex: " + GetLastError());
 		}
 	}
 	template<uint32 Type, typename T>
 	void BroadcastGameMessage(const T& msgGame, int excludePlayerSeat = -1, int len = sizeof(T))
 	{
-		for (PlayerSocket* player : m_players)
+		switch (WaitForSingleObject(m_broadcastMutex, 5000))
 		{
-			if (player->m_seat != excludePlayerSeat)
-				player->OnMatchGameMessage<Type>(msgGame, len);
+			case WAIT_OBJECT_0: // Acquired ownership of the broadcast mutex
+			{
+				for (PlayerSocket* player : m_players)
+				{
+					if (player->m_seat != excludePlayerSeat)
+						player->OnMatchGameMessage<Type>(msgGame, len);
+				}
+
+				if (!ReleaseMutex(m_broadcastMutex))
+					throw std::runtime_error("Match::BroadcastGameMessage(): Couldn't release broadcast mutex: " + GetLastError());
+				break;
+			}
+
+			case WAIT_ABANDONED: // Acquired ownership of an abandoned broadcast mutex
+				throw std::runtime_error("Match::BroadcastGameMessage(): Got ownership of an abandoned broadcast mutex: " + GetLastError());
 		}
 	}
 	template<uint32 Type, typename T, typename M, uint16 MessageLen> // Trailing data array after T
 	void BroadcastGameMessage(const T& msgGame, const Array<M, MessageLen>& msgGameSecond, int excludePlayerSeat = -1)
 	{
-		for (PlayerSocket* player : m_players)
+		switch (WaitForSingleObject(m_broadcastMutex, 5000))
 		{
-			if (player->m_seat != excludePlayerSeat)
-				player->OnMatchGameMessage<Type>(msgGame, msgGameSecond);
+			case WAIT_OBJECT_0: // Acquired ownership of the broadcast mutex
+			{
+				for (PlayerSocket* player : m_players)
+				{
+					if (player->m_seat != excludePlayerSeat)
+						player->OnMatchGameMessage<Type>(msgGame, msgGameSecond);
+				}
+
+				if (!ReleaseMutex(m_broadcastMutex))
+					throw std::runtime_error("Match::BroadcastGameMessage(): Couldn't release broadcast mutex: " + GetLastError());
+				break;
+			}
+
+			case WAIT_ABANDONED: // Acquired ownership of an abandoned broadcast mutex
+				throw std::runtime_error("Match::BroadcastGameMessage(): Got ownership of an abandoned broadcast mutex: " + GetLastError());
 		}
 	}
 
@@ -92,6 +131,9 @@ protected:
 	State m_state;
 
 	const SkillLevel m_skillLevel;
+
+private:
+	HANDLE m_broadcastMutex;
 
 private:
 	Match(const Match&) = delete;
