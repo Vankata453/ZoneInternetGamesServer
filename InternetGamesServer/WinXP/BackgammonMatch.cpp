@@ -164,7 +164,7 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 					m_playerStates[0] = MatchPlayerState::END_MATCH;
 					m_playerStates[1] = MatchPlayerState::END_MATCH;
 					m_matchState = MatchState::ENDED;
-
+					m_state = STATE_GAMEOVER;
 					return;
 				}
 			}
@@ -196,6 +196,7 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 					m_playerStates[0] = MatchPlayerState::END_GAME;
 					m_playerStates[1] = MatchPlayerState::END_GAME;
 					m_matchState = MatchState::PLAYING;
+					m_state = STATE_PLAYING;
 					return;
 				}
 			}

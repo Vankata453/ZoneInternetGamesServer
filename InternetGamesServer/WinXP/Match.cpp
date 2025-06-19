@@ -51,7 +51,8 @@ Match::Match(PlayerSocket& player) :
 	::Match<PlayerSocket>(player),
 	m_state(STATE_WAITINGFORPLAYERS),
 	m_skillLevel(player.GetSkillLevel()),
-	m_broadcastMutex(CreateMutex(nullptr, false, nullptr))
+	m_broadcastMutex(CreateMutex(nullptr, false, nullptr)),
+	m_endTime(0)
 {
 	JoinPlayer(player);
 }
@@ -125,6 +126,29 @@ Match::Update()
 
 				std::cout << "[MATCH] " << m_guid << ": Started match!" << std::endl;
 				m_state = STATE_PLAYING;
+			}
+			break;
+		}
+		case STATE_PLAYING:
+		{
+			if (m_endTime != 0)
+			{
+				std::cout << "[MATCH] " << m_guid << ": Playing state restored, cancelling game over close timer." << std::endl;
+				m_endTime = 0;
+			}
+			break;
+		}
+		case STATE_GAMEOVER:
+		{
+			if (m_endTime == 0)
+			{
+				std::cout << "[MATCH] " << m_guid << ": Game over, match will automatically close in 60 seconds!" << std::endl;
+				m_endTime = std::time(nullptr);
+			}
+			else if (std::time(nullptr) - m_endTime >= 60) // A minute has passed since the match ended
+			{
+				std::cout << "[MATCH] " << m_guid << ": Match ended a minute ago, closing!" << std::endl;
+				m_state = STATE_ENDED;
 			}
 			break;
 		}

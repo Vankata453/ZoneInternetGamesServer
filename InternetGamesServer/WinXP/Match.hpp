@@ -34,6 +34,7 @@ public:
 		STATE_WAITINGFORPLAYERS,
 		STATE_PENDINGSTART,
 		STATE_PLAYING,
+		STATE_GAMEOVER,
 		STATE_ENDED
 	};
 
@@ -135,6 +136,8 @@ protected:
 
 private:
 	HANDLE m_broadcastMutex;
+
+	std::time_t m_endTime;
 
 private:
 	Match(const Match&) = delete;
