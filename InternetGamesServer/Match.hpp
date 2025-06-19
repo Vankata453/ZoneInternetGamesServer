@@ -10,6 +10,8 @@
 #include <rpc.h>
 #include <rpcdce.h>
 
+#define MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE 0 // DEBUG: If a player leaves a match, do not disconnect other players.
+
 template<typename P>
 class Match
 {

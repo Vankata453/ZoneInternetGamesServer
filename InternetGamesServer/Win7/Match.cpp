@@ -66,8 +66,6 @@ Match::QueuedEvent::QueuedEvent(const std::string& xml_, const std::string& xmlS
 {}
 
 
-#define MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE 0 // DEBUG: If a player leaves a match, do not disconnect other players.
-
 Match::Match(PlayerSocket& player) :
 	::Match<PlayerSocket>(player),
 	m_state(STATE_WAITINGFORPLAYERS),

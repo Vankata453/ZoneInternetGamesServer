@@ -67,9 +67,21 @@ MatchManager::Update()
 				match->Update();
 				++it;
 			}
-			for (auto it = m_matches_winxp.begin(); it != m_matches_winxp.end(); ++it)
+			for (auto it = m_matches_winxp.begin(); it != m_matches_winxp.end();)
 			{
-				(*it)->Update();
+				const auto& match = *it;
+
+				// Close ended matches
+				if (match->GetState() == WinXP::Match::STATE_ENDED)
+				{
+					std::cout << "[MATCH MANAGER] Closing ended Windows XP " << WinXP::Match::GameToNameString(match->GetGame())
+						<< " match " << match->GetGUID() << "!" << std::endl;
+					it = m_matches_winxp.erase(it);
+					continue;
+				}
+
+				match->Update();
+				++it;
 			}
 
 			if (!ReleaseMutex(m_mutex))
