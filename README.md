@@ -1,12 +1,17 @@
 # Zone Internet Games Server
 
-This project aims to bring back the functionality of the Internet Games, included in Windows 7, the servers for which were officially shut down on January 22nd, 2020.
+This project aims to bring back the functionality of the Internet Games included in Windows 7 and XP, the servers for which were officially shut down on:
+
+* **Windows XP**: July 31st, 2019
+* **Windows 7**: January 22nd, 2020
 
 Those games include:
 
-* Internet Backgammon
-* Internet Checkers
-* Internet Spades
+* Internet Backgammon (XP, 7)
+* Internet Checkers (XP, 7)
+* Internet Spades (XP, 7)
+* Internet Hearts (XP)
+* Internet Reversi (XP)
 
 ## Connecting an Internet Game to a hosted Internet Games Server
 
@@ -42,22 +47,22 @@ This repository includes, or will include, the following:
 
 A Winsock server, which aims to make the Internet Games playable by acting as a Zone games server.
 It matches players in lobbies, depending on the game being played, as well as the chosen skill level.
-It can manage many matches of any of the 3 games at the same time.
+It can manage many matches of any of the games at the same time.
 
 Each game has custom messages, which need to be supported by the server in order for it to function properly.
 The current progress on individual game support is the following:
 
-#### Internet Backgammon
+#### Internet Backgammon (Windows 7)
 
-Internet Backgammon, according to my testing, is fully supported.
+Fully supported, according to my testing.
 
-![Internet Backgammon](docs/img/README_BackgammonPreview.png)
+![Internet Backgammon (7)](docs/img/README_BackgammonPreview.png)
 
-#### Internet Checkers
+#### Internet Checkers (Windows 7)
 
-Internet Checkers, according to my testing, is fully supported.
+Fully supported, according to my testing.
 
-![Internet Checkers](docs/img/README_CheckersPreview.png)
+![Internet Checkers (7)](docs/img/README_CheckersPreview.png)
 
 > [!NOTE]
 >
@@ -65,11 +70,33 @@ Internet Checkers, according to my testing, is fully supported.
 > so that leads to the drawback of causing an "Error communicating with server" message
 > after a game has finished with a win (even though since the game has ended anyway, it's not really important).
 
-#### Internet Spades
+#### Internet Spades (Windows 7)
 
-Internet Spades, according to my testing, is fully supported.
+Fully supported, according to my testing.
 
-![Internet Spades](docs/img/README_SpadesPreview.png)
+![Internet Spades (7)](docs/img/README_SpadesPreview.png)
+
+#### Internet Backgammon (Windows XP)
+
+Fully supported, according to my testing.
+
+![Internet Backgammon (XP)](docs/img/README_BackgammonXPPreview.png)
+
+#### Internet Checkers (Windows XP)
+
+To-be-done!
+
+#### Internet Spades (Windows XP)
+
+To-be-done!
+
+#### Internet Hearts (Windows XP)
+
+To-be-done!
+
+#### Internet Reversi (Windows XP)
+
+To-be-done!
 
 
 > [!NOTE]
@@ -96,18 +123,32 @@ Internet Spades, according to my testing, is fully supported.
 
 ### Internet Games Client DLL + DLL Injector
 
-A DLL, which is to be injected into any of the 3 games, using the DLL Injector application.
+A DLL, which is to be injected into any of the 3 games, using the DLL Injector application. It has two variants for Windows 7 and Windows XP games. The Windows XP variant is only available in x86 builds.
 
-The DLL performs the following operations:
+> [!NOTE]
+>
+> The Internet Games Client DLL and the DLL Injector currently do not run on Windows XP, due to them linking to newer libraries.
+> Currently, you can only use them when playing the Windows XP Internet Games on a newer Windows version.
+
+#### Functionality
+
+The Windows 7 Client DLL performs the following operations:
 
 * Creates the `HKEY_CURRENT_USER\Software\Microsoft\zone.com\Zgmprxy` registry key, if it doesn't exist.
 * Creates a `DisableTLS` DWORD 32-bit registry value under `HKEY_CURRENT_USER\Software\Microsoft\zone.com\Zgmprxy`, set to 1.
 * Displays a dialog, where the user can enter a host and port, where an [Internet Games Server](#internet-games-server) is located, to connect to.
 * Puts a hook on the [`GetAddrInfoW`](https://learn.microsoft.com/en-us/windows/win32/api/ws2tcpip/nf-ws2tcpip-getaddrinfow) function from `ws2_32.dll`, setting appropriate arguments, as well as the host and the port, specified in the dialog.
 
+The Windows XP Client DLL performs the following operations:
+
+* Displays a dialog, where the user can enter a host and port, where an [Internet Games Server](#internet-games-server) is located, to connect to.
+* Puts a hook on the [`inet_addr`](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-inet_addr) and [`htons`](https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-htons) functions from `ws2_32.dll`, setting the host and the port, specified in the dialog.
+
 #### Command line arguments (DLL Injector)
 
-* `-b` (`--backgammon`) *OR* `-c` (`--checkers`) *OR* `-s` (`--spades`) **[REQUIRED]**: Specifies the target game to inject the client DLL into.
+* **Exactly one of the following arguments:**
+  * `-b` (`--backgammon`) *OR* `-c` (`--checkers`) *OR* `-s` (`--spades`) **[REQUIRED]**: Specifies a target Windows 7 game to inject the client DLL into.
+  * `-x` (`--xp`): For injecting the client DLL into any Windows XP game **(x86 only!)**.
 * `-r` (`--repeat`): See [Using DLL Injector on multiple instances](#using-dll-injector-on-multiple-instances). *Default: 0*
 
 ## Building
