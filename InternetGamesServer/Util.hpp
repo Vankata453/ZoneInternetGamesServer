@@ -113,6 +113,53 @@ struct Array final
 	inline T& operator[](int idx) { return raw[idx]; }
 	inline const T& operator[](int idx) const { return raw[idx]; }
 
+	class iterator final
+	{
+	public:
+		iterator(Array<T, Size>& parent, size_t index = 0) :
+			el(parent.raw + index)
+		{}
+
+		inline T& operator*() { return *el; }
+		inline iterator& operator++()
+		{
+			++el;
+			return *this;
+		}
+
+		inline bool operator==(const iterator& other) const { return el == other.el; }
+		inline bool operator!=(const iterator& other) const { return el != other.el; }
+
+	private:
+		T* el;
+	};
+	class const_iterator final
+	{
+	public:
+		const_iterator(const Array<T, Size>& parent, size_t index = 0) :
+			el(parent.raw + index)
+		{}
+
+		inline const T& operator*() const { return *el; }
+		inline const_iterator& operator++()
+		{
+			++el;
+			return *this;
+		}
+
+		inline bool operator==(const const_iterator& other) const { return el == other.el; }
+		inline bool operator!=(const const_iterator& other) const { return el != other.el; }
+
+	private:
+		const T* el;
+	};
+
+	inline iterator begin() { return iterator(*this); }
+	inline iterator end() { return iterator(*this, len - 1); }
+
+	inline const_iterator begin() const { return const_iterator(*this); }
+	inline const_iterator end() const { return const_iterator(*this, len - 1); }
+
 private:
 	size_t len = 0;
 };
