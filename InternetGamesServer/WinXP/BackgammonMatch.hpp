@@ -3,8 +3,11 @@
 #include "Match.hpp"
 
 #include <array>
+#include <random>
 
 namespace WinXP {
+
+#define XPBackgammonMaxStateTransactionsSize 12
 
 class BackgammonMatch final : public Match
 {
@@ -17,10 +20,15 @@ public:
 	void ProcessIncomingGameMessage(PlayerSocket& player, uint32 type) override;
 
 private:
+	void ValidateStateTransaction(int tag,
+		const Array<MsgStateTransaction::Transaction, XPBackgammonMaxStateTransactionsSize>& trans, int16 seat);
+
+private:
 	enum class MatchState
 	{
 		INITIALIZING,
-		PLAYING
+		PLAYING,
+		ENDED
 	};
 	MatchState m_matchState;
 
@@ -30,9 +38,17 @@ private:
 		AWAITING_INITIAL_TRANSACTION, // Seat 0 only
 		AWAITING_MATCH_START, // Seat 0 only
 		WAITING_FOR_MATCH_START, // Seat 1 only
-		PLAYING
+		IN_GAME,
+		END_GAME,
+		END_MATCH
 	};
 	std::array<MatchPlayerState, 2> m_playerStates;
+
+	std::mt19937 m_rng;
+
+	bool m_initialRollStarted;
+	int m_doubleCubeValue;
+	int16 m_doubleCubeOwnerSeat;
 
 private:
 	BackgammonMatch(const BackgammonMatch&) = delete;
