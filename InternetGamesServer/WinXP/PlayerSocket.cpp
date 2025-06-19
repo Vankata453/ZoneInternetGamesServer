@@ -122,7 +122,7 @@ PlayerSocket::OnGameStart(const std::vector<PlayerSocket*>& matchPlayers)
 	assert(matchPlayers.size() == totalPlayerCount);
 	for (int16 i = 0; i < totalPlayerCount; ++i)
 	{
-		MsgGameStart::User& user = msgGameStart.users[i];
+		MsgGameStart::User& user = msgGameStart.users[matchPlayers[i]->m_seat];
 		const Config& config = matchPlayers[i]->m_config;
 
 		user.ID = matchPlayers[i]->GetID();
