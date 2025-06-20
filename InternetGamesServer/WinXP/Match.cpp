@@ -51,7 +51,6 @@ Match::Match(PlayerSocket& player) :
 	::Match<PlayerSocket>(player),
 	m_state(STATE_WAITINGFORPLAYERS),
 	m_skillLevel(player.GetSkillLevel()),
-	m_broadcastMutex(CreateMutex(nullptr, false, nullptr)),
 	m_endTime(0)
 {
 	JoinPlayer(player);
@@ -61,8 +60,6 @@ Match::~Match()
 {
 	for (PlayerSocket* p : m_players)
 		p->OnMatchEnded();
-
-	CloseHandle(m_broadcastMutex);
 }
 
 

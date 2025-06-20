@@ -20,6 +20,7 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	m_securityKey(),
 	m_sequenceID(0),
 	m_inLobby(false),
+	m_genericMessageMutex(CreateMutex(nullptr, false, nullptr)),
 	m_incomingGenericMsg(),
 	m_incomingGameMsg(),
 	m_serviceName(),
@@ -34,6 +35,8 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 PlayerSocket::~PlayerSocket()
 {
 	OnDisconnected();
+
+	CloseHandle(m_genericMessageMutex);
 }
 
 
@@ -160,6 +163,9 @@ PlayerSocket::AwaitGenericMessageHeader()
 	if (!ValidateInternalMessageNoTotalLength<MessageConnectionGeneric>(m_incomingGenericMsg.base))
 		throw std::runtime_error("MsgBaseGeneric: Message is invalid!");
 
+	if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
+		throw std::runtime_error("WinXP::PlayerSocket::AwaitGenericMessageHeader(): Got ownership of an abandoned generic message mutex: " + GetLastError());
+
 	m_socket.ReceiveData(m_incomingGenericMsg.info, DecryptMessage, m_securityKey);
 
 	m_incomingGenericMsg.valid = true;
@@ -228,6 +234,9 @@ PlayerSocket::AwaitIncomingGenericFooter()
 		throw std::runtime_error("MsgFooterGeneric: Status is not OK! - " + std::to_string(msgFooterGeneric.status));
 
 	m_incomingGenericMsg.valid = false;
+
+	if (!ReleaseMutex(m_genericMessageMutex))
+		throw std::runtime_error("WinXP::PlayerSocket::AwaitIncomingGenericFooter(): Couldn't release generic message mutex: " + GetLastError());
 }
 
 
