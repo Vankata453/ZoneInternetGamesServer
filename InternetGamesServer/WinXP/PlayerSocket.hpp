@@ -6,6 +6,7 @@
 #include "Match.hpp"
 #include "Protocol/Game.hpp"
 #include "Protocol/Init.hpp"
+#include "Protocol/Proxy.hpp"
 #include "Security.hpp"
 
 namespace WinXP {
@@ -85,7 +86,7 @@ private:
 		if (msgBaseGeneric.totalLength != sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + ROUND_DATA_LENGTH_UINT32(msgBaseApp.dataLength) + sizeof(MsgFooterGeneric))
 			throw std::runtime_error("MsgBaseGeneric: totalLength is invalid!");
 
-		if (msgBaseApp.signature != (m_inLobby ? XPProxyProtocolSignature : XPInternalProtocolSignatureApp))
+		if (msgBaseApp.signature != (m_inLobby ? XPLobbyProtocolSignature : XPProxyProtocolSignature))
 			throw std::runtime_error("MsgBaseApplication: Invalid protocol signature!");
 		if (msgBaseApp.messageType != Type)
 			throw std::runtime_error("MsgBaseApplication: Incorrect message type! Expected: " + std::to_string(Type));
@@ -274,7 +275,7 @@ private:
 		assert(len % sizeof(uint32) == 0);
 
 		MsgBaseApplication msgBaseApp;
-		msgBaseApp.signature = (m_inLobby ? XPProxyProtocolSignature : XPInternalProtocolSignatureApp);
+		msgBaseApp.signature = (m_inLobby ? XPLobbyProtocolSignature : XPProxyProtocolSignature);
 		msgBaseApp.messageType = Type;
 		msgBaseApp.dataLength = len;
 
@@ -289,7 +290,7 @@ private:
 		MsgFooterGeneric msgFooterGeneric;
 		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
 
-		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
+		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
 			throw std::runtime_error("WinXP::PlayerSocket::SendGenericMessage(): Got ownership of an abandoned generic message mutex: " + GetLastError());
 
 		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
@@ -309,7 +310,7 @@ private:
 		assert(m_inLobby);
 
 		MsgBaseApplication msgBaseApp;
-		msgBaseApp.signature = XPProxyProtocolSignature;
+		msgBaseApp.signature = XPLobbyProtocolSignature;
 		msgBaseApp.messageType = MessageGameMessage;
 		msgBaseApp.dataLength = sizeof(MsgGameMessage) + len;
 
@@ -334,7 +335,7 @@ private:
 		MsgFooterGeneric msgFooterGeneric;
 		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
 
-		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
+		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
 			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + GetLastError());
 
 		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
@@ -355,7 +356,7 @@ private:
 		assert(m_inLobby);
 
 		MsgBaseApplication msgBaseApp;
-		msgBaseApp.signature = XPProxyProtocolSignature;
+		msgBaseApp.signature = XPLobbyProtocolSignature;
 		msgBaseApp.messageType = MessageGameMessage;
 		msgBaseApp.dataLength = static_cast<uint32>(sizeof(MsgGameMessage) + AdjustedSize<T> + msgGameSecond.GetLength() * sizeof(M));
 
@@ -386,7 +387,7 @@ private:
 		MsgFooterGeneric msgFooterGeneric;
 		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
 
-		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
+		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
 			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + GetLastError());
 
 		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
@@ -408,7 +409,7 @@ private:
 		assert(m_inLobby);
 
 		MsgBaseApplication msgBaseApp;
-		msgBaseApp.signature = XPProxyProtocolSignature;
+		msgBaseApp.signature = XPLobbyProtocolSignature;
 		msgBaseApp.messageType = MessageGameMessage;
 		msgBaseApp.dataLength = static_cast<uint32>(sizeof(MsgGameMessage) + AdjustedSize<T> + msgGameSecond.GetLength() * sizeof(M));
 
@@ -445,7 +446,7 @@ private:
 		MsgFooterGeneric msgFooterGeneric;
 		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
 
-		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
+		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
 			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + GetLastError());
 
 		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
@@ -461,6 +462,7 @@ private:
 
 	/* Sending messages */
 	void SendProxyHelloMessages();
+	void SendProxyServiceInfoMessages(MsgProxyServiceInfo::Reason reason);
 
 private:
 	struct IncomingGenericMessage final

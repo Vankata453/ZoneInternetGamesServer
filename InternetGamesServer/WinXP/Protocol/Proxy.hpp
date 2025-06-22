@@ -55,6 +55,13 @@ struct MsgProxyServiceRequest final : public MsgBaseProxy
 	uint32 reason = 0;
 	char serviceName[16];
 	uint32 channel = 0;
+
+	enum Reason
+	{
+		REASON_INFO = 0,
+		REASON_CONNECT,
+		REASON_DISCONNECT
+	};
 };
 
 namespace Util {

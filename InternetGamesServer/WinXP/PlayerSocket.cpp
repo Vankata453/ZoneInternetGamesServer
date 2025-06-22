@@ -7,7 +7,6 @@
 #include <sstream>
 
 #include "../../MatchManager.hpp"
-#include "Protocol/Proxy.hpp"
 
 namespace WinXP {
 
@@ -95,6 +94,39 @@ PlayerSocket::ProcessMessages()
 						m_match->ProcessMessage(msgChatSwitch);
 						break;
 					}
+					case 1: // Find new opponent
+					{
+						m_inLobby = false;
+
+						/* Await disconnect request and send response */
+						const MsgProxyServiceRequest msgServiceRequestDisconnect = AwaitIncomingGenericMessage<MsgProxyServiceRequest, 1>();
+						if (!ValidateProxyMessage<MessageProxyServiceRequest>(msgServiceRequestDisconnect))
+							throw std::runtime_error("MsgProxyServiceRequest: Message is invalid!");
+
+						if (msgServiceRequestDisconnect.reason != MsgProxyServiceRequest::REASON_DISCONNECT)
+							throw std::runtime_error("MsgProxyServiceRequest: Reason is not client disconnection!");
+
+						SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_DISCONNECT);
+
+						/* Disconnect from match */
+						m_match->DisconnectedPlayer(*this);
+
+						/* Await connect request and send response */
+						AwaitGenericMessageHeader();
+						const MsgProxyServiceRequest msgServiceRequestConnect = AwaitIncomingGenericMessage<MsgProxyServiceRequest, 1>();
+						if (!ValidateProxyMessage<MessageProxyServiceRequest>(msgServiceRequestConnect))
+							throw std::runtime_error("MsgProxyServiceRequest: Message is invalid!");
+
+						if (msgServiceRequestConnect.reason != MsgProxyServiceRequest::REASON_CONNECT)
+							throw std::runtime_error("MsgProxyServiceRequest: Reason is not client connection!");
+
+						SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_CONNECT);
+
+						/* Await client config */
+						m_inLobby = true;
+						m_state = STATE_UNCONFIGURED;
+						break;
+					}
 					default:
 						throw std::runtime_error("PlayerSocket::ProcessMessages(): Generic message of unknown type received: " + std::to_string(m_incomingGenericMsg.GetType()));
 				}
@@ -163,7 +195,7 @@ PlayerSocket::AwaitGenericMessageHeader()
 	if (!ValidateInternalMessageNoTotalLength<MessageConnectionGeneric>(m_incomingGenericMsg.base))
 		throw std::runtime_error("MsgBaseGeneric: Message is invalid!");
 
-	if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
+	if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
 		throw std::runtime_error("WinXP::PlayerSocket::AwaitGenericMessageHeader(): Got ownership of an abandoned generic message mutex: " + GetLastError());
 
 	m_socket.ReceiveData(m_incomingGenericMsg.info, DecryptMessage, m_securityKey);
@@ -183,7 +215,7 @@ PlayerSocket::AwaitIncomingGameMessageHeader()
 	if (msgBaseGeneric.totalLength != sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + ROUND_DATA_LENGTH_UINT32(msgBaseApp.dataLength) + sizeof(MsgFooterGeneric))
 		throw std::runtime_error("MsgBaseGeneric: totalLength is invalid!");
 
-	if (msgBaseApp.signature != XPProxyProtocolSignature)
+	if (msgBaseApp.signature != XPLobbyProtocolSignature)
 		throw std::runtime_error("MsgBaseApplication: Invalid protocol signature!");
 	if (msgBaseApp.messageType != MessageGameMessage)
 		throw std::runtime_error("MsgBaseApplication: Incorrect message type! Expected: Game message");
@@ -255,6 +287,9 @@ PlayerSocket::AwaitProxyHiMessages()
 		throw std::runtime_error("MsgProxyHi: Incorrect protocol version!");
 	if (msg.hi.clientVersion != XPProxyClientVersion)
 		throw std::runtime_error("MsgProxyHi: Unsupported client version!");
+
+	if (msg.serviceRequest.reason != MsgProxyServiceRequest::REASON_CONNECT)
+		throw std::runtime_error("MsgProxyServiceRequest: Reason is not client connection!");
 
 	// Determine game
 	const std::string gameToken(msg.hi.gameToken, 6);
@@ -354,6 +389,21 @@ PlayerSocket::SendProxyHelloMessages()
 	msgsServiceInfo.basicServiceInfo = msgsHello.basicServiceInfo;
 
 	SendGenericMessage<3>(std::move(msgsHello));
+	SendGenericMessage<2>(std::move(msgsServiceInfo));
+}
+
+void
+PlayerSocket::SendProxyServiceInfoMessages(MsgProxyServiceInfo::Reason reason)
+{
+	Util::MsgProxyServiceInfoCollection msgsServiceInfo;
+
+	msgsServiceInfo.basicServiceInfo.flags = MsgProxyServiceInfo::SERVICE_AVAILABLE | MsgProxyServiceInfo::SERVICE_LOCAL;
+	msgsServiceInfo.basicServiceInfo.minutesRemaining = 0;
+	std::memcpy(msgsServiceInfo.basicServiceInfo.serviceName, m_serviceName, sizeof(m_serviceName));
+
+	msgsServiceInfo.serviceInfo = msgsServiceInfo.basicServiceInfo;
+	msgsServiceInfo.serviceInfo.reason = reason;
+
 	SendGenericMessage<2>(std::move(msgsServiceInfo));
 }
 
