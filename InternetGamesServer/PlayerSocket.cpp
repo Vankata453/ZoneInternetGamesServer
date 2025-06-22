@@ -13,8 +13,11 @@ PlayerSocket::PlayerSocket(Socket& socket) :
 
 
 void
-PlayerSocket::OnMatchEnded()
+PlayerSocket::Disconnect()
 {
-	// The match has ended, so disconnect the player
+	if (m_socket.IsDisconnected())
+		return;
+
+	OnDisconnected();
 	m_socket.Disconnect();
 }

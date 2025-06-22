@@ -29,7 +29,6 @@ public:
 
 	/** Event handling */
 	void OnGameStart(const std::vector<PlayerSocket*>& matchPlayers);
-	void OnDisconnected();
 
 	inline void OnMatchAwaitEmptyGameMessage(uint32 type)
 	{
@@ -463,6 +462,9 @@ private:
 	/* Sending messages */
 	void SendProxyHelloMessages();
 	void SendProxyServiceInfoMessages(MsgProxyServiceInfo::Reason reason);
+
+protected:
+	void OnDisconnected() override;
 
 private:
 	struct IncomingGenericMessage final

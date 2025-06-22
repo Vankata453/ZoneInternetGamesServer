@@ -33,7 +33,8 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 
 PlayerSocket::~PlayerSocket()
 {
-	OnDisconnected();
+	if (!m_socket.IsDisconnected())
+		OnDisconnected();
 
 	CloseHandle(m_genericMessageMutex);
 }

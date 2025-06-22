@@ -24,7 +24,6 @@ public:
 
 	/** Event handling */
 	void OnGameStart();
-	void OnDisconnected();
 	void OnEventReceive(const std::string& xml) const;
 	void OnChat(const StateChatTag* tag);
 
@@ -33,6 +32,9 @@ public:
 	inline std::string GetPUID() const { return m_puid; }
 	inline Match::Game GetGame() const { return m_game; }
 	inline Match::Level GetLevel() const { return m_level; }
+
+protected:
+	void OnDisconnected() override;
 
 private:
 	void ParseSasTicket(const std::string& xml);

@@ -25,12 +25,6 @@ public:
 	// Handler for the thread of a socket
 	static DWORD WINAPI SocketHandler(void* socket);
 
-	// Server disconnection request
-	class DisconnectionRequest final : public std::exception
-	{
-	public:
-		DisconnectionRequest() throw() {}
-	};
 	// Client disconnected exception
 	class ClientDisconnected final : public std::exception
 	{
@@ -167,8 +161,15 @@ public:
 
 	inline SOCKET GetRaw() const { return m_socket; }
 	inline std::string GetAddressString() const { return GetAddressString(m_socket); }
+	inline bool IsDisconnected() const { return m_disconnected; }
 
 private:
 	const SOCKET m_socket;
 	std::ostream& m_log;
+
+	bool m_disconnected;
+
+private:
+	Socket(const Socket&) = delete;
+	Socket operator=(const Socket&) = delete;
 };

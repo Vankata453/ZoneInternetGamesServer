@@ -24,7 +24,8 @@ PlayerSocket::PlayerSocket(Socket& socket) :
 
 PlayerSocket::~PlayerSocket()
 {
-	OnDisconnected();
+	if (!m_socket.IsDisconnected())
+		OnDisconnected();
 }
 
 
@@ -46,7 +47,7 @@ std::vector<std::string>
 PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 {
 	if (receivedData[0] == "LEAVE\r\n") // The client has requested to be disconnected from the server
-		throw Socket::DisconnectionRequest();
+		Disconnect();
 
 	switch (m_state)
 	{
@@ -113,7 +114,7 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 		}
 		else if (receivedData[0] == "LEAVE") // Client has left the game, disconnect it from the server
 		{
-			m_socket.Disconnect();
+			Disconnect();
 		}
 		break;
 	}

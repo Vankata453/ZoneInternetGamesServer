@@ -58,8 +58,9 @@ Match::Match(PlayerSocket& player) :
 
 Match::~Match()
 {
+	// Match has ended, so disconnect any remaining players
 	for (PlayerSocket* p : m_players)
-		p->OnMatchEnded();
+		p->Disconnect();
 }
 
 
@@ -96,7 +97,13 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 	//       an "Internet connection to the game server was broken" message after a game has finished with a win
 	//       (even though since the game has ended anyway, it's not really important).
 	if (m_state == STATE_PLAYING)
+	{
+		// Disconnect any remaining players
+		for (PlayerSocket* p : m_players)
+			p->Disconnect();
+
 		m_state = STATE_ENDED;
+	}
 #endif
 }
 

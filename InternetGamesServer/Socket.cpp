@@ -89,10 +89,6 @@ Socket::SocketHandler(void* socket_)
 		assert(player);
 		player->ProcessMessages();
 	}
-	catch (const DisconnectionRequest&)
-	{
-		// Will be logged after this statement
-	}
 	catch (const ClientDisconnected&)
 	{
 		std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
@@ -105,7 +101,6 @@ Socket::SocketHandler(void* socket_)
 			<< ": " << err.what() << std::endl;;
 		return 0;
 	}
-	std::cout << "[SOCKET] Disconnecting from " << socket.GetAddressString() << '.' << std::endl;
 	return 0;
 }
 
@@ -132,7 +127,8 @@ Socket::GetAddressString(SOCKET socket, const char portSeparator)
 
 Socket::Socket(SOCKET socket, std::ostream& log) :
 	m_socket(socket),
-	m_log(log)
+	m_log(log),
+	m_disconnected(false)
 {}
 
 Socket::~Socket()
@@ -146,10 +142,16 @@ Socket::~Socket()
 void
 Socket::Disconnect()
 {
+	if (m_disconnected)
+		return;
+
+	std::cout << "[SOCKET] Disconnecting from " << GetAddressString() << '.' << std::endl;
+
 	// Shut down the connection
-	HRESULT shutdownResult = shutdown(m_socket, SD_BOTH);
-	if (shutdownResult == SOCKET_ERROR)
+	if (shutdown(m_socket, SD_BOTH) == SOCKET_ERROR)
 		std::cout << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+
+	m_disconnected = true;
 }
 
 

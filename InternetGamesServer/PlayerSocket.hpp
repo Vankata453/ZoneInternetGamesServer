@@ -15,11 +15,13 @@ public:
 
 	virtual void ProcessMessages() = 0;
 
-	/** Event handling */
-	virtual void OnMatchEnded();
+	void Disconnect();
 
 	virtual Socket::Type GetType() const = 0;
 	inline std::string GetAddressString() const { return m_socket.GetAddressString(); }
+
+protected:
+	virtual void OnDisconnected() {}
 
 protected:
 	Socket& m_socket;
