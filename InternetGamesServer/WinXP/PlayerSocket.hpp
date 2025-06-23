@@ -59,6 +59,10 @@ public:
 	{
 		SendGameMessage<Type>(msgGame, msgGameSecond);
 	}
+	inline void OnMatchServiceInfo(MsgProxyServiceInfo::Reason reason)
+	{
+		SendProxyServiceInfoMessages(reason);
+	}
 
 	Socket::Type GetType() const override { return Socket::WIN7; }
 	inline uint32 GetID() const { return m_ID; }
@@ -268,13 +272,13 @@ private:
 
 	/* Sending utilities */
 	template<uint32 Type, typename T>
-	void SendGenericMessage(T msgApp, int len = AdjustedSize<T>)
+	void SendGenericMessage(T msgApp, int len = AdjustedSize<T>, bool forceProxySig = false)
 	{
 		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
 		assert(len % sizeof(uint32) == 0);
 
 		MsgBaseApplication msgBaseApp;
-		msgBaseApp.signature = (m_inLobby ? XPLobbyProtocolSignature : XPProxyProtocolSignature);
+		msgBaseApp.signature = (m_inLobby && !forceProxySig ? XPLobbyProtocolSignature : XPProxyProtocolSignature);
 		msgBaseApp.messageType = Type;
 		msgBaseApp.dataLength = len;
 
@@ -499,6 +503,7 @@ private:
 	const GUID m_machineGUID;
 	const uint32 m_securityKey;
 	uint32 m_sequenceID;
+	bool m_proxyConnected;
 	bool m_inLobby;
 
 	HANDLE m_genericMessageMutex; // Mutex to prevent simultaneous receiving/sending generic messages

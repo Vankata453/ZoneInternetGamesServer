@@ -89,6 +89,14 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 		return;
 	}
 
+	// If the game has already ended, notify all players that someone has left the match and "Play Again" is now impossible
+	if (m_state == STATE_GAMEOVER && m_players.size() == GetRequiredPlayerCount() - 1)
+	{
+		for (PlayerSocket* p : m_players)
+			p->OnMatchServiceInfo(MsgProxyServiceInfo::SERVICE_DISCONNECT);
+		return;
+	}
+
 #if not MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE
 	// Originally, servers replaced players who have left the game with AI.
 	// However, since there is no logic support for any of the games on this server currently,
@@ -137,6 +145,8 @@ Match::Update()
 		{
 			if (m_endTime != 0)
 			{
+				assert(m_players.size() == GetRequiredPlayerCount());
+
 				std::cout << "[MATCH] " << m_guid << ": Playing state restored, cancelling game over close timer." << std::endl;
 				m_endTime = 0;
 			}

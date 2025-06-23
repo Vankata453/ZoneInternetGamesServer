@@ -149,7 +149,6 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 					m_playerStates[player.m_seat] = MatchPlayerState::END_GAME;
 					m_doubleCubeValue = 1;
 					m_doubleCubeOwnerSeat = -1;
-
 					return;
 				}
 				case MessageEndMatch:
@@ -165,6 +164,9 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 					m_playerStates[1] = MatchPlayerState::END_MATCH;
 					m_matchState = MatchState::ENDED;
 					m_state = STATE_GAMEOVER;
+
+					m_doubleCubeValue = 1;
+					m_doubleCubeOwnerSeat = -1;
 					return;
 				}
 			}
@@ -182,15 +184,13 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 					const MsgEndTurn msgEndGame = player.OnMatchAwaitGameMessage<MsgEndTurn, MessageEndGame>();
 					if (msgEndGame.seat != player.m_seat)
 						throw std::runtime_error("Backgammon::MsgEndTurn (MessageEndGame): Incorrect seat!");
-
-					m_playerStates[player.m_seat] = MatchPlayerState::END_GAME;
-					m_doubleCubeValue = 1;
-					m_doubleCubeOwnerSeat = -1;
-
 					return;
 				}
 				case MessageNewMatch:
 				{
+					if (m_players.size() != GetRequiredPlayerCount())
+						throw std::runtime_error("Backgammon::MessageNewMatch: Cannot proceed as players are missing!");
+
 					player.OnMatchAwaitEmptyGameMessage(MessageNewMatch);
 
 					m_playerStates[0] = MatchPlayerState::END_GAME;
