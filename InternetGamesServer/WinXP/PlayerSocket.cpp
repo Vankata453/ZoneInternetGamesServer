@@ -18,7 +18,6 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	m_machineGUID(hiMessage.machineGUID),
 	m_securityKey(),
 	m_sequenceID(0),
-	m_proxyConnected(false),
 	m_inLobby(false),
 	m_genericMessageMutex(CreateMutex(nullptr, false, nullptr)),
 	m_incomingGenericMsg(),
@@ -59,18 +58,31 @@ PlayerSocket::ProcessMessages()
 			{
 				AwaitProxyHiMessages();
 				SendProxyHelloMessages();
-				m_inLobby = true;
-
-				m_state = STATE_UNCONFIGURED;
 				break;
 			}
 			case STATE_UNCONFIGURED:
 			{
 				AwaitClientConfig();
-				SendGenericMessage<MessageServerStatus>(MsgServerStatus());
 
 				m_match = MatchManager::Get().FindLobby(*this);
 				m_state = STATE_WAITINGFOROPPONENTS;
+
+				SendGenericMessage<MessageServerStatus>(MsgServerStatus());
+				break;
+			}
+			case STATE_PROXY_DISCONNECTED: // Reconnect proxy (after: find new opponent, received corrupted data)
+			{
+				assert(!m_inLobby);
+
+				/* Await connect request and send response */
+				const MsgProxyServiceRequest msgServiceRequestConnect = AwaitIncomingGenericMessage<MsgProxyServiceRequest, 1>();
+				if (!ValidateProxyMessage<MessageProxyServiceRequest>(msgServiceRequestConnect))
+					throw std::runtime_error("MsgProxyServiceRequest: Message is invalid!");
+
+				if (msgServiceRequestConnect.reason != MsgProxyServiceRequest::REASON_CONNECT)
+					throw std::runtime_error("MsgProxyServiceRequest: Reason is not client connection!");
+
+				SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_CONNECT);
 				break;
 			}
 			case STATE_PLAYING:
@@ -96,47 +108,21 @@ PlayerSocket::ProcessMessages()
 						m_match->ProcessMessage(msgChatSwitch);
 						break;
 					}
-					case 1: // Find new opponent
+					case 1: // Disconnect proxy (find new opponent, received corrupted data)
 					{
+						assert(m_inLobby);
+
 						m_inLobby = false;
 
-						if (m_proxyConnected)
-						{
-							/* Await disconnect request and send response */
-							const MsgProxyServiceRequest msgServiceRequestDisconnect = AwaitIncomingGenericMessage<MsgProxyServiceRequest, 1>();
-							if (!ValidateProxyMessage<MessageProxyServiceRequest>(msgServiceRequestDisconnect))
-								throw std::runtime_error("MsgProxyServiceRequest: Message is invalid!");
-
-							if (msgServiceRequestDisconnect.reason != MsgProxyServiceRequest::REASON_DISCONNECT)
-								throw std::runtime_error("MsgProxyServiceRequest: Reason is not client disconnection!");
-
-							SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_DISCONNECT);
-
-							/* Disconnect from match */
-							m_match->DisconnectedPlayer(*this);
-
-							/* Await connect request header */
-							AwaitGenericMessageHeader();
-						}
-						else
-						{
-							/* Disconnect from match */
-							m_match->DisconnectedPlayer(*this);
-						}
-
-						/* Await connect request and send response */
-						const MsgProxyServiceRequest msgServiceRequestConnect = AwaitIncomingGenericMessage<MsgProxyServiceRequest, 1>();
-						if (!ValidateProxyMessage<MessageProxyServiceRequest>(msgServiceRequestConnect))
+						/* Await disconnect request and send response */
+						const MsgProxyServiceRequest msgServiceRequestDisconnect = AwaitIncomingGenericMessage<MsgProxyServiceRequest, 1>();
+						if (!ValidateProxyMessage<MessageProxyServiceRequest>(msgServiceRequestDisconnect))
 							throw std::runtime_error("MsgProxyServiceRequest: Message is invalid!");
 
-						if (msgServiceRequestConnect.reason != MsgProxyServiceRequest::REASON_CONNECT)
-							throw std::runtime_error("MsgProxyServiceRequest: Reason is not client connection!");
+						if (msgServiceRequestDisconnect.reason != MsgProxyServiceRequest::REASON_DISCONNECT)
+							throw std::runtime_error("MsgProxyServiceRequest: Reason is not client disconnection!");
 
-						SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_CONNECT);
-
-						/* Await client config */
-						m_inLobby = true;
-						m_state = STATE_UNCONFIGURED;
+						SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_DISCONNECT);
 						break;
 					}
 					default:
@@ -402,7 +388,9 @@ PlayerSocket::SendProxyHelloMessages()
 
 	SendGenericMessage<3>(std::move(msgsHello));
 	SendGenericMessage<2>(std::move(msgsServiceInfo));
-	m_proxyConnected = true;
+
+	m_inLobby = true;
+	m_state = STATE_UNCONFIGURED;
 }
 
 void
@@ -418,10 +406,22 @@ PlayerSocket::SendProxyServiceInfoMessages(MsgProxyServiceInfo::Reason reason)
 	msgsServiceInfo.serviceInfo.reason = reason;
 
 	SendGenericMessage<2>(std::move(msgsServiceInfo), AdjustedSize<Util::MsgProxyServiceInfoCollection>, true);
+
 	if (reason == MsgProxyServiceInfo::SERVICE_CONNECT)
-		m_proxyConnected = true;
+	{
+		m_inLobby = true;
+		m_state = STATE_UNCONFIGURED;
+	}
 	else if (reason == MsgProxyServiceInfo::SERVICE_DISCONNECT)
-		m_proxyConnected = false;
+	{
+		if (m_match)
+		{
+			m_match->DisconnectedPlayer(*this);
+			m_match = nullptr;
+		}
+		m_inLobby = false;
+		m_state = STATE_PROXY_DISCONNECTED;
+	}
 }
 
 

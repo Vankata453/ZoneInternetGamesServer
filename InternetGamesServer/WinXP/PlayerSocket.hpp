@@ -17,6 +17,7 @@ public:
 	enum State {
 		STATE_INITIALIZED,
 		STATE_UNCONFIGURED,
+		STATE_PROXY_DISCONNECTED,
 		STATE_WAITINGFOROPPONENTS,
 		STATE_PLAYING
 	};
@@ -64,7 +65,7 @@ public:
 		SendProxyServiceInfoMessages(reason);
 	}
 
-	Socket::Type GetType() const override { return Socket::WIN7; }
+	Socket::Type GetType() const override { return Socket::WINXP; }
 	inline uint32 GetID() const { return m_ID; }
 	inline State GetState() const { return m_state; }
 	inline Match::Game GetGame() const { return m_game; }
@@ -503,7 +504,6 @@ private:
 	const GUID m_machineGUID;
 	const uint32 m_securityKey;
 	uint32 m_sequenceID;
-	bool m_proxyConnected;
 	bool m_inLobby;
 
 	HANDLE m_genericMessageMutex; // Mutex to prevent simultaneous receiving/sending generic messages

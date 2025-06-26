@@ -97,6 +97,8 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 	{
 		for (PlayerSocket* p : m_players)
 			p->OnMatchServiceInfo(MsgProxyServiceInfo::SERVICE_DISCONNECT);
+
+		m_state = STATE_ENDED;
 		return;
 	}
 
