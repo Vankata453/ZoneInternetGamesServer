@@ -37,7 +37,7 @@ MatchManager::MatchManager() :
 	m_matches_winxp()
 {
 	if (!m_mutex)
-		throw std::runtime_error("MatchManager: Couldn't create mutex: " + GetLastError());
+		throw std::runtime_error("MatchManager: Couldn't create mutex: " + std::to_string(GetLastError()));
 }
 
 MatchManager::~MatchManager()
@@ -86,11 +86,11 @@ MatchManager::Update()
 			}
 
 			if (!ReleaseMutex(m_mutex))
-				throw std::runtime_error("MatchManager::Update(): Couldn't release mutex: " + GetLastError());
+				throw std::runtime_error("MatchManager::Update(): Couldn't release mutex: " + std::to_string(GetLastError()));
 			break;
 
 		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
-			throw std::runtime_error("MatchManager::Update(): Got ownership of an abandoned mutex: " + GetLastError());
+			throw std::runtime_error("MatchManager::Update(): Got ownership of an abandoned mutex: " + std::to_string(GetLastError()));
 	}
 }
 
@@ -190,13 +190,13 @@ MatchManager::CreateLobby(Win7::PlayerSocket& player)
 			}
 
 			if (!ReleaseMutex(m_mutex))
-				throw std::runtime_error("MatchManager::CreateLobby(): Couldn't release mutex: " + GetLastError());
+				throw std::runtime_error("MatchManager::CreateLobby(): Couldn't release mutex: " + std::to_string(GetLastError()));
 
 			return m_matches_win7.back().get();
 		}
 
 		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
-			throw std::runtime_error("MatchManager::CreateLobby(): Got ownership of an abandoned mutex: " + GetLastError());
+			throw std::runtime_error("MatchManager::CreateLobby(): Got ownership of an abandoned mutex: " + std::to_string(GetLastError()));
 	}
 	return nullptr; // Would never happen, but suppresses a warning
 }
@@ -235,13 +235,13 @@ MatchManager::CreateLobby(WinXP::PlayerSocket& player)
 			}
 
 			if (!ReleaseMutex(m_mutex))
-				throw std::runtime_error("MatchManager::CreateLobby(): Couldn't release mutex: " + GetLastError());
+				throw std::runtime_error("MatchManager::CreateLobby(): Couldn't release mutex: " + std::to_string(GetLastError()));
 
 			return m_matches_winxp.back().get();
 		}
 
 		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
-			throw std::runtime_error("MatchManager::CreateLobby(): Got ownership of an abandoned mutex: " + GetLastError());
+			throw std::runtime_error("MatchManager::CreateLobby(): Got ownership of an abandoned mutex: " + std::to_string(GetLastError()));
 	}
 	return nullptr; // Would never happen, but suppresses a warning
 }

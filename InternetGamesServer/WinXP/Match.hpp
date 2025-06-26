@@ -63,7 +63,7 @@ protected:
 	void BroadcastGenericMessage(const T& msgApp, int excludePlayerSeat = -1, int len = sizeof(T))
 	{
 		if (WaitForSingleObject(m_broadcastMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
-			throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Got ownership of an abandoned broadcast mutex: " + GetLastError());
+			throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Got ownership of an abandoned broadcast mutex: " + std::to_string(GetLastError()));
 
 		try
 		{
@@ -76,18 +76,18 @@ protected:
 		catch (const std::exception&)
 		{
 			if (!ReleaseMutex(m_broadcastMutex))
-				throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + GetLastError());
+				throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
 			throw;
 		}
 
 		if (!ReleaseMutex(m_broadcastMutex))
-			throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + GetLastError());
+			throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
 	}
 	template<uint32 Type, typename T>
 	void BroadcastGameMessage(const T& msgGame, int excludePlayerSeat = -1, int len = sizeof(T))
 	{
 		if (WaitForSingleObject(m_broadcastMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
-			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Got ownership of an abandoned broadcast mutex: " + GetLastError());
+			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Got ownership of an abandoned broadcast mutex: " + std::to_string(GetLastError()));
 
 		try
 		{
@@ -100,18 +100,18 @@ protected:
 		catch (const std::exception&)
 		{
 			if (!ReleaseMutex(m_broadcastMutex))
-				throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + GetLastError());
+				throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
 			throw;
 		}
 
 		if (!ReleaseMutex(m_broadcastMutex))
-			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Couldn't release broadcast mutex: " + GetLastError());
+			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
 	}
 	template<uint32 Type, typename T, typename M, uint16 MessageLen> // Trailing data array after T
 	void BroadcastGameMessage(const T& msgGame, const Array<M, MessageLen>& msgGameSecond, int excludePlayerSeat = -1)
 	{
 		if (WaitForSingleObject(m_broadcastMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
-			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Got ownership of an abandoned broadcast mutex: " + GetLastError());
+			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Got ownership of an abandoned broadcast mutex: " + std::to_string(GetLastError()));
 
 		try
 		{
@@ -124,12 +124,12 @@ protected:
 		catch (const std::exception&)
 		{
 			if (!ReleaseMutex(m_broadcastMutex))
-				throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + GetLastError());
+				throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
 			throw;
 		}
 
 		if (!ReleaseMutex(m_broadcastMutex))
-			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Couldn't release broadcast mutex: " + GetLastError());
+			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
 	}
 
 	/** Other static utilities */

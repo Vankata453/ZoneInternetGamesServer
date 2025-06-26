@@ -217,12 +217,12 @@ Match::EventSend(const PlayerSocket& caller, const std::string& xml)
 			}
 
 			if (!ReleaseMutex(m_eventMutex))
-				throw std::runtime_error("Match::EventSend(): Couldn't release event mutex: " + GetLastError());
+				throw std::runtime_error("Match::EventSend(): Couldn't release event mutex: " + std::to_string(GetLastError()));
 			break;
 		}
 
 		case WAIT_ABANDONED: // Acquired ownership of an abandoned event mutex
-			throw std::runtime_error("Match::EventSend(): Got ownership of an abandoned event mutex: " + GetLastError());
+			throw std::runtime_error("Match::EventSend(): Got ownership of an abandoned event mutex: " + std::to_string(GetLastError()));
 	}
 }
 
