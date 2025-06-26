@@ -84,7 +84,9 @@ Fully supported, according to my testing.
 
 #### Internet Checkers (Windows XP)
 
-To-be-done!
+Fully supported, according to my testing.
+
+![Internet Backgammon (XP)](docs/img/README_CheckersXPPreview.png)
 
 #### Internet Spades (Windows XP)
 

@@ -11,6 +11,7 @@
 #include "Win7/PlayerSocket.hpp"
 #include "Win7/SpadesMatch.hpp"
 #include "WinXP/BackgammonMatch.hpp"
+#include "WinXP/CheckersMatch.hpp"
 #include "WinXP/PlayerSocket.hpp"
 
 MatchManager MatchManager::s_instance;
@@ -213,8 +214,8 @@ MatchManager::CreateLobby(WinXP::PlayerSocket& player)
 					m_matches_winxp.push_back(std::make_unique<WinXP::BackgammonMatch>(player));
 					break;
 
-				case WinXP::Match::Game::CHECKERS: // TODO
-					m_matches_winxp.push_back(std::make_unique<WinXP::BackgammonMatch>(player));
+				case WinXP::Match::Game::CHECKERS:
+					m_matches_winxp.push_back(std::make_unique<WinXP::CheckersMatch>(player));
 					break;
 
 				case WinXP::Match::Game::SPADES: // TODO

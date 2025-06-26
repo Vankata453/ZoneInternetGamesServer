@@ -63,6 +63,9 @@
     <ClCompile Include="WinXP\BackgammonMatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="WinXP\CheckersMatch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.hpp">
@@ -123,6 +126,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="WinXP\Endian.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\CheckersMatch.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Protocol\Checkers.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
