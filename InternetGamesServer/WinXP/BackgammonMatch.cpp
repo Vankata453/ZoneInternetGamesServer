@@ -249,6 +249,8 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 				player.OnMatchAwaitGameMessage<MsgChatMessage, MessageChatMessage, char, 128>();
 			if (msgChat.first.userID != player.GetID())
 				throw std::runtime_error("Backgammon::MsgChatMessage: Incorrect user ID!");
+			if (msgChat.first.seat != player.m_seat)
+				throw std::runtime_error("Backgammon::MsgChatMessage: Incorrect seat!");
 
 			const WCHAR* chatMsgRaw = reinterpret_cast<const WCHAR*>(msgChat.second.raw);
 			const size_t chatMsgLen = msgChat.second.GetLength() / sizeof(WCHAR) - 1;

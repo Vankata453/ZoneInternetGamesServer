@@ -19,6 +19,7 @@ public:
 		STATE_UNCONFIGURED,
 		STATE_PROXY_DISCONNECTED,
 		STATE_WAITINGFOROPPONENTS,
+		STATE_STARTING_GAME,
 		STATE_PLAYING
 	};
 
@@ -36,29 +37,47 @@ public:
 		AwaitIncomingEmptyGameMessage(type);
 	}
 	template<typename T, uint32 Type>
-	T OnMatchAwaitGameMessage()
+	inline T OnMatchAwaitGameMessage()
 	{
 		return AwaitIncomingGameMessage<T, Type>();
 	}
 	template<typename T, uint32 Type, typename M, uint16 MessageLen> // Trailing data array after T
-	std::pair<T, Array<M, MessageLen>> OnMatchAwaitGameMessage()
+	inline std::pair<T, Array<M, MessageLen>> OnMatchAwaitGameMessage()
 	{
 		return AwaitIncomingGameMessage<T, Type, M, MessageLen>();
 	}
 	template<uint32 Type, typename T>
-	void OnMatchGenericMessage(const T& msgApp, int len = sizeof(T))
+	inline void OnMatchGenericMessage(const T& msgApp, int len = sizeof(T))
 	{
 		SendGenericMessage<Type>(msgApp, len);
 	}
 	template<uint32 Type, typename T>
 	void OnMatchGameMessage(const T& msgGame, int len = sizeof(T))
 	{
-		SendGameMessage<Type>(msgGame, len);
+		switch (WaitForSingleObject(m_acceptsGameMessagesEvent, 5000))
+		{
+			case WAIT_OBJECT_0:
+				SendGameMessage<Type>(msgGame, len);
+				break;
+			case WAIT_TIMEOUT:
+				throw std::runtime_error("WinXP::PlayerSocket::OnMatchGameMessage(): Timed out waiting for \"accepts game messages\" event!");
+			default:
+				throw std::runtime_error("WinXP::PlayerSocket::OnMatchGameMessage(): An error occured waiting for \"accepts game messages\" event: " + std::to_string(GetLastError()));
+		}
 	}
 	template<uint32 Type, typename T, typename M, uint16 MessageLen> // Trailing data array after T
 	void OnMatchGameMessage(T msgGame, const Array<M, MessageLen>& msgGameSecond)
 	{
-		SendGameMessage<Type>(msgGame, msgGameSecond);
+		switch (WaitForSingleObject(m_acceptsGameMessagesEvent, 5000))
+		{
+			case WAIT_OBJECT_0:
+				SendGameMessage<Type>(msgGame, msgGameSecond);
+				break;
+			case WAIT_TIMEOUT:
+				throw std::runtime_error("WinXP::PlayerSocket::OnMatchGameMessage(): Timed out waiting for \"accepts game messages\" event!");
+			default:
+				throw std::runtime_error("WinXP::PlayerSocket::OnMatchGameMessage(): An error occured waiting for \"accepts game messages\" event: " + std::to_string(GetLastError()));
+		}
 	}
 	inline void OnMatchServiceInfo(MsgProxyServiceInfo::Reason reason)
 	{
@@ -312,6 +331,7 @@ private:
 		assert(len % sizeof(uint32) == 0);
 
 		assert(m_inLobby);
+		assert(m_state == STATE_PLAYING); // The client accepts game messages only in STATE_PLAYING
 
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = XPLobbyProtocolSignature;
@@ -358,6 +378,7 @@ private:
 		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
 
 		assert(m_inLobby);
+		assert(m_state == STATE_PLAYING); // The client accepts game messages only in STATE_PLAYING
 
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = XPLobbyProtocolSignature;
@@ -411,6 +432,7 @@ private:
 		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
 
 		assert(m_inLobby);
+		assert(m_state == STATE_PLAYING); // The client accepts game messages only in STATE_PLAYING
 
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = XPLobbyProtocolSignature;
@@ -507,6 +529,7 @@ private:
 	bool m_inLobby;
 
 	HANDLE m_genericMessageMutex; // Mutex to prevent simultaneous receiving/sending generic messages
+	HANDLE m_acceptsGameMessagesEvent; // Signaled when the client is ready to accept game messages. Only set in STATE_PLAYING
 
 	IncomingGenericMessage m_incomingGenericMsg;
 	IncomingGameMessage m_incomingGameMsg;

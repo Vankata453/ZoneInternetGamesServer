@@ -42,6 +42,9 @@ CheckersMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 	{
 		case MatchState::AWAITING_START:
 		{
+			if (m_playersCheckedIn[player.m_seat])
+				break;
+
 			MsgCheckIn msgCheckIn = player.OnMatchAwaitGameMessage<MsgCheckIn, MessageCheckIn>();
 			if (msgCheckIn.protocolSignature != XPCheckersProtocolSignature)
 				throw std::runtime_error("Checkers::MsgCheckIn: Invalid protocol signature!");
@@ -203,9 +206,15 @@ CheckersMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 	{
 		case MessageChatMessage:
 		{
-			const std::pair<MsgChatMessage, Array<char, 128>> msgChat =
+			std::pair<MsgChatMessage, Array<char, 128>> msgChat =
 				player.OnMatchAwaitGameMessage<MsgChatMessage, MessageChatMessage, char, 128>();
-			if (msgChat.first.userID != player.GetID())
+			if (msgChat.first.seat != player.m_seat)
+				throw std::runtime_error("Checkers::MsgChatMessage: Incorrect player seat!");
+
+			// userID may be 0, if chat message was sent before client check-in completed
+			if (msgChat.first.userID == 0)
+				msgChat.first.userID = player.GetID();
+			else if (msgChat.first.userID != player.GetID())
 				throw std::runtime_error("Checkers::MsgChatMessage: Incorrect user ID!");
 
 			const WCHAR* chatMsgRaw = reinterpret_cast<const WCHAR*>(msgChat.second.raw);

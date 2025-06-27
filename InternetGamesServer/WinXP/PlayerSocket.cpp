@@ -20,6 +20,7 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	m_sequenceID(0),
 	m_inLobby(false),
 	m_genericMessageMutex(CreateMutex(nullptr, false, nullptr)),
+	m_acceptsGameMessagesEvent(CreateEvent(nullptr, TRUE, FALSE, nullptr)),
 	m_incomingGenericMsg(),
 	m_incomingGameMsg(),
 	m_serviceName(),
@@ -36,6 +37,7 @@ PlayerSocket::~PlayerSocket()
 	if (!m_socket.IsDisconnected())
 		OnDisconnected();
 
+	CloseHandle(m_acceptsGameMessagesEvent);
 	CloseHandle(m_genericMessageMutex);
 }
 
@@ -85,6 +87,19 @@ PlayerSocket::ProcessMessages()
 				SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_CONNECT);
 				break;
 			}
+			case STATE_STARTING_GAME:
+			{
+				switch (WaitForSingleObject(m_acceptsGameMessagesEvent, 5000))
+				{
+					case WAIT_OBJECT_0:
+						break;
+					case WAIT_TIMEOUT:
+						throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Timed out waiting for \"accepts game messages\" event!");
+					default:
+						throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): An error occured waiting for \"accepts game messages\" event: " + std::to_string(GetLastError()));
+				}
+				// Fallthrough (game messages are now accepted)
+			}
 			case STATE_PLAYING:
 			{
 				switch (m_incomingGenericMsg.GetType())
@@ -126,10 +141,12 @@ PlayerSocket::ProcessMessages()
 						break;
 					}
 					default:
-						throw std::runtime_error("PlayerSocket::ProcessMessages(): Generic message of unknown type received: " + std::to_string(m_incomingGenericMsg.GetType()));
+						throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Generic message of unknown type received: " + std::to_string(m_incomingGenericMsg.GetType()));
 				}
 				break;
 			}
+			default:
+				throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Message was received, but current state (" + std::to_string(m_state) + ") does not process any!");
 		}
 	}
 }
@@ -166,11 +183,15 @@ PlayerSocket::OnGameStart(const std::vector<PlayerSocket*>& matchPlayers)
 		assert(config.skillLevel != Match::SkillLevel::INVALID);
 	}
 
+	m_state = STATE_STARTING_GAME;
+
 	SendGenericMessage<MessageUserInfoResponse>(std::move(msgUserInfo));
 	SendGenericMessage<MessageGameStart>(std::move(msgGameStart),
 		sizeof(MsgGameStart) - sizeof(MsgGameStart::User) * (XPMaxMatchPlayers - totalPlayerCount));
 
+	// The match can now send game messages to this client - game start messages have been sent
 	m_state = STATE_PLAYING;
+	SetEvent(m_acceptsGameMessagesEvent);
 }
 
 void
@@ -205,7 +226,9 @@ void
 PlayerSocket::AwaitIncomingGameMessageHeader()
 {
 	assert(m_incomingGenericMsg.valid && !m_incomingGameMsg.valid);
+
 	assert(m_inLobby);
+	assert(m_state == STATE_PLAYING); // The client can send game messages only in STATE_PLAYING
 
 	const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
 	const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
@@ -409,6 +432,8 @@ PlayerSocket::SendProxyServiceInfoMessages(MsgProxyServiceInfo::Reason reason)
 
 	if (reason == MsgProxyServiceInfo::SERVICE_CONNECT)
 	{
+		assert(m_state != STATE_PLAYING);
+
 		m_inLobby = true;
 		m_state = STATE_UNCONFIGURED;
 	}
@@ -421,6 +446,7 @@ PlayerSocket::SendProxyServiceInfoMessages(MsgProxyServiceInfo::Reason reason)
 		}
 		m_inLobby = false;
 		m_state = STATE_PROXY_DISCONNECTED;
+		ResetEvent(m_acceptsGameMessagesEvent);
 	}
 }
 
