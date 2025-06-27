@@ -217,7 +217,15 @@ PlayerSocket::AwaitGenericMessageHeader()
 	if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
 		throw std::runtime_error("WinXP::PlayerSocket::AwaitGenericMessageHeader(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
 
-	m_socket.ReceiveData(m_incomingGenericMsg.info, DecryptMessage, m_securityKey);
+	try
+	{
+		m_socket.ReceiveData(m_incomingGenericMsg.info, DecryptMessage, m_securityKey);
+	}
+	catch (...)
+	{
+		ReleaseMutex(m_genericMessageMutex);
+		throw;
+	}
 
 	m_incomingGenericMsg.valid = true;
 }
@@ -243,7 +251,15 @@ PlayerSocket::AwaitIncomingGameMessageHeader()
 	if (msgBaseApp.dataLength < sizeof(MsgGameMessage))
 		throw std::runtime_error("MsgBaseApplication: Data is of incorrect size! Expected: equal or more than " + std::to_string(sizeof(MsgGameMessage)));
 
-	m_socket.ReceiveData(m_incomingGameMsg.info, DecryptMessage, m_securityKey);
+	try
+	{
+		m_socket.ReceiveData(m_incomingGameMsg.info, DecryptMessage, m_securityKey);
+	}
+	catch (...)
+	{
+		ReleaseMutex(m_genericMessageMutex);
+		throw;
+	}
 
 	m_incomingGameMsg.valid = true;
 }
@@ -259,10 +275,10 @@ PlayerSocket::AwaitIncomingEmptyGameMessage(uint32 type)
 
 	if (msgGameMessage.gameID != m_match->GetGameID())
 		throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
-	if (msgGameMessage.length != 0)
-		throw std::runtime_error("MsgGameMessage: length is invalid: Expected empty message!");
 	if (msgGameMessage.type != type)
 		throw std::runtime_error("MsgGameMessage: Incorrect message type! Expected: " + std::to_string(type));
+	if (msgGameMessage.length != 0)
+		throw std::runtime_error("MsgGameMessage: length is invalid: Expected empty message!");
 
 	AwaitIncomingGenericFooter();
 	m_incomingGameMsg.valid = false;
@@ -280,7 +296,15 @@ void
 PlayerSocket::AwaitIncomingGenericFooter()
 {
 	MsgFooterGeneric msgFooterGeneric;
-	m_socket.ReceiveData(msgFooterGeneric);
+	try
+	{
+		m_socket.ReceiveData(msgFooterGeneric);
+	}
+	catch (...)
+	{
+		ReleaseMutex(m_genericMessageMutex);
+		throw;
+	}
 	if (msgFooterGeneric.status == MsgFooterGeneric::STATUS_CANCELLED)
 		throw std::runtime_error("MsgFooterGeneric: Status is CANCELLED!");
 	else if (msgFooterGeneric.status != MsgFooterGeneric::STATUS_OK)

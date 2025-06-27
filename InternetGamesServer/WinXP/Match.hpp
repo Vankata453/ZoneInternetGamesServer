@@ -73,10 +73,9 @@ protected:
 					player->OnMatchGenericMessage<Type>(msgApp, len);
 			}
 		}
-		catch (const std::exception&)
+		catch (...)
 		{
-			if (!ReleaseMutex(m_broadcastMutex))
-				throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
+			ReleaseMutex(m_broadcastMutex);
 			throw;
 		}
 
@@ -97,10 +96,9 @@ protected:
 					player->OnMatchGameMessage<Type>(msgGame, len);
 			}
 		}
-		catch (const std::exception&)
+		catch (...)
 		{
-			if (!ReleaseMutex(m_broadcastMutex))
-				throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
+			ReleaseMutex(m_broadcastMutex);
 			throw;
 		}
 
@@ -121,10 +119,9 @@ protected:
 					player->OnMatchGameMessage<Type>(msgGame, msgGameSecond);
 			}
 		}
-		catch (const std::exception&)
+		catch (...)
 		{
-			if (!ReleaseMutex(m_broadcastMutex))
-				throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
+			ReleaseMutex(m_broadcastMutex);
 			throw;
 		}
 

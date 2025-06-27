@@ -117,7 +117,15 @@ private:
 			throw std::runtime_error("MsgBaseApplication: Data is of incorrect size! Expected: " + std::to_string(AdjustedSize<T>));
 
 		T msgApp;
-		m_socket.ReceiveData(msgApp, DecryptMessage, m_securityKey);
+		try
+		{
+			m_socket.ReceiveData(msgApp, DecryptMessage, m_securityKey);
+		}
+		catch (...)
+		{
+			ReleaseMutex(m_genericMessageMutex);
+			throw;
+		}
 
 		AwaitIncomingGenericFooter();
 
@@ -146,16 +154,24 @@ private:
 
 		if (msgGameMessage.gameID != m_match->GetGameID())
 			throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
+		if (msgGameMessage.type != Type)
+			throw std::runtime_error("MsgGameMessage: Incorrect message type! Expected: " + std::to_string(Type));
 		if (msgGameMessage.length != msgBaseApp.dataLength - sizeof(msgGameMessage))
 			throw std::runtime_error("MsgGameMessage: length is invalid!");
 		if (msgGameMessage.length != AdjustedSize<T>)
 			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(AdjustedSize<T>));
-		if (msgGameMessage.type != Type)
-			throw std::runtime_error("MsgGameMessage: Incorrect message type! Expected: " + std::to_string(Type));
 
 		T msgGame;
 		char msgGameRaw[sizeof(T)];
-		m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
+		try
+		{
+			m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
+		}
+		catch (...)
+		{
+			ReleaseMutex(m_genericMessageMutex);
+			throw;
+		}
 
 		AwaitIncomingGenericFooter();
 		m_incomingGameMsg.valid = false;
@@ -185,14 +201,22 @@ private:
 
 		if (msgGameMessage.gameID != m_match->GetGameID())
 			throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
-		if (msgGameMessage.length != msgBaseApp.dataLength - sizeof(msgGameMessage))
-			throw std::runtime_error("MsgGameMessage: length is invalid!");
 		if (msgGameMessage.type != Type)
 			throw std::runtime_error("MsgGameMessage: Incorrect message type! Expected: " + std::to_string(Type));
+		if (msgGameMessage.length != msgBaseApp.dataLength - sizeof(msgGameMessage))
+			throw std::runtime_error("MsgGameMessage: length is invalid!");
 
 		T msgGame;
 		char msgGameRaw[sizeof(T)];
-		m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
+		try
+		{
+			m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
+		}
+		catch (...)
+		{
+			ReleaseMutex(m_genericMessageMutex);
+			throw;
+		}
 
 		if (msgGameMessage.length != AdjustedSize<T> + msgGame.messageLength * sizeof(M))
 			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(AdjustedSize<T> + msgGame.messageLength * sizeof(M)));
@@ -203,7 +227,15 @@ private:
 
 		Array<M, MessageLen> msgGameSecond;
 		msgGameSecond.SetLength(static_cast<int>(msgGame.messageLength));
-		m_socket.ReceiveData(msgGameSecond, DecryptMessage, m_securityKey, rawMsgLength);
+		try
+		{
+			m_socket.ReceiveData(msgGameSecond, DecryptMessage, m_securityKey, rawMsgLength);
+		}
+		catch (...)
+		{
+			ReleaseMutex(m_genericMessageMutex);
+			throw;
+		}
 
 		AwaitIncomingGenericFooter();
 		m_incomingGameMsg.valid = false;
@@ -237,14 +269,22 @@ private:
 
 		if (msgGameMessage.gameID != m_match->GetGameID())
 			throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
-		if (msgGameMessage.length != msgBaseApp.dataLength - sizeof(msgGameMessage))
-			throw std::runtime_error("MsgGameMessage: length is invalid!");
 		if (msgGameMessage.type != Type)
 			throw std::runtime_error("MsgGameMessage: Incorrect message type! Expected: " + std::to_string(Type));
+		if (msgGameMessage.length != msgBaseApp.dataLength - sizeof(msgGameMessage))
+			throw std::runtime_error("MsgGameMessage: length is invalid!");
 
 		T msgGame;
 		char msgGameRaw[sizeof(T)];
-		m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
+		try
+		{
+			m_socket.ReceiveData(msgGame, &T::ConvertToHostEndian, DecryptMessage, m_securityKey, msgGameRaw);
+		}
+		catch (...)
+		{
+			ReleaseMutex(m_genericMessageMutex);
+			throw;
+		}
 
 		if (msgGameMessage.length != AdjustedSize<T> + msgGame.messageLength * sizeof(M))
 			throw std::runtime_error("MsgGameMessage: Data is of incorrect size! Expected: " + std::to_string(AdjustedSize<T> + msgGame.messageLength * sizeof(M)));
@@ -257,7 +297,15 @@ private:
 		// Must be in one buffer as to not split DWORD blocks for checksum generation.
 		Array<char, ROUND_DATA_LENGTH_UINT32(MessageLen * sizeof(M))> msgGameSecondFull;
 		msgGameSecondFull.SetLength(rawMsgLengthRounded);
-		m_socket.ReceiveData(msgGameSecondFull, DecryptMessage, m_securityKey, rawMsgLengthRounded);
+		try
+		{
+			m_socket.ReceiveData(msgGameSecondFull, DecryptMessage, m_securityKey, rawMsgLengthRounded);
+		}
+		catch (...)
+		{
+			ReleaseMutex(m_genericMessageMutex);
+			throw;
+		}
 
 		AwaitIncomingGenericFooter();
 		m_incomingGameMsg.valid = false;
@@ -316,10 +364,18 @@ private:
 		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
 			throw std::runtime_error("WinXP::PlayerSocket::SendGenericMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
 
-		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgApp), EncryptMessage, m_securityKey, len);
-		m_socket.SendData(msgFooterGeneric);
+		try
+		{
+			m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgApp), EncryptMessage, m_securityKey, len);
+			m_socket.SendData(msgFooterGeneric);
+		}
+		catch (...)
+		{
+			ReleaseMutex(m_genericMessageMutex);
+			throw;
+		}
 
 		if (!ReleaseMutex(m_genericMessageMutex))
 			throw std::runtime_error("WinXP::PlayerSocket::SendGenericMessage(): Couldn't release generic message mutex: " + std::to_string(GetLastError()));
@@ -362,11 +418,19 @@ private:
 		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
 			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
 
-		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey, len);
-		m_socket.SendData(msgFooterGeneric);
+		try
+		{
+			m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey, len);
+			m_socket.SendData(msgFooterGeneric);
+		}
+		catch (...)
+		{
+			ReleaseMutex(m_genericMessageMutex);
+			throw;
+		}
 
 		if (!ReleaseMutex(m_genericMessageMutex))
 			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Couldn't release generic message mutex: " + std::to_string(GetLastError()));
@@ -415,12 +479,20 @@ private:
 		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
 			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
 
-		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgGameSecond), EncryptMessage, m_securityKey, rawMsgLength);
-		m_socket.SendData(msgFooterGeneric);
+		try
+		{
+			m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgGameSecond), EncryptMessage, m_securityKey, rawMsgLength);
+			m_socket.SendData(msgFooterGeneric);
+		}
+		catch (...)
+		{
+			ReleaseMutex(m_genericMessageMutex);
+			throw;
+		}
 
 		if (!ReleaseMutex(m_genericMessageMutex))
 			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Couldn't release generic message mutex: " + std::to_string(GetLastError()));
@@ -475,12 +547,20 @@ private:
 		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
 			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
 
-		m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey);
-		m_socket.SendData(std::move(msgGameSecondFull), EncryptMessage, m_securityKey, rawMsgLengthRounded);
-		m_socket.SendData(msgFooterGeneric);
+		try
+		{
+			m_socket.SendData(std::move(msgBaseGeneric), EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgBaseApp), EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgGameMessage), EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgGame), &T::ConvertToNetworkEndian, EncryptMessage, m_securityKey);
+			m_socket.SendData(std::move(msgGameSecondFull), EncryptMessage, m_securityKey, rawMsgLengthRounded);
+			m_socket.SendData(msgFooterGeneric);
+		}
+		catch (...)
+		{
+			ReleaseMutex(m_genericMessageMutex);
+			throw;
+		}
 
 		if (!ReleaseMutex(m_genericMessageMutex))
 			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Couldn't release generic message mutex: " + std::to_string(GetLastError()));
