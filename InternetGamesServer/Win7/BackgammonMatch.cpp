@@ -1,9 +1,11 @@
 #include "BackgammonMatch.hpp"
 
 #include "PlayerSocket.hpp"
-#include "Util.hpp"
+#include "../Util.hpp"
 
 static const std::uniform_int_distribution<> s_dieDistribution(1, 6);
+
+namespace Win7 {
 
 BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
 	Match(player),
@@ -323,4 +325,6 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 		}
 	}
 	return {};
+}
+
 }

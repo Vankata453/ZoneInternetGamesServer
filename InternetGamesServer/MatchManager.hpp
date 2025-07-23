@@ -3,9 +3,19 @@
 #include <memory>
 #include <vector>
 
-#include "PlayerSocket.hpp"
+#include <winsock2.h>
 
-class Match;
+#include "WinXP/Match.hpp"
+
+class PlayerSocket;
+
+namespace Win7 {
+	class Match;
+	class PlayerSocket;
+};
+namespace WinXP {
+	class PlayerSocket;
+};
 
 class MatchManager final
 {
@@ -28,15 +38,18 @@ public:
 
 	/** Find a lobby (pending match) to join a player in, based on their game.
 		If none is available, create one. */
-	Match* FindLobby(PlayerSocket& player);
+	Win7::Match* FindLobby(Win7::PlayerSocket& player);
+	WinXP::Match* FindLobby(WinXP::PlayerSocket& player);
 
 private:
-	Match* CreateLobby(PlayerSocket& player);
+	Win7::Match* CreateLobby(Win7::PlayerSocket& player);
+	WinXP::Match* CreateLobby(WinXP::PlayerSocket& player);
 
 private:
 	HANDLE m_mutex; // Mutex to prevent simultaneous updating and creation of matches
 
-	std::vector<std::unique_ptr<Match>> m_matches;
+	std::vector<std::unique_ptr<Win7::Match>> m_matches_win7;
+	std::vector<std::unique_ptr<WinXP::Match>> m_matches_winxp;
 
 private:
 	MatchManager(const MatchManager&) = delete;

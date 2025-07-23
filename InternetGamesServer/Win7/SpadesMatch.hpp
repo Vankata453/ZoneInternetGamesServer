@@ -5,17 +5,19 @@
 #include <array>
 #include <random>
 
+namespace Win7 {
+
 class SpadesMatch final : public Match
 {
 public:
 	SpadesMatch(PlayerSocket& player);
 
 	Game GetGame() const override { return Game::SPADES; }
+	size_t GetRequiredPlayerCount() const override { return 4; }
 
 	std::vector<std::string> ConstructGameStartMessagesXML(const PlayerSocket& caller) const override;
 
 protected:
-	size_t GetRequiredPlayerCount() const override { return 4; }
 	std::pair<uint8_t, uint8_t> GetCustomChatMessagesRange() const override { return { 50, 54 }; }
 	bool IsValidChatNudgeMessage(const std::string& msg) const override;
 
@@ -83,3 +85,5 @@ private:
 	SpadesMatch(const SpadesMatch&) = delete;
 	SpadesMatch operator=(const SpadesMatch&) = delete;
 };
+
+}

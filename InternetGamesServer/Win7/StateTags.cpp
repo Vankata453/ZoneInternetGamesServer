@@ -1,6 +1,8 @@
 #include "StateTags.hpp"
 
-#include "Util.hpp"
+#include "../Util.hpp"
+
+namespace Win7 {
 
 StateSTag
 StateSTag::ConstructGameInit(const std::string& xml)
@@ -138,4 +140,6 @@ StateChatTag::AppendToTags(XMLPrinter& printer) const
 	printer.CloseElement("oValue");
 
 	printer.CloseElement("Tag");
+}
+
 }

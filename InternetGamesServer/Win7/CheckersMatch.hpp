@@ -2,6 +2,8 @@
 
 #include "Match.hpp"
 
+namespace Win7 {
+
 class CheckersMatch final : public Match
 {
 public:
@@ -23,3 +25,5 @@ private:
 	CheckersMatch(const CheckersMatch&) = delete;
 	CheckersMatch operator=(const CheckersMatch&) = delete;
 };
+
+}

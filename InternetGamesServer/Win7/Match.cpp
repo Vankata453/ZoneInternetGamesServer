@@ -2,12 +2,13 @@
 
 #include <algorithm>
 #include <iostream>
-#include <rpcdce.h>
 #include <synchapi.h>
 #include <sstream>
 
 #include "PlayerSocket.hpp"
-#include "Util.hpp"
+#include "../Util.hpp"
+
+namespace Win7 {
 
 Match::Game
 Match::GameFromString(const std::string& str)
@@ -65,27 +66,21 @@ Match::QueuedEvent::QueuedEvent(const std::string& xml_, const std::string& xmlS
 {}
 
 
-#define MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE 0 // DEBUG: If a player leaves a match, do not disconnect other players.
-
 Match::Match(PlayerSocket& player) :
+	::Match<PlayerSocket>(player),
 	m_state(STATE_WAITINGFORPLAYERS),
-	m_guid(),
 	m_level(player.GetLevel()),
-	m_players(),
 	m_eventMutex(CreateMutex(nullptr, false, nullptr)),
-	m_creationTime(std::time(nullptr)),
 	m_endTime(0)
 {
-	// Generate a unique GUID for the match
-	UuidCreate(&m_guid);
-
 	JoinPlayer(player);
 }
 
 Match::~Match()
 {
+	// Match has ended, so disconnect any remaining players
 	for (PlayerSocket* p : m_players)
-		p->OnMatchEnded();
+		p->Disconnect();
 
 	CloseHandle(m_eventMutex);
 }
@@ -97,8 +92,7 @@ Match::JoinPlayer(PlayerSocket& player)
 	if (m_state != STATE_WAITINGFORPLAYERS)
 		return;
 
-	// Add to players array
-	m_players.push_back(&player);
+	AddPlayer(player);
 
 	// Switch state, if enough players have joined
 	if (m_players.size() == GetRequiredPlayerCount())
@@ -108,9 +102,7 @@ Match::JoinPlayer(PlayerSocket& player)
 void
 Match::DisconnectedPlayer(PlayerSocket& player)
 {
-	// Remove from players array
-	if (!m_players.empty())
-		m_players.erase(std::remove(m_players.begin(), m_players.end(), &player), m_players.end());
+	RemovePlayer(player);
 
 	// End the match on no players, marking it as to-be-removed from MatchManager
 	if (m_players.empty())
@@ -127,7 +119,13 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 	//       an "Error communicating with server" message after a game has finished with a win
 	//       (even though since the game has ended anyway, it's not really important).
 	if (m_state == STATE_PLAYING)
+	{
+		// Disconnect any remaining players
+		for (PlayerSocket* p : m_players)
+			p->Disconnect();
+
 		m_state = STATE_ENDED;
+	}
 #endif
 }
 
@@ -147,7 +145,7 @@ Match::Update()
 				const int playerCount = static_cast<int>(m_players.size());
 				const std::vector<int> roles = GenerateUniqueRandomNums(0, playerCount - 1);
 				for (int i = 0; i < playerCount; i++)
-					m_players[i]->m_role = roles[i];
+					const_cast<int&>(m_players[i]->m_role) = roles[i];
 
 				for (PlayerSocket* p : m_players)
 					p->OnGameStart();
@@ -219,12 +217,12 @@ Match::EventSend(const PlayerSocket& caller, const std::string& xml)
 			}
 
 			if (!ReleaseMutex(m_eventMutex))
-				throw std::runtime_error("Match::EventSend(): Couldn't release event mutex: " + GetLastError());
+				throw std::runtime_error("Match::EventSend(): Couldn't release event mutex: " + std::to_string(GetLastError()));
 			break;
 		}
 
 		case WAIT_ABANDONED: // Acquired ownership of an abandoned event mutex
-			throw std::runtime_error("Match::EventSend(): Got ownership of an abandoned event mutex: " + GetLastError());
+			throw std::runtime_error("Match::EventSend(): Got ownership of an abandoned event mutex: " + std::to_string(GetLastError()));
 	}
 }
 
@@ -343,4 +341,6 @@ Match::IsValidChatNudgeMessage(const std::string& msg) const
 {
 	return msg == "1400_12345" || // Nudge (player 1)
 		msg == "1400_12346"; // Nudge (player 2)
+}
+
 }

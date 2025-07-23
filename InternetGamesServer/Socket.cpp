@@ -7,10 +7,15 @@
 #include <iostream>
 #include <fstream>
 
-#include "PlayerSocket.hpp"
 #include "Util.hpp"
+#include "Win7/PlayerSocket.hpp"
+#include "WinXP/PlayerSocket.hpp"
+#include "WinXP/Protocol/Init.hpp"
+#include "WinXP/Security.hpp"
 
 #define DEFAULT_BUFLEN 2048
+
+static const char* SOCKET_WIN7_HI_RESPONSE = "STADIUM/2.0\r\n";
 
 std::string Socket::s_logsDirectory = "";
 bool Socket::s_logPingMessages = false;
@@ -40,46 +45,71 @@ Socket::SocketHandler(void* socket_)
 	}
 
 	Socket socket(rawSocket, *logStream);
-	PlayerSocket player(socket);
-
-	while (true)
+	try
 	{
-		try
+		std::unique_ptr<PlayerSocket> player;
 		{
-			// Receive and send back data
-			const std::vector<std::vector<std::string>> receivedData = socket.ReceiveData();
-			assert(!receivedData.empty());
+			// Determine socket type, create PlayerSocket object and parse initial message
+			char receivedBuf[DEFAULT_BUFLEN];
+			const int receivedLen = socket.ReceiveData(receivedBuf, DEFAULT_BUFLEN);
+			if (!strncmp(receivedBuf, SOCKET_WIN7_HI_RESPONSE, receivedLen)) // WIN7
+			{
+				player = std::make_unique<Win7::PlayerSocket>(socket);
 
-			for (const std::vector<std::string>& receivedLineData : receivedData)
-				socket.SendData(player.GetResponse(receivedLineData));
-		}
-		catch (const DisconnectionRequest&)
-		{
-			std::cout << "[SOCKET] Disconnecting from " << socket.GetAddressString() << '.' << std::endl;
+				socket.SendData(SOCKET_WIN7_HI_RESPONSE, static_cast<int>(strlen(SOCKET_WIN7_HI_RESPONSE)));
+			}
+			else if (receivedLen == sizeof(WinXP::MsgConnectionHi)) // WINXP
+			{
+				WinXP::MsgConnectionHi hiMessage;
+				std::memcpy(&hiMessage, receivedBuf, receivedLen);
+				WinXP::DecryptMessage(&hiMessage, sizeof(hiMessage), XPDefaultSecurityKey);
 
-			player.OnDisconnected();
-			break;
-		}
-		catch (const ClientDisconnected&)
-		{
-			std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
-				<< ": Client has been disconnected." << std::endl;
+				if (WinXP::ValidateInternalMessage<WinXP::MessageConnectionHi>(hiMessage) &&
+					hiMessage.protocolVersion == XPInternalProtocolVersion)
+				{
+					*logStream << "[INITIAL MESSAGE]: " << hiMessage << '\n' << std::endl;
 
-			player.OnDisconnected();
-			break;
-		}
-		catch (const std::exception& err)
-		{
-			std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
-				<< ": " << err.what() << std::endl;
+					auto xpPlayer = std::make_unique<WinXP::PlayerSocket>(socket, hiMessage);
 
-			player.OnDisconnected();
-			break;
+					socket.SendData(xpPlayer->ConstructHelloMessage(), WinXP::EncryptMessage, XPDefaultSecurityKey);
+
+					player = std::move(xpPlayer);
+				}
+				else
+				{
+					throw std::runtime_error("Invalid initial message!");
+				}
+			}
+			else
+			{
+				throw std::runtime_error("Invalid initial message!");
+			}
 		}
+
+		assert(player);
+		player->ProcessMessages();
+	}
+	catch (const ClientDisconnected&)
+	{
+		std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
+			<< ": Client has been disconnected." << std::endl;
+		return 0;
+	}
+	catch (const std::exception& err)
+	{
+		std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
+			<< ": " << err.what() << std::endl;;
+		return 0;
 	}
 	return 0;
 }
 
+
+char*
+Socket::GetAddressString(IN_ADDR address)
+{
+	return inet_ntoa(address);
+}
 
 std::string
 Socket::GetAddressString(SOCKET socket, const char portSeparator)
@@ -97,7 +127,8 @@ Socket::GetAddressString(SOCKET socket, const char portSeparator)
 
 Socket::Socket(SOCKET socket, std::ostream& log) :
 	m_socket(socket),
-	m_log(log)
+	m_log(log),
+	m_disconnected(false)
 {}
 
 Socket::~Socket()
@@ -111,22 +142,47 @@ Socket::~Socket()
 void
 Socket::Disconnect()
 {
+	if (m_disconnected)
+		return;
+
+	std::cout << "[SOCKET] Disconnecting from " << GetAddressString() << '.' << std::endl;
+
 	// Shut down the connection
-	HRESULT shutdownResult = shutdown(m_socket, SD_BOTH);
-	if (shutdownResult == SOCKET_ERROR)
+	if (shutdown(m_socket, SD_BOTH) == SOCKET_ERROR)
 		std::cout << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+
+	m_disconnected = true;
 }
 
+
+int
+Socket::ReceiveData(char* data, int len)
+{
+	if (len == 0)
+		return 0;
+
+	const int receivedLen = recv(m_socket, data, len, 0);
+	if (receivedLen == 0)
+		throw ClientDisconnected();
+	else if (receivedLen < 0)
+		throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+
+	m_log << "[RECEIVED]: ";
+	m_log.write(data, receivedLen);
+	m_log << "\n\n" << std::endl;
+
+	return receivedLen;
+}
 
 std::vector<std::vector<std::string>>
 Socket::ReceiveData()
 {
-	char recvbuf[DEFAULT_BUFLEN];
+	char receivedBuf[DEFAULT_BUFLEN];
 
-	HRESULT recvResult = recv(m_socket, recvbuf, DEFAULT_BUFLEN, 0);
-	if (recvResult > 0)
+	const int receivedLen = recv(m_socket, receivedBuf, DEFAULT_BUFLEN, 0);
+	if (receivedLen > 0)
 	{
-		const std::string received(recvbuf, recvResult);
+		const std::string received(receivedBuf, receivedLen);
 		std::istringstream receivedStream(received);
 
 		std::vector<std::vector<std::string>> receivedEntries;
@@ -158,15 +214,26 @@ Socket::ReceiveData()
 
 		return receivedEntries;
 	}
-	else if (recvResult == 0)
+	else if (receivedLen == 0)
 	{
 		throw ClientDisconnected();
 	}
-	else if (recvResult != 0)
-	{
-		throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
-	}
-	return {}; // Would never happen, but surpresses a warning
+	throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+}
+
+
+int
+Socket::SendData(const char* data, int len)
+{
+	const int sentLen = send(m_socket, data, len, 0);
+	if (sentLen == SOCKET_ERROR)
+		throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
+
+	m_log << "[SENT]: ";
+	m_log.write(data, sentLen);
+	m_log << "\n(BYTES SENT=" << sentLen << ")\n\n" << std::endl;
+
+	return sentLen;
 }
 
 void
@@ -174,12 +241,7 @@ Socket::SendData(std::vector<std::string> data)
 {
 	for (const std::string& message : data)
 	{
-		if (message.empty()) continue;
-
-		HRESULT sendResult = send(m_socket, message.c_str(), static_cast<int>(message.length()), 0);
-		if (sendResult == SOCKET_ERROR)
-			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
-
-		m_log << "[SENT]: " << message << "\n(BYTES SENT=" << sendResult << ")\n\n" << std::endl;
+		if (!message.empty())
+			SendData(message.c_str(), static_cast<int>(message.length()));
 	}
 }

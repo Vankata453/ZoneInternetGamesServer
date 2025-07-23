@@ -1,104 +1,55 @@
 #pragma once
 
+#define WIN32_LEAN_AND_MEAN
+
 #include <ctime>
 #include <string>
 #include <vector>
 
-#include <winsock2.h>
+#include <windows.h>
+#include <rpc.h>
+#include <rpcdce.h>
 
-#include "StateTags.hpp"
+#define MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE 0 // DEBUG: If a player leaves a match, do not disconnect other players.
 
-class PlayerSocket;
-
+template<typename P>
 class Match
 {
 public:
-	enum class Game {
-		INVALID = 0,
-		BACKGAMMON,
-		CHECKERS,
-		SPADES
-	};
-	static Game GameFromString(const std::string& str);
-	static std::string GameToNameString(Game game);
-
-	enum class Level {
-		INVALID = 0,
-		BEGINNER,
-		INTERMEDIATE,
-		EXPERT
-	};
-	static Level LevelFromPublicELO(const std::string& str);
-
-	enum State {
-		STATE_WAITINGFORPLAYERS,
-		STATE_PENDINGSTART,
-		STATE_PLAYING,
-		STATE_GAMEOVER,
-		STATE_ENDED
-	};
-
-public:
-	Match(PlayerSocket& player);
-	virtual ~Match();
-
-	void JoinPlayer(PlayerSocket& player);
-	void DisconnectedPlayer(PlayerSocket& player);
+	Match(P& player) :
+		m_guid(),
+		m_creationTime(std::time(nullptr)),
+		m_players()
+	{
+		// Generate a unique GUID for the match
+		UuidCreate(const_cast<GUID*>(&m_guid));
+	}
+	virtual ~Match() = default;
 
 	/** Update match logic */
-	virtual void Update();
+	virtual void Update() = 0;
 
-	/** Event handling */
-	void EventSend(const PlayerSocket& caller, const std::string& xml);
-	void Chat(StateChatTag tag);
-
-	virtual Game GetGame() const = 0;
-	inline State GetState() const { return m_state; }
-	inline REFGUID GetGUID() const { return m_guid; }
-	inline Level GetLevel() const { return m_level; }
-
-	/** Construct XML messages */
-	std::string ConstructReadyXML() const;
-	std::string ConstructStateXML(const std::vector<const StateTag*> tags) const;
-
-	/** Construct XML data for STag messages */
-	std::string ConstructGameInitXML(PlayerSocket* caller) const;
-	virtual std::vector<std::string> ConstructGameStartMessagesXML(const PlayerSocket& caller) const;
-
-protected:
-	struct QueuedEvent final
-	{
-		QueuedEvent(const std::string& xml, bool includeSender = false);
-		QueuedEvent(const std::string& xml, const std::string& xmlSender);
-
-		const std::string xml; // The XML data string for the event.
-		const std::string xmlSender;  // The XML data string for the event, to be sent only to the original sender.
-		const bool includeSender; // Should the event also be sent back to the original sender? (Ignored if xmlSender is set.)
-	};
-
-protected:
 	virtual size_t GetRequiredPlayerCount() const { return 2; }
-	virtual std::pair<uint8_t, uint8_t> GetCustomChatMessagesRange() const = 0;
-	virtual bool IsValidChatNudgeMessage(const std::string& msg) const;
-
-	/** Append additional XML data to STag messages */
-	virtual void AppendToGameInitXML(XMLPrinter& printer, PlayerSocket* caller) const {}
-
-	/** Process event and return a custom response. */
-	virtual std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller);
+	inline REFGUID GetGUID() const { return m_guid; }
 
 protected:
-	State m_state;
+	void AddPlayer(P& player)
+	{
+		// Add to players array
+		m_players.push_back(&player);
+	}
+	void RemovePlayer(const P& player)
+	{
+		// Remove from players array
+		if (!m_players.empty())
+			m_players.erase(std::remove(m_players.begin(), m_players.end(), &player), m_players.end());
+	}
 
-	GUID m_guid;
-	const Level m_level;
-	std::vector<PlayerSocket*> m_players;
-
-private:
-	HANDLE m_eventMutex; // Mutex to prevent simultaneous event processing from multiple clients
-
+protected:
+	const GUID m_guid;
 	const std::time_t m_creationTime;
-	std::time_t m_endTime;
+
+	std::vector<P*> m_players;
 
 private:
 	Match(const Match&) = delete;

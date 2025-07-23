@@ -18,7 +18,7 @@
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Match.cpp">
+    <ClCompile Include="Win7\Match.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Util.cpp">
@@ -36,16 +36,34 @@
     <ClCompile Include="external\tinyxml2\tinyxml2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BackgammonMatch.cpp">
+    <ClCompile Include="Win7\BackgammonMatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CheckersMatch.cpp">
+    <ClCompile Include="Win7\CheckersMatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SpadesMatch.cpp">
+    <ClCompile Include="Win7\SpadesMatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="StateTags.cpp">
+    <ClCompile Include="Win7\StateTags.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WinXP\Security.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Win7\PlayerSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WinXP\Match.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WinXP\PlayerSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WinXP\BackgammonMatch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WinXP\CheckersMatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -59,19 +77,61 @@
     <ClInclude Include="PlayerSocket.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BackgammonMatch.hpp">
+    <ClInclude Include="Win7\BackgammonMatch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CheckersMatch.hpp">
+    <ClInclude Include="Win7\CheckersMatch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SpadesMatch.hpp">
+    <ClInclude Include="Win7\SpadesMatch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="StateTags.hpp">
+    <ClInclude Include="Win7\StateTags.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Security.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Protocol\Init.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Defines.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Win7\PlayerSocket.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Match.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\PlayerSocket.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Match.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Protocol\Proxy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Protocol\Game.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\BackgammonMatch.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Protocol\Backgammon.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Endian.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\CheckersMatch.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Protocol\Checkers.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -79,7 +139,7 @@
     <ClInclude Include="MatchManager.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Match.hpp">
+    <ClInclude Include="Win7\Match.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -9,8 +9,13 @@
 namespace RemoteAddressDialog {
 
 /* Input */
+#ifdef XP_GAMES
+std::string valHost;
+std::string valPort;
+#else
 std::wstring valHost;
 std::wstring valPort;
+#endif
 
 /* Message processor */
 INT_PTR CALLBACK ProcessMessage(HWND hDialog, UINT message, WPARAM wParam, LPARAM lParam)
@@ -37,16 +42,26 @@ INT_PTR CALLBACK ProcessMessage(HWND hDialog, UINT message, WPARAM wParam, LPARA
                 case ID_SET:
                 {
                     // Host string
-                    WCHAR wHost[256];
-                    if (!GetDlgItemTextW(hDialog, IDC_HOST, wHost, 256))
+#ifdef XP_GAMES
+                    CHAR host[256];
+                    if (!GetDlgItemTextA(hDialog, IDC_HOST, host, 256))
+#else
+                    WCHAR host[256];
+                    if (!GetDlgItemTextW(hDialog, IDC_HOST, host, 256))
+#endif
                         printf("Couldn't get specified remote address host in remote address dialog.\n");
-                    valHost = wHost;
+                    valHost = host;
 
                     // Port string
-                    WCHAR wPort[5];
-                    if (!GetDlgItemTextW(hDialog, IDC_PORT, wPort, 5))
+#ifdef XP_GAMES
+                    CHAR port[5];
+                    if (!GetDlgItemTextA(hDialog, IDC_PORT, port, 5))
+#else
+                    WCHAR port[5];
+                    if (!GetDlgItemTextW(hDialog, IDC_PORT, port, 5))
+#endif
                         printf("Couldn't get specified remote address port in remote address dialog.\n");
-                    valPort = wPort;
+                    valPort = port;
 
                     // Do not close the dialog, if a host and port aren't specified
                     if (valHost.empty() || valPort.empty())

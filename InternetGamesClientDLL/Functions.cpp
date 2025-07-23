@@ -7,7 +7,12 @@
 #include <stdexcept>
 
 /* Function pointers */
+#ifdef XP_GAMES
+void* inet_addr = nullptr;
+void* htons = nullptr;
+#else
 void* GetAddrInfoW = nullptr;
+#endif
 
 
 /* Acquiring function pointers */
@@ -39,7 +44,12 @@ bool GetFunctions()
             printf("Couldn't get handle to \"ws2_32.dll\": %X\n", GetLastError());
             return false;
         }
+#ifdef XP_GAMES
+        inet_addr = GetExport(ws2_32Dll, "inet_addr");
+        htons = GetExport(ws2_32Dll, "htons");
+#else
         GetAddrInfoW = GetExport(ws2_32Dll, "GetAddrInfoW");
+#endif
     }
     catch (const GetExportError&)
     {

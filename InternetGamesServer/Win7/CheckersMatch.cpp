@@ -1,7 +1,9 @@
 #include "CheckersMatch.hpp"
 
 #include "PlayerSocket.hpp"
-#include "Util.hpp"
+#include "../Util.hpp"
+
+namespace Win7 {
 
 CheckersMatch::CheckersMatch(PlayerSocket& player) :
 	Match(player),
@@ -122,4 +124,6 @@ CheckersMatch::AppendToGameInitXML(XMLPrinter& printer, PlayerSocket* caller) co
 	printer.CloseElement("Board");
 
 	NewElementWithText(printer, "GameType", "Standard");
+}
+
 }

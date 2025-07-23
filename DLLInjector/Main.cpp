@@ -8,6 +8,7 @@
 #include <wchar.h>
 
 #define DLL_FILE_PATH "InternetGamesClientDLL.dll"
+#define DLL_FILE_PATH_XP "InternetGamesClientDLL_XP.dll"
 #define DLL_FILE_PATH_RELATIVE
 
 /** Functions */
@@ -16,6 +17,9 @@ DWORD FindProcessID(const wchar_t* targetExecutable, const int repetitions);
 int wmain(int argc, wchar_t* argv[])
 {
     std::wstring targetExecutable;
+#if !defined(_WIN64)
+    bool targetXP = false; // Target is a Windows XP Internet Game
+#endif
     int repetitions = 0;
 
     // Process arguments
@@ -33,6 +37,13 @@ int wmain(int argc, wchar_t* argv[])
         {
             targetExecutable = L"shvlzm.exe";
         }
+#if !defined(_WIN64)
+        else if (!wcscmp(argv[i], L"-x") || !wcscmp(argv[i], L"--xp"))
+        {
+            targetExecutable = L"zClientm.exe";
+            targetXP = true;
+        }
+#endif
         else if (!wcscmp(argv[i], L"-r") || !wcscmp(argv[i], L"--repeat"))
         {
             if (argc < i + 2)
@@ -45,7 +56,11 @@ int wmain(int argc, wchar_t* argv[])
     }
     if (targetExecutable.empty())
     {
+#ifdef _WIN64
         printf("ERROR: Target game must be specified: \"-b\" (\"--backgammon\"), \"-c\" (\"--checkers\") or \"-s\" (\"--spades\")!\n");
+#else
+        printf("ERROR: Target game must be specified: \"-b\" (\"--backgammon\"), \"-c\" (\"--checkers\"), \"-s\" (\"--spades\") or \"-x\" (\"--xp\")!\n");
+#endif
         return -1;
     }
 
@@ -64,9 +79,17 @@ int wmain(int argc, wchar_t* argv[])
 #ifdef DLL_FILE_PATH_RELATIVE
     CHAR currentDir[MAX_PATH];
     GetCurrentDirectoryA(MAX_PATH, currentDir);
+#ifdef _WIN64
     const std::string dllPath = std::string(currentDir) + '\\' + DLL_FILE_PATH;
 #else
+    const std::string dllPath = std::string(currentDir) + '\\' + (targetXP ? DLL_FILE_PATH_XP : DLL_FILE_PATH);
+#endif
+#else
+#ifdef _WIN64
     const std::string dllPath = DLL_FILE_PATH;
+#else
+    const std::string dllPath = targetXP ? DLL_FILE_PATH_XP : DLL_FILE_PATH;
+#endif
 #endif
     const size_t dllPathSize = dllPath.length();
 

@@ -2,8 +2,8 @@
 
 #include "Breakpoints.hpp"
 
+#include <array>
 #include <stdio.h>
-#include <vector>
 #include <ws2def.h>
 
 #include "Dialogs.hpp"
@@ -34,25 +34,80 @@ bool AddBreakpoint(void* address)
 bool SetBreakpoints()
 {
     bool success = true;
+#ifdef XP_GAMES
+    success &= AddBreakpoint(inet_addr);
+    success &= AddBreakpoint(htons);
+#else
     success &= AddBreakpoint(GetAddrInfoW);
+#endif
 
     return success;
 }
 
 
 // Helper function for getting function parameters from CONTEXT (x86-64) or WOW64_CONTEXT (x86-32).
-// Based on https://devblogs.microsoft.com/oldnewthing/20230321-00/?p=107954
+template<size_t count>
 #if _WIN64
-std::vector<DWORD64> GetParamsFromContext(const CONTEXT* c)
+std::array<DWORD64*, count> GetParamsFromContext(CONTEXT* c)
 {
-    return { c->Rcx, c->Rdx, c->R8, c->R9,
-        c->Rsp + 32, c->Rsp + 40, c->Rsp + 48, c->Rsp + 56, c->Rsp + 64 };
+    std::array<DWORD64*, count> params = {
+        &c->Rcx,
+        &c->Rdx,
+        &c->R8,
+        &c->R9
+    };
+
+    DWORD64* currParam = reinterpret_cast<DWORD64*>(c->Rsp) + 4;
+    for (size_t i = 4; i < count; ++i)
+        params[i] = ++currParam;
+
+    return params;
+}
+
+template<>
+std::array<DWORD64*, 1> GetParamsFromContext<1>(CONTEXT* c)
+{
+    return {
+        &c->Rcx
+    };
+}
+template<>
+std::array<DWORD64*, 2> GetParamsFromContext<2>(CONTEXT* c)
+{
+    return {
+        &c->Rcx,
+        &c->Rdx
+    };
+}
+template<>
+std::array<DWORD64*, 3> GetParamsFromContext<3>(CONTEXT* c)
+{
+    return {
+        &c->Rcx,
+        &c->Rdx,
+        &c->R8,
+    };
+}
+template<>
+std::array<DWORD64*, 4> GetParamsFromContext<4>(CONTEXT* c)
+{
+    return {
+        &c->Rcx,
+        &c->Rdx,
+        &c->R8,
+        &c->R9
+    };
 }
 #else
-std::vector<DWORD> GetParamsFromContext(const CONTEXT* c)
+std::array<DWORD*, count> GetParamsFromContext(CONTEXT* c)
 {
-    return { c->Esp + 4, c->Esp + 8, c->Esp + 12, c->Esp + 16,
-        c->Esp + 20, c->Esp + 24, c->Esp + 28, c->Esp + 32, c->Esp + 36 };
+    std::array<DWORD*, count> params;
+
+    DWORD* currParam = reinterpret_cast<DWORD*>(c->Esp);
+    for (size_t i = 0; i < count; ++i)
+        params[i] = ++currParam;
+
+    return params;
 }
 #endif
 
@@ -65,23 +120,40 @@ LONG CALLBACK VectoredExceptionHandler(EXCEPTION_POINTERS* exceptionInfo)
 
         const DWORD_PTR exceptionAddress = reinterpret_cast<DWORD_PTR>(exceptionInfo->ExceptionRecord->ExceptionAddress);
         CONTEXT* context = exceptionInfo->ContextRecord;
-        const auto params = GetParamsFromContext(context);
+#ifdef XP_GAMES
+        const auto params = GetParamsFromContext<1>(context);
+#else
+        const auto params = GetParamsFromContext<3>(context);
+#endif
 
         // Perform actions, based on the function
+#ifdef XP_GAMES
+        if (exceptionAddress == reinterpret_cast<DWORD_PTR>(inet_addr))
+        {
+            // Set custom address
+            strcpy(*reinterpret_cast<CHAR**>(params[0]), RemoteAddressDialog::valHost.c_str());
+        }
+        else if (exceptionAddress == reinterpret_cast<DWORD_PTR>(htons))
+        {
+            // Set custom port
+            *reinterpret_cast<UINT16*>(params[0]) = static_cast<UINT16>(std::stoi(RemoteAddressDialog::valPort));
+        }
+#else
         if (exceptionAddress == reinterpret_cast<DWORD_PTR>(GetAddrInfoW))
         {
-            if (!wcscmp(reinterpret_cast<PCWSTR>(params[0]), L"mpmatch.games.msn.com")) // Ensure the function is trying to connect to the default game server
+            if (!wcscmp(*reinterpret_cast<PCWSTR*>(params[0]), L"mpmatch.games.msn.com")) // Ensure the function is trying to connect to the default game server
             {
-                // Set custom address
-                wcscpy(reinterpret_cast<WCHAR*>(params[0]), RemoteAddressDialog::valHost.c_str());
-                wcscpy(reinterpret_cast<WCHAR*>(params[1]), RemoteAddressDialog::valPort.c_str());
+                // Set custom address and port
+                wcscpy(*reinterpret_cast<WCHAR**>(params[0]), RemoteAddressDialog::valHost.c_str());
+                wcscpy(*reinterpret_cast<WCHAR**>(params[1]), RemoteAddressDialog::valPort.c_str());
 
                 // Set properties, required for connecting to the custom server
-                ADDRINFOW* addrInfo = reinterpret_cast<ADDRINFOW*>(params[2]);
+                ADDRINFOW* addrInfo = *reinterpret_cast<ADDRINFOW**>(params[2]);
                 addrInfo->ai_family = AF_INET;
                 addrInfo->ai_protocol = IPPROTO_TCP;
             }
         }
+#endif
 
         return EXCEPTION_CONTINUE_EXECUTION;
     }
