@@ -117,7 +117,6 @@ To-be-done!
 * `-l` (`--log`): Enables socket data logging. Allows for specifying a custom folder; if not specified, the *default "InternetGamesServer_logs"* folder is used.
 * `--skip-level-matching`: Allows matching players, disregarding their chosen skill level. 
 * `--log-ping-messages`: Log empty received messages by sockets, which are used for pinging the server.
-*  `--log-ping-messages`: Log empty received messages by sockets, which are used for pinging the server.
 *  `-ip`: IP to host the server on. *Default: 0.0.0.0*. 
 
 ### Internet Games Client DLL + DLL Injector
@@ -165,13 +164,5 @@ allowing to skip a select number of previously started processes of the specifie
 For example, to inject the DLL into a second instance of the same game, provide `-r 1` (or `--repeat 1`).
 
 ## Credits
-
-
-## Fixes if you get the following errors, install VS 2019 with some C++ components.
-![vs](https://github.com/user-attachments/assets/6662758e-b9bd-4679-b394-5228f7beecc0)
-
-
-
-
 
 * [codereversing.com](https://www.codereversing.com/archives/138) for providing some logs and tons of helpful information, regarding reverse-engineering the Internet Games.
