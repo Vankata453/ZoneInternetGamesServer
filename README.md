@@ -1,5 +1,11 @@
 # Zone Internet Games Server (LAN)
 
+This project aims to bring back the functionality of the Internet Games included in Windows 7 and XP, the servers for which were officially shut down on:
+
+* **Windows XP**: July 31st, 2019
+* **Windows 7**: January 22nd, 2020
+
+
 Those games include:
 
 * Internet Backgammon (XP, 7)
