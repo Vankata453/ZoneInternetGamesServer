@@ -145,13 +145,13 @@ Socket::Disconnect()
 	if (m_disconnected)
 		return;
 
+	m_disconnected = true; // Set early on to prevent another thread from disconnecting this socket again.
+
 	std::cout << "[SOCKET] Disconnecting from " << GetAddressString() << '.' << std::endl;
 
 	// Shut down the connection
 	if (shutdown(m_socket, SD_BOTH) == SOCKET_ERROR)
 		std::cout << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
-
-	m_disconnected = true;
 }
 
 

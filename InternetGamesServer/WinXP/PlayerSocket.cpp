@@ -5,6 +5,7 @@
 #include <random>
 #include <stdexcept>
 #include <sstream>
+#include <iostream>
 
 #include "../../MatchManager.hpp"
 
@@ -41,6 +42,12 @@ PlayerSocket::~PlayerSocket()
 	CloseHandle(m_genericMessageMutex);
 }
 
+
+#define XPPlayerSocketMatchGuard \
+	if (!m_match) \
+		throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Attempted to access destroyed match!"); \
+	if (m_match->GetState() == Match::STATE_ENDED) \
+		throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Attempted to access ended match!");
 
 void
 PlayerSocket::ProcessMessages()
@@ -107,6 +114,8 @@ PlayerSocket::ProcessMessages()
 					case MessageGameMessage:
 					{
 						AwaitIncomingGameMessageHeader();
+
+						XPPlayerSocketMatchGuard
 						m_match->ProcessIncomingGameMessage(*this, m_incomingGameMsg.GetType());
 						break;
 					}
@@ -120,6 +129,7 @@ PlayerSocket::ProcessMessages()
 							break;
 						m_config.chatEnabled = msgChatSwitch.chatEnabled;
 
+						XPPlayerSocketMatchGuard
 						m_match->ProcessMessage(msgChatSwitch);
 						break;
 					}
@@ -150,6 +160,8 @@ PlayerSocket::ProcessMessages()
 		}
 	}
 }
+
+#undef XPPlayerSocketMatchGuard
 
 
 void
@@ -202,6 +214,9 @@ PlayerSocket::OnDisconnected()
 		m_match->DisconnectedPlayer(*this);
 		m_match = nullptr;
 	}
+	m_inLobby = false;
+	m_state = STATE_DISCONNECTING;
+	ResetEvent(m_acceptsGameMessagesEvent);
 }
 
 
