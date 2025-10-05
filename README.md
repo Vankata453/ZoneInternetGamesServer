@@ -125,12 +125,9 @@ To-be-done!
 
 ### Internet Games Client DLL + DLL Injector
 
-A DLL, which is to be injected into any of the 3 games, using the DLL Injector application. It has two variants for Windows 7 and Windows XP games. The Windows XP variant is only available in x86 builds.
+A DLL, which is to be injected into any of the 3 games, using the DLL Injector application.
 
-> [!NOTE]
->
-> The Internet Games Client DLL and the DLL Injector currently do not run on Windows XP, due to them linking to newer libraries.
-> Currently, you can only use them when playing the Windows XP Internet Games on a newer Windows version.
+Both applications have two variants for Windows 7 and Windows XP games. The Windows XP one is only available in x86 builds.
 
 #### Functionality
 
@@ -148,7 +145,7 @@ The Windows XP Client DLL performs the following operations:
 
 #### Command line arguments (DLL Injector)
 
-* **Exactly one of the following arguments:**
+* **[WINDOWS 7 ONLY!] Exactly one of the following arguments:**
   * `-b` (`--backgammon`) *OR* `-c` (`--checkers`) *OR* `-s` (`--spades`) **[REQUIRED]**: Specifies a target Windows 7 game to inject the client DLL into.
   * `-x` (`--xp`): For injecting the client DLL into any Windows XP game **(x86 only!)**.
 * `-r` (`--repeat`): See [Using DLL Injector on multiple instances](#using-dll-injector-on-multiple-instances). *Default: 0*

@@ -12,20 +12,39 @@
 #define DLL_FILE_PATH_RELATIVE
 
 /** Functions */
+#ifdef WIN_XP
+bool EnableDebugPrivileges();
+#endif
 DWORD FindProcessID(const wchar_t* targetExecutable, const int repetitions);
 
 int wmain(int argc, wchar_t* argv[])
 {
+#ifdef WIN_XP
+    static const std::wstring targetExecutable = L"zClientm.exe";
+#else
     std::wstring targetExecutable;
 #if !defined(_WIN64)
     bool targetXP = false; // Target is a Windows XP Internet Game
+#endif
 #endif
     int repetitions = 0;
 
     // Process arguments
     for (int i = 1; i < argc; ++i)
     {
-        if (!wcscmp(argv[i], L"-b") || !wcscmp(argv[i], L"--backgammon"))
+        if (!wcscmp(argv[i], L"-r") || !wcscmp(argv[i], L"--repeat"))
+        {
+            if (argc < i + 2)
+            {
+                printf("ERROR: Repetition count must be provided after \"-r\" or \"--repeat\"!\n");
+                return -1;
+            }
+            repetitions = wcstol(argv[++i], nullptr, 10);
+        }
+#ifdef WIN_XP
+    }
+#else
+        else if (!wcscmp(argv[i], L"-b") || !wcscmp(argv[i], L"--backgammon"))
         {
             targetExecutable = L"bckgzm.exe";
         }
@@ -44,15 +63,6 @@ int wmain(int argc, wchar_t* argv[])
             targetXP = true;
         }
 #endif
-        else if (!wcscmp(argv[i], L"-r") || !wcscmp(argv[i], L"--repeat"))
-        {
-            if (argc < i + 2)
-            {
-                printf("ERROR: Repetition count must be provided after \"-r\" or \"--repeat\"!\n");
-                return -1;
-            }
-            repetitions = wcstol(argv[++i], nullptr, 10);
-        }
     }
     if (targetExecutable.empty())
     {
@@ -63,6 +73,13 @@ int wmain(int argc, wchar_t* argv[])
 #endif
         return -1;
     }
+#endif
+
+#ifdef WIN_XP
+    // Enable debug privileges (required for Windows XP/2000)
+    if (!EnableDebugPrivileges())
+        return -2;
+#endif
 
     // Get process ID of target executable
     const DWORD processID = FindProcessID(targetExecutable.c_str(), repetitions);
@@ -79,16 +96,24 @@ int wmain(int argc, wchar_t* argv[])
 #ifdef DLL_FILE_PATH_RELATIVE
     CHAR currentDir[MAX_PATH];
     GetCurrentDirectoryA(MAX_PATH, currentDir);
+#ifdef WIN_XP
+    const std::string dllPath = std::string(currentDir) + '\\' + DLL_FILE_PATH_XP;
+#else
 #ifdef _WIN64
     const std::string dllPath = std::string(currentDir) + '\\' + DLL_FILE_PATH;
 #else
     const std::string dllPath = std::string(currentDir) + '\\' + (targetXP ? DLL_FILE_PATH_XP : DLL_FILE_PATH);
 #endif
+#endif
+#else
+#ifdef WIN_XP
+    const std::string dllPath = DLL_FILE_PATH_XP;
 #else
 #ifdef _WIN64
     const std::string dllPath = DLL_FILE_PATH;
 #else
     const std::string dllPath = targetXP ? DLL_FILE_PATH_XP : DLL_FILE_PATH;
+#endif
 #endif
 #endif
     const size_t dllPathSize = dllPath.length();
@@ -127,6 +152,33 @@ int wmain(int argc, wchar_t* argv[])
 }
 
 /** Functions */
+
+#ifdef WIN_XP
+bool EnableDebugPrivileges()
+{
+    HANDLE hToken;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
+    {
+        printf("ERROR: Couldn't open token for current process!");
+        return false;
+    }
+
+    TOKEN_PRIVILEGES tokenPriv;
+    LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &tokenPriv.Privileges[0].Luid);
+    tokenPriv.PrivilegeCount = 1;
+    tokenPriv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    const BOOL result = AdjustTokenPrivileges(hToken, FALSE, &tokenPriv, 0, NULL, 0);
+    CloseHandle(hToken);
+    if (!result)
+    {
+        printf("ERROR: Couldn't adjust privileges of process token!");
+        return false;
+    }
+    return true;
+}
+#endif
+
 DWORD FindProcessID(const wchar_t* targetExecutable, const int repetitions)
 {
     // Get a snapshot of all running processes at this moment
