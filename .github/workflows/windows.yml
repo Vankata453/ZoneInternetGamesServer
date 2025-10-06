@@ -47,7 +47,6 @@ jobs:
           throw "Visual Studio 2022 installation not found!"
 
       - name: Install v141_xp toolset
-        shell: pwsh
         run: |
           set "vsPath=${{ steps.detect-vs.outputs.VSPath }}"
           set "installer=C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
