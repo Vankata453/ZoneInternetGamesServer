@@ -57,20 +57,12 @@ jobs:
           Write-Host "Installing v141_xp toolset into: $vsPath"
           Start-Process -FilePath $installer -ArgumentList @(
             'modify',
-            '--installPath', '$vsPath',
+            '--installPath', $vsPath,
             '--add', 'Microsoft.VisualStudio.Component.VC.v141.x86.x64',
             '--add', 'Microsoft.VisualStudio.Component.WinXP',
             '--includeRecommended',
-            '--quiet', '--norestart',
-            '--log', 'vs_installer.log'
+            '--quiet', '--norestart'
           ) -Wait
-          Get-Content "vs_installer.log" -Tail 50
-
-      - name: Verify that v141_xp toolset exists
-        shell: pwsh
-        run: |
-          $toolsets = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022" -Recurse -Depth 3 -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "v141*" }
-          $toolsets | Select-Object FullName
 
       - name: Build
         env:
