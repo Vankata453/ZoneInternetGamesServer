@@ -64,7 +64,7 @@ jobs:
 
           md "%LAYOUT_DIR%" 2>nul
           echo Installing v141_xp toolset and build tools into layout: %LAYOUT_DIR%.
-          vs_bootstrapper.exe --layout "%LAYOUT_DIR&" ^
+          start /w vs_bootstrapper.exe --layout "%LAYOUT_DIR&" ^
             --lang en-US ^
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
             --add Microsoft.VisualStudio.Component.WinXP ^
