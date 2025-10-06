@@ -44,6 +44,13 @@ jobs:
             --add Microsoft.VisualStudio.Component.VC.v141.xp `
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 `
             --quiet --wait --norestart
+          if ($LASTEXITCODE -ne 0) { throw "vs_installer failed with exit code $LASTEXITCODE" }
+
+      - name: Verify that v141_xp toolset exists
+        shell: pwsh
+        run: |
+          $toolsets = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022" -Recurse -Depth 3 -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "v141*" }
+          $toolsets | Select-Object FullName
 
       - name: Build
         env:
