@@ -59,7 +59,9 @@ jobs:
             '--add', 'Microsoft.VisualStudio.Component.VC.v141.x86.x64',
             '--add', 'Microsoft.VisualStudio.Component.WinXP',
             '--includeRecommended',
-            '--quiet', '--norestart'
+            '--quiet', '--norestart',
+            '--log', 'vs_buildtools.log'
+          Get-Content vs_buildtools.log -Tail 50
           ) -Wait
 
       - name: Verify that v141_xp toolset exists
