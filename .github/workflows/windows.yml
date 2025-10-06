@@ -59,7 +59,7 @@ jobs:
         if: steps.cache-vs.outputs.cache-hit != 'true'
         shell: cmd
         run: |
-          curl -L -o vs_bootstrapper.exe https://aka.ms/vs/17/release/vs_community.exe
+          curl -L -o vs_bootstrapper.exe https://aka.ms/vs/17/release/vs_buildtools.exe
           echo Successfully downloaded VS 2022 bootstrapper!
 
           md "%LAYOUT_DIR%" 2>nul
@@ -77,6 +77,18 @@ jobs:
           )
           echo Layout successfully created at %LAYOUT_DIR%.
           dir /w %LAYOUT_DIR%
+
+      - name: Collect Visual Studio installer logs
+        run: |
+          mkdir logs
+          copy "%TEMP%\dd_*.log" logs\
+        shell: cmd
+
+      - name: Upload logs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vs-logs
+          path: logs
 
       - name: Install v141_xp toolset and build tools
         shell: cmd
