@@ -91,7 +91,7 @@ jobs:
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
             --add Microsoft.VisualStudio.Component.WinXP ^
             --includeRecommended ^
-            --nocache --quiet --norestart
+            --noweb --nocache --quiet --norestart
 
           if %errorlevel% neq 0 (
             echo Visual Studio component installation failed with error %errorlevel%!
