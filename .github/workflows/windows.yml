@@ -46,28 +46,55 @@ jobs:
           }
           throw "Visual Studio 2022 installation not found!"
 
-      - name: Install v141_xp toolset
+      - name: Restore VS layout cache (if any)
+        id: cache-vs
+        uses: actions/cache@v4
+        with:
+          path: C:\vs_layout
+          key: ${{ runner.os }}-vs-layout-v141_xp
+
+      - name: Create VS layout for v141_xp toolset and build tools
+        if: steps.cache-vs.outputs.cache-hit != 'true'
+        env:
+          LAYOUT_DIR: C:\vs_layout
+        shell: cmd
+        run: |
+          set "installer=C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
+          md "%LAYOUT_DIR%" 2>nul
+
+          echo Installing v141_xp toolset and build tools into layout %LAYOUT_DIR%.
+          "%installer%" export ^
+            --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
+            --add Microsoft.VisualStudio.Component.WinXP ^
+            --includeRecommended ^
+            --path "%LAYOUT_DIR%" ^
+            --quiet
+
+          if %errorlevel% neq 0 (
+            echo Failed to create layout! Code: %errorlevel%
+            exit /b %errorlevel%
+          )
+          echo Layout successfully created at %LAYOUT_DIR%.
+
+      - name: Install v141_xp toolset and build tools
         shell: cmd
         run: |
           set "vsPath=${{ steps.detect-vs.outputs.VSPath }}"
           set "installer=C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
-          
-          echo Using existing VS2022 installer at: %installer%
-          echo Installing v141_xp toolset into: %vsPath%
-          
+
+          echo Installing v141_xp toolset and build tools into: %vsPath%.
           "%installer%" modify ^
             --installPath "%vsPath%" ^
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
             --add Microsoft.VisualStudio.Component.WinXP ^
             --includeRecommended ^
-            --quiet --norestart
-          
+            --quiet --nocache --norestart
+
           if %errorlevel% neq 0 (
-            echo Visual Studio component installation failed with error %errorlevel%.
+            echo Visual Studio component installation failed with error %errorlevel%!
             exit /b %errorlevel%
-          ) else (
-            echo Visual Studio component installation completed successfully.
           )
+          echo Visual Studio component installation completed successfully.
 
       - name: Build
         env:
