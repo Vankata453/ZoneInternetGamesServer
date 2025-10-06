@@ -42,12 +42,8 @@ jobs:
           & $installer modify `
             --installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise" `
             --add Microsoft.VisualStudio.Component.VC.v141.xp `
+            --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 `
             --quiet --wait --norestart
-
-      - name: Verify MSVC toolsets
-        run: |
-          dir "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC"
-          cl.exe /?
 
       - name: Build
         env:
