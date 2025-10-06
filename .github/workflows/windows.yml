@@ -54,24 +54,6 @@ jobs:
           $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
           Write-Host "Using existing VS2022 installer at: $installer"
 
-          Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs_buildtools.exe
-          Start-Process -FilePath .\vs_buildtools.exe -ArgumentList @(
-            '--add', 'Microsoft.VisualStudio.Component.VC.v141.x86.x64',
-            '--add', 'Microsoft.VisualStudio.Component.WinXP',
-            '--includeRecommended',
-            '--quiet', '--norestart',
-            '--log', 'vs_buildtools.log'
-          ) -Wait
-          Get-Content vs_buildtools.log -Tail 50
-
-      - name: Install v141_xp toolset
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          $vsPath = "${{ steps.detect-vs.outputs.VSPath }}"
-          $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
-          Write-Host "Using existing VS2022 installer at: $installer"
-
           Write-Host "Installing v141_xp toolset into: $vsPath"
           Start-Process -FilePath $installer -ArgumentList @(
             'modify',
