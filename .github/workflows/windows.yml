@@ -58,11 +58,10 @@ jobs:
           & $installer modify `
             --installPath "$vsPath" `
             --add Microsoft.VisualStudio.Workload.VCTools `
-            --add Microsoft.VisualStudio.Component.VC.v141.xp `
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 `
-            --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+            --add Microsoft.VisualStudio.Component.WinXP `
             --includeRecommended `
-            --wait --norestart
+            --quiet --wait --norestart
           if ($LASTEXITCODE -ne 0) { throw "vs_installer failed with exit code $LASTEXITCODE" }
 
       - name: Verify that v141_xp toolset exists
