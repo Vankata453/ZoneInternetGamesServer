@@ -32,7 +32,7 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: Detect VS2022 install path
+      - name: Detect VS 2022 install path
         id: detect-vs
         shell: pwsh
         run: |
@@ -46,7 +46,7 @@ jobs:
           }
           throw "Visual Studio 2022 installation not found!"
 
-      - name: Restore VS layout cache (if any)
+      - name: Restore VS layout cache
         id: cache-vs
         uses: actions/cache@v4
         with:
@@ -59,16 +59,16 @@ jobs:
           LAYOUT_DIR: C:\vs_layout
         shell: cmd
         run: |
-          set "installer=C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
-          md "%LAYOUT_DIR%" 2>nul
+          curl -L -o vs_bootstrapper.exe https://aka.ms/vs/17/release/vs_community.exe
+          echo Successfully downloaded VS 2022 bootstrapper!
 
-          echo Installing v141_xp toolset and build tools into layout %LAYOUT_DIR%.
-          "%installer%" export ^
+          md "%LAYOUT_DIR%" 2>nul
+          echo Installing v141_xp toolset and build tools into layout: %LAYOUT_DIR%.
+          vs_bootstrapper.exe --layout "%LAYOUT_DIR&" ^
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
             --add Microsoft.VisualStudio.Component.WinXP ^
             --includeRecommended ^
-            --path "%LAYOUT_DIR%" ^
-            --quiet
+            --quiet --norestart
 
           if %errorlevel% neq 0 (
             echo Failed to create layout! Code: %errorlevel%
@@ -88,7 +88,7 @@ jobs:
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
             --add Microsoft.VisualStudio.Component.WinXP ^
             --includeRecommended ^
-            --quiet --nocache --norestart
+            --nocache --quiet --norestart
 
           if %errorlevel% neq 0 (
             echo Visual Studio component installation failed with error %errorlevel%!
