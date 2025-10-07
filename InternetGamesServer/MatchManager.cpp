@@ -13,6 +13,7 @@
 #include "WinXP/BackgammonMatch.hpp"
 #include "WinXP/CheckersMatch.hpp"
 #include "WinXP/PlayerSocket.hpp"
+#include "WinXP/ReversiMatch.hpp"
 
 MatchManager MatchManager::s_instance;
 
@@ -226,8 +227,8 @@ MatchManager::CreateLobby(WinXP::PlayerSocket& player)
 					m_matches_winxp.push_back(std::make_unique<WinXP::BackgammonMatch>(player));
 					break;
 
-				case WinXP::Match::Game::REVERSI: // TODO
-					m_matches_winxp.push_back(std::make_unique<WinXP::BackgammonMatch>(player));
+				case WinXP::Match::Game::REVERSI:
+					m_matches_winxp.push_back(std::make_unique<WinXP::ReversiMatch>(player));
 					break;
 
 				default:

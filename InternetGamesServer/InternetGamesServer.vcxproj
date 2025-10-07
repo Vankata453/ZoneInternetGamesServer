@@ -167,6 +167,7 @@
     <ClCompile Include="WinXP\CheckersMatch.cpp" />
     <ClCompile Include="WinXP\Match.cpp" />
     <ClCompile Include="WinXP\PlayerSocket.cpp" />
+    <ClCompile Include="WinXP\ReversiMatch.cpp" />
     <ClCompile Include="WinXP\Security.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -193,6 +194,8 @@
     <ClInclude Include="WinXP\Protocol\Game.hpp" />
     <ClInclude Include="WinXP\Protocol\Init.hpp" />
     <ClInclude Include="WinXP\Protocol\Proxy.hpp" />
+    <ClInclude Include="WinXP\Protocol\Reversi.hpp" />
+    <ClInclude Include="WinXP\ReversiMatch.hpp" />
     <ClInclude Include="WinXP\Security.hpp" />
   </ItemGroup>
   <ItemGroup>

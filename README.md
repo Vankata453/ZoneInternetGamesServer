@@ -86,7 +86,7 @@ Fully supported, according to my testing.
 
 Fully supported, according to my testing.
 
-![Internet Backgammon (XP)](docs/img/README_CheckersXPPreview.png)
+![Internet Checkers (XP)](docs/img/README_CheckersXPPreview.png)
 
 #### Internet Spades (Windows XP)
 
@@ -98,7 +98,9 @@ To-be-done!
 
 #### Internet Reversi (Windows XP)
 
-To-be-done!
+Fully supported, according to my testing.
+
+![Internet Reversi (XP)](docs/img/README_ReversiXPPreview.png)
 
 
 > [!NOTE]
