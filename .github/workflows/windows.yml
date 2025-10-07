@@ -22,8 +22,6 @@ jobs:
         build_type: [ Debug, Release ]
 
     runs-on: windows-latest
-    env:
-      LAYOUT_DIR: C:\vs_layout
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -42,53 +40,11 @@ jobs:
           foreach ($edition in $editions) {
             $path = "C:\Program Files\Microsoft Visual Studio\2022\$edition"
             if (Test-Path $path) {
-              "VSEdition=$edition" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
               "VSPath=$path" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
               exit 0
             }
           }
           throw "Visual Studio 2022 installation not found!"
-
-      - name: Restore VS layout cache
-        id: cache-vs
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.LAYOUT_DIR }}
-          key: ${{ runner.os }}-vs-layout-v141_xp
-
-      - name: Create VS layout for v141_xp toolset and build tools
-        if: steps.cache-vs.outputs.cache-hit != 'true'
-        shell: cmd
-        run: |
-          curl -L -o vs_bootstrapper.exe https://aka.ms/vs/17/release/vs_${{ steps.detect-vs.outputs.VSEdition }}.exe
-          echo Successfully downloaded VS 2022 ${{ steps.detect-vs.outputs.VSEdition }} bootstrapper!
-
-          md "%LAYOUT_DIR%" 2>nul
-          echo Installing v141_xp toolset and build tools into layout: %LAYOUT_DIR%.
-          vs_bootstrapper.exe --layout "%LAYOUT_DIR%" ^
-            --lang en-US ^
-            --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
-            --add Microsoft.VisualStudio.Component.WinXP ^
-            --wait --quiet --norestart
-
-          if %errorlevel% neq 0 (
-            echo Failed to create layout! Code: %errorlevel%
-            exit /b %errorlevel%
-          )
-          echo Layout successfully created at %LAYOUT_DIR%.
-          dir /w %LAYOUT_DIR%
-
-      - name: Collect Visual Studio installer logs
-        run: |
-          mkdir logs
-          copy "%TEMP%\dd_*.log" logs\
-        shell: cmd
-
-      - name: Upload logs artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: "vs-logs-${{ matrix.arch }}-${{ matrix.build_type }}"
-          path: logs
 
       - name: Install v141_xp toolset and build tools
         shell: cmd
@@ -99,10 +55,9 @@ jobs:
           echo Installing v141_xp toolset and build tools into: %vsPath%.
           "%installer%" modify ^
             --installPath "%vsPath%" ^
-            --layoutPath "%LAYOUT_DIR%" ^
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
             --add Microsoft.VisualStudio.Component.WinXP ^
-            --noweb --nocache --quiet --norestart
+            --nocache --quiet --norestart
 
           if %errorlevel% neq 0 (
             echo Visual Studio component installation failed with error %errorlevel%!
