@@ -34,6 +34,7 @@ jobs:
 
       - name: Detect VS 2022 install path
         id: detect-vs
+        if: matrix.arch == 'x86'
         shell: pwsh
         run: |
           $editions = "Enterprise","Professional","Community"
@@ -47,6 +48,7 @@ jobs:
           throw "Visual Studio 2022 installation not found!"
 
       - name: Install v141_xp toolset and build tools
+        if: matrix.arch == 'x86'
         shell: cmd
         run: |
           set "vsPath=${{ steps.detect-vs.outputs.VSPath }}"
