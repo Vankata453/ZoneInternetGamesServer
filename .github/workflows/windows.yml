@@ -68,7 +68,7 @@ jobs:
             --lang en-US ^
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
             --add Microsoft.VisualStudio.Component.WinXP ^
-            --noUpdateInstaller --nocache --wait --quiet --norestart
+            --wait --quiet --norestart
 
           if %errorlevel% neq 0 (
             echo Failed to create layout! Code: %errorlevel%
