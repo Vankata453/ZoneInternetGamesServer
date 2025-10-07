@@ -42,6 +42,7 @@ jobs:
           foreach ($edition in $editions) {
             $path = "C:\Program Files\Microsoft Visual Studio\2022\$edition"
             if (Test-Path $path) {
+              "VSEdition=$edition" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
               "VSPath=$path" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
               exit 0
             }
@@ -59,8 +60,8 @@ jobs:
         if: steps.cache-vs.outputs.cache-hit != 'true'
         shell: cmd
         run: |
-          curl -L -o vs_bootstrapper.exe https://aka.ms/vs/17/release/vs_buildtools.exe
-          echo Successfully downloaded VS 2022 bootstrapper!
+          curl -L -o vs_bootstrapper.exe https://aka.ms/vs/17/release/vs_${{ steps.detect-vs.outputs.VSEdition }}.exe
+          echo Successfully downloaded VS 2022 ${{ steps.detect-vs.outputs.VSEdition }} bootstrapper!
 
           md "%LAYOUT_DIR%" 2>nul
           echo Installing v141_xp toolset and build tools into layout: %LAYOUT_DIR%.
