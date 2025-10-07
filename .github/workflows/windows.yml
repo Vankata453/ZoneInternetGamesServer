@@ -68,7 +68,6 @@ jobs:
             --lang en-US ^
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
             --add Microsoft.VisualStudio.Component.WinXP ^
-            --includeRecommended ^
             --noUpdateInstaller --nocache --wait --quiet --norestart
 
           if %errorlevel% neq 0 (
@@ -87,7 +86,7 @@ jobs:
       - name: Upload logs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vs-logs
+          name: "vs-logs-${{ matrix.arch }}-${{ matrix.build_type }}"
           path: logs
 
       - name: Install v141_xp toolset and build tools
@@ -102,7 +101,6 @@ jobs:
             --layoutPath "%LAYOUT_DIR%" ^
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
             --add Microsoft.VisualStudio.Component.WinXP ^
-            --includeRecommended ^
             --noweb --nocache --quiet --norestart
 
           if %errorlevel% neq 0 (
