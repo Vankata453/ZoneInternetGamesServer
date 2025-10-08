@@ -4,6 +4,8 @@
 
 #include <array>
 
+#include "Protocol/Checkers.hpp"
+
 namespace WinXP {
 
 class CheckersMatch final : public Match
@@ -29,6 +31,8 @@ private:
 	MatchState m_matchState;
 
 	std::array<bool, 2> m_playersCheckedIn;
+	std::array<Checkers::MsgCheckIn, 2> m_playerCheckInMsgs;
+
 	int16 m_playerTurn;
 	int16 m_drawOfferedBy;
 	bool m_drawAccepted;

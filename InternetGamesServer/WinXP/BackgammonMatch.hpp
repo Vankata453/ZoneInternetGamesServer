@@ -5,6 +5,8 @@
 #include <array>
 #include <random>
 
+#include "Protocol/Backgammon.hpp"
+
 namespace WinXP {
 
 #define XPBackgammonMaxStateTransactionsSize 12
@@ -43,6 +45,8 @@ private:
 		END_MATCH
 	};
 	std::array<MatchPlayerState, 2> m_playerStates;
+
+	std::array<Backgammon::MsgCheckIn, 2> m_playerCheckInMsgs;
 
 	std::mt19937 m_rng;
 

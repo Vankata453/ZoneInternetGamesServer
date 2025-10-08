@@ -1,7 +1,6 @@
 #include "CheckersMatch.hpp"
 
 #include "PlayerSocket.hpp"
-#include "Protocol/Checkers.hpp"
 
 namespace WinXP {
 
@@ -16,6 +15,7 @@ CheckersMatch::CheckersMatch(PlayerSocket& player) :
 	Match(player),
 	m_matchState(MatchState::AWAITING_START),
 	m_playersCheckedIn({ false, false }),
+	m_playerCheckInMsgs(),
 	m_playerTurn(0),
 	m_drawOfferedBy(-1),
 	m_drawAccepted(false),
@@ -26,6 +26,7 @@ void
 CheckersMatch::Reset()
 {
 	m_playersCheckedIn = { false, false };
+	m_playerCheckInMsgs = {};
 	m_playerTurn = 0;
 	m_drawOfferedBy = -1;
 	m_drawAccepted = false;
@@ -57,11 +58,16 @@ CheckersMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 				throw std::runtime_error("Checkers::MsgCheckIn: Incorrect player seat!");
 
 			msgCheckIn.playerID = player.GetID();
-			BroadcastGameMessage<MessageCheckIn>(msgCheckIn);
 
 			m_playersCheckedIn[player.m_seat] = true;
+			m_playerCheckInMsgs[player.m_seat] = std::move(msgCheckIn);
 			if (m_playersCheckedIn[0] && m_playersCheckedIn[1])
+			{
+				for (const MsgCheckIn& msg : m_playerCheckInMsgs)
+					BroadcastGameMessage<MessageCheckIn>(msg);
+				m_playerCheckInMsgs = {};
 				m_matchState = MatchState::PLAYING;
+			}
 			return;
 		}
 		case MatchState::PLAYING:

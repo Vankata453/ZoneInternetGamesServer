@@ -1,7 +1,6 @@
 #include "BackgammonMatch.hpp"
 
 #include "PlayerSocket.hpp"
-#include "Protocol/Backgammon.hpp"
 
 static const std::uniform_int_distribution<> s_dieDistribution(1, 6);
 
@@ -19,6 +18,7 @@ BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
 	Match(player),
 	m_matchState(MatchState::INITIALIZING),
 	m_playerStates({ MatchPlayerState::AWAITING_CHECKIN, MatchPlayerState::AWAITING_CHECKIN }),
+	m_playerCheckInMsgs(),
 	m_rng(std::random_device()()),
 	m_initialRollStarted(false),
 	m_doubleCubeValue(1),
@@ -53,8 +53,15 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 					if (msgCheckIn.playerType != 1)
 						throw std::runtime_error("Backgammon::MsgCheckIn: Incorrect player type!");
 
-					BroadcastGameMessage<MessageCheckIn>(msgCheckIn);
 					m_playerStates[player.m_seat] = player.m_seat == 0 ? MatchPlayerState::AWAITING_INITIAL_TRANSACTION : MatchPlayerState::WAITING_FOR_MATCH_START;
+					m_playerCheckInMsgs[player.m_seat] = std::move(msgCheckIn);
+					if (m_playerStates[0] != MatchPlayerState::AWAITING_CHECKIN &&
+						m_playerStates[1] != MatchPlayerState::AWAITING_CHECKIN)
+					{
+						for (const MsgCheckIn& msg : m_playerCheckInMsgs)
+							BroadcastGameMessage<MessageCheckIn>(msg);
+						m_playerCheckInMsgs = {};
+					}
 					return;
 				}
 				case MatchPlayerState::AWAITING_MATCH_START:

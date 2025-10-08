@@ -1,7 +1,6 @@
 #include "ReversiMatch.hpp"
 
 #include "PlayerSocket.hpp"
-#include "Protocol/Reversi.hpp"
 
 namespace WinXP {
 
@@ -16,6 +15,7 @@ ReversiMatch::ReversiMatch(PlayerSocket& player) :
 	Match(player),
 	m_matchState(MatchState::AWAITING_START),
 	m_playersCheckedIn({ false, false }),
+	m_playerCheckInMsgs(),
 	m_playerTurn(1),
 	m_playerResigned(-1)
 {}
@@ -24,6 +24,7 @@ void
 ReversiMatch::Reset()
 {
 	m_playersCheckedIn = { false, false };
+	m_playerCheckInMsgs = {};
 	m_playerTurn = 1;
 	m_playerResigned = -1;
 }
@@ -53,11 +54,16 @@ ReversiMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 				throw std::runtime_error("Reversi::MsgCheckIn: Incorrect player seat!");
 
 			msgCheckIn.playerID = player.GetID();
-			BroadcastGameMessage<MessageCheckIn>(msgCheckIn);
 
 			m_playersCheckedIn[player.m_seat] = true;
+			m_playerCheckInMsgs[player.m_seat] = std::move(msgCheckIn);
 			if (m_playersCheckedIn[0] && m_playersCheckedIn[1])
+			{
+				for (const MsgCheckIn& msg : m_playerCheckInMsgs)
+					BroadcastGameMessage<MessageCheckIn>(msg);
+				m_playerCheckInMsgs = {};
 				m_matchState = MatchState::PLAYING;
+			}
 			return;
 		}
 		case MatchState::PLAYING:
