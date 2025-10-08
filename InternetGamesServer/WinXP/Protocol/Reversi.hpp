@@ -201,9 +201,12 @@ static std::ostream& operator<<(std::ostream& out, const MsgEndMatch& m)
 {
 	out << "Reversi::MsgEndMatch:";
 	return out
+		<< "  numPoints = " << m.numPoints
 		<< "  reason = " << m.reason
 		<< "  seatLost = " << m.seatLost
-		<< "  seatQuit = " << m.seatQuit;
+		<< "  seatQuit = " << m.seatQuit
+		<< "  pieceCount[0] = " << m.pieceCount[0]
+		<< "  pieceCount[1] = " << m.pieceCount[1];
 }
 
 static std::ostream& operator<<(std::ostream& out, const MsgNewGameVote& m)
