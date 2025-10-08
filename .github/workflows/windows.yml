@@ -3,15 +3,15 @@ on:
   push:
     branches: [ "master" ]
     paths:
-      - DLLInjector/*
-      - InternetGamesClientDLL/*
-      - InternetGamesServer/*
+      - DLLInjector/**
+      - InternetGamesClientDLL/**
+      - InternetGamesServer/**
   pull_request:
     branches: [ "master" ]
     paths:
-      - DLLInjector/*
-      - InternetGamesClientDLL/*
-      - InternetGamesServer/*
+      - DLLInjector/**
+      - InternetGamesClientDLL/**
+      - InternetGamesServer/**
   workflow_dispatch:
 
 jobs:
