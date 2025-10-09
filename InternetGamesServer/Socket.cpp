@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "Resource.h"
 #include "Util.hpp"
 #include "Win7/PlayerSocket.hpp"
 #include "WinXP/PlayerSocket.hpp"
@@ -16,9 +17,32 @@
 #define DEFAULT_BUFLEN 2048
 
 static const char* SOCKET_WIN7_HI_RESPONSE = "STADIUM/2.0\r\n";
+static const std::vector<BYTE> XP_AD_BANNER_DATA = {};
 
 std::string Socket::s_logsDirectory = "";
 bool Socket::s_logPingMessages = false;
+bool Socket::s_disableXPAdBanner = false;
+
+
+void LoadXPAdBannerImage()
+{
+	if (Socket::s_disableXPAdBanner) return;
+
+	HINSTANCE hInstance = GetModuleHandle(NULL);
+	HRSRC hRes = FindResource(hInstance, MAKEINTRESOURCE(IDB_XP_AD_BANNER), L"PNG");
+	if (!hRes) return;
+
+	HGLOBAL hData = LoadResource(hInstance, hRes);
+	if (!hData) return;
+
+	const DWORD size = SizeofResource(hInstance, hRes);
+	if (size == 0) return;
+
+	BYTE* pData = reinterpret_cast<BYTE*>(LockResource(hData));
+	if (!pData) return;
+
+	const_cast<std::vector<BYTE>&>(XP_AD_BANNER_DATA) = std::vector<BYTE>(pData, pData + size);
+}
 
 
 // Handler for the thread of a socket
@@ -77,12 +101,65 @@ Socket::SocketHandler(void* socket_)
 				}
 				else
 				{
-					throw std::runtime_error("Invalid initial message!");
+					throw std::runtime_error("Invalid WinXP initial message!");
 				}
+			}
+			else if (!strncmp("GET /windows/ad.asp", receivedBuf, strlen("GET /windows/ad.asp"))) // WINXP: Banner ad request
+			{
+				if (s_disableXPAdBanner)
+					throw std::runtime_error("Ignoring banner ad request: Disabled.");
+
+				// Example of an old ad page: https://web.archive.org/web/20020205100250id_/http://zone.msn.com/windows/ad.asp
+				// The banner.png image will be returned by this server later, "example.com" is simply a dummy domain.
+				// We link to the GitHub repository on the Wayback Machine, as it can be somewhat loaded in IE6 via HTTP (ads strictly open with IE).
+				const std::string adHtml = R"(
+					<HTML>
+						<HEAD></HEAD>
+						<BODY MARGINWIDTH="0" MARGINHEIGHT="0" TOPMARGIN="0" LEFTMARGIN="0" BGCOLOR="#FFFFFF">
+							<A HREF="http://web.archive.org/web/2/https://github.com/Vankata453/ZoneInternetGamesServer" TARGET="_new">
+								<IMG SRC="http://example.com/banner.png" ALT="Powered by ZoneInternetGamesServer" BORDER=0 WIDTH=380 HEIGHT=200>
+							</A>
+							<ZONEAD></ZONEAD>
+						</BODY>
+					</HTML>
+					)";
+				const std::string adHttpHeader =
+					"HTTP/1.1 200 OK\r\n"
+					"Content-Type: text/html; charset=UTF-8\r\n"
+					"Content-Length: " + std::to_string(adHtml.size()) + "\r\n"
+					"Connection: close\r\n"
+					"\r\n";
+				socket.SendData(adHttpHeader.c_str(), static_cast<int>(adHttpHeader.size()));
+				socket.SendData(adHtml.c_str(), static_cast<int>(adHtml.size()));
+
+				throw std::runtime_error("Banner ad sent over.");
+			}
+			else if (!strncmp("GET /banner.png", receivedBuf, strlen("GET /banner.png"))) // WINXP: Banner ad image request
+			{
+				if (s_disableXPAdBanner)
+					throw std::runtime_error("Ignoring banner ad image request: Disabled.");
+				if (XP_AD_BANNER_DATA.empty())
+					throw std::runtime_error("No banner ad image found!");
+
+				const std::string adImageHttpHeader =
+					"HTTP/1.1 200 OK\r\n"
+					"Content-Type: image/png\r\n"
+					"Content-Length: " + std::to_string(XP_AD_BANNER_DATA.size()) + "\r\n"
+					"Connection: close\r\n"
+					"\r\n";
+				socket.SendData(adImageHttpHeader.c_str(), static_cast<int>(adImageHttpHeader.size()));
+
+				const int sentLen = send(socket.GetRaw(), reinterpret_cast<const char*>(XP_AD_BANNER_DATA.data()),
+					static_cast<int>(XP_AD_BANNER_DATA.size()), 0);
+				if (sentLen == SOCKET_ERROR)
+					throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
+				*logStream << "[SENT]: [RAW AD BANNER PNG]\n(BYTES SENT=" << sentLen << ")\n\n" << std::endl;
+
+				throw std::runtime_error("Banner ad image sent over.");
 			}
 			else
 			{
-				throw std::runtime_error("Invalid initial message!");
+				throw std::runtime_error("Invalid initial message or request!");
 			}
 		}
 

@@ -7,12 +7,15 @@
 #include <sstream>
 #include <vector>
 
+void LoadXPAdBannerImage();
+
 /** SOCKET wrapper featuring general socket handling functions */
 class Socket final
 {
 public:
 	static std::string s_logsDirectory;
 	static bool s_logPingMessages; // DEBUG: Log empty ping messages from sockets
+	static bool s_disableXPAdBanner;
 
 	enum Type
 	{

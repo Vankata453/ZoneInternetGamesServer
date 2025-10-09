@@ -45,7 +45,13 @@ int main(int argc, char* argv[])
 		{
 			Socket::s_logPingMessages = true;
 		}
+		else if (!strcmp(argv[i], "--disable-xp-ad-banner"))
+		{
+			Socket::s_disableXPAdBanner = true;
+		}
 	}
+
+	LoadXPAdBannerImage();
 
 	// Create a thread to update the logic of all matches
 	DWORD nMatchManagerThreadID;
