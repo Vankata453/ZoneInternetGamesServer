@@ -75,8 +75,6 @@ PlayerSocket::ProcessMessages()
 
 				m_match = MatchManager::Get().FindLobby(*this);
 				m_state = STATE_WAITINGFOROPPONENTS;
-
-				SendGenericMessage<MessageServerStatus>(MsgServerStatus());
 				break;
 			}
 			case STATE_PROXY_DISCONNECTED: // Disconnected proxy (after: disconnected from match, find new opponent, received corrupted data)

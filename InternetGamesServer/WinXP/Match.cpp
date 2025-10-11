@@ -75,6 +75,11 @@ Match::JoinPlayer(PlayerSocket& player)
 
 	AddPlayer(player);
 
+	MsgServerStatus msgServerStatus;
+	msgServerStatus.playersWaiting = static_cast<int>(m_players.size());
+	for (PlayerSocket* p : m_players)
+		p->OnMatchGenericMessage<MessageServerStatus>(msgServerStatus);
+
 	// Switch state, if enough players have joined
 	if (m_players.size() == GetRequiredPlayerCount())
 		m_state = STATE_PENDINGSTART;
@@ -89,6 +94,15 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 	if (m_players.empty())
 	{
 		m_state = STATE_ENDED;
+		return;
+	}
+
+	if (m_state == STATE_WAITINGFORPLAYERS)
+	{
+		MsgServerStatus msgServerStatus;
+		msgServerStatus.playersWaiting = static_cast<int>(m_players.size());
+		for (PlayerSocket* p : m_players)
+			p->OnMatchGenericMessage<MessageServerStatus>(msgServerStatus);
 		return;
 	}
 
