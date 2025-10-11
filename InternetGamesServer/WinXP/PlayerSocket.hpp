@@ -80,10 +80,7 @@ public:
 				throw std::runtime_error("WinXP::PlayerSocket::OnMatchGameMessage(): An error occured waiting for \"accepts game messages\" event: " + std::to_string(GetLastError()));
 		}
 	}
-	inline void OnMatchServiceInfo(MsgProxyServiceInfo::Reason reason)
-	{
-		SendProxyServiceInfoMessages(reason);
-	}
+	void OnMatchDisconnect();
 
 	Socket::Type GetType() const override { return Socket::WINXP; }
 	inline uint32 GetID() const { return m_ID; }

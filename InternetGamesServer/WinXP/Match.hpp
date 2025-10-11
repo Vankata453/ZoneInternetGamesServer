@@ -140,7 +140,6 @@ protected:
 
 private:
 	HANDLE m_broadcastMutex; // Mutex to prevent simultaneous broadcasting of multiple messages to players
-	HANDLE m_disconnectMutex; // Mutex to prevent simultaneous disconnection of socket, which is likely to cause a crash if multiple clients are being disconnected at the same time.
 
 	std::time_t m_endTime;
 

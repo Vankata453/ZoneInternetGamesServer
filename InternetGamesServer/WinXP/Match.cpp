@@ -52,7 +52,6 @@ Match::Match(PlayerSocket& player) :
 	m_state(STATE_WAITINGFORPLAYERS),
 	m_skillLevel(player.GetSkillLevel()),
 	m_broadcastMutex(CreateMutex(nullptr, false, nullptr)),
-	m_disconnectMutex(CreateMutex(nullptr, false, nullptr)),
 	m_endTime(0)
 {
 	JoinPlayer(player);
@@ -62,9 +61,8 @@ Match::~Match()
 {
 	// Match has ended, so disconnect any remaining players
 	for (PlayerSocket* p : m_players)
-		p->Disconnect();
+		p->OnMatchDisconnect();
 
-	CloseHandle(m_disconnectMutex);
 	CloseHandle(m_broadcastMutex);
 }
 
@@ -87,55 +85,27 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 {
 	RemovePlayer(player);
 
-	if (WaitForSingleObject(m_disconnectMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned disconnect mutex
-		throw std::runtime_error("WinXP::Match::DisconnectedPlayer(): Got ownership of an abandoned disconnect mutex: " + std::to_string(GetLastError()));
-
-	try
+	// End the match on no players, marking it as to-be-removed from MatchManager
+	if (m_players.empty())
 	{
-		// End the match on no players, marking it as to-be-removed from MatchManager
-		if (m_players.empty())
-		{
-			m_state = STATE_ENDED;
-			goto disconnectEnd;
-		}
+		m_state = STATE_ENDED;
+		return;
+	}
 
-		// If the game has already ended, notify all players that someone has left the match and "Play Again" is now impossible
-		if (m_state == STATE_GAMEOVER && m_players.size() == GetRequiredPlayerCount() - 1)
-		{
-			m_state = STATE_ENDED;
-
-			for (PlayerSocket* p : m_players)
-				p->OnMatchServiceInfo(MsgProxyServiceInfo::SERVICE_DISCONNECT);
-
-			goto disconnectEnd;
-		}
-
-#if not MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE
-		// Originally, servers replaced players who have left the game with AI.
-		// However, since there is no logic support for any of the games on this server currently,
-		// if currently playing a game, we end the game directly by disconnecting everyone.
-		// NOTE: The server doesn't know when a game has finished with a win, so this has the drawback of causing
-		//       an "Internet connection to the game server was broken" message after a game has finished with a win
-		//       (even though since the game has ended anyway, it's not really important).
-		if (m_state == STATE_PLAYING)
-		{
-			m_state = STATE_ENDED;
-
-			// Disconnect any remaining players
-			for (PlayerSocket* p : m_players)
-				p->Disconnect();
-		}
+#if MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE
+	if (
+#else
+	if (m_state == STATE_PLAYING ||
 #endif
-	}
-	catch (...)
+		// If the game has already ended, notify all players that someone has left the match and "Play Again" is now impossible
+		(m_state == STATE_GAMEOVER && m_players.size() == GetRequiredPlayerCount() - 1))
 	{
-		ReleaseMutex(m_disconnectMutex);
-		throw;
-	}
+		std::cout << "[MATCH] " << m_guid << ": A player left, closing match!" << std::endl;
+		m_state = STATE_ENDED;
 
-disconnectEnd:
-	if (!ReleaseMutex(m_disconnectMutex))
-		throw std::runtime_error("WinXP::Match::DisconnectedPlayer(): Couldn't release disconnect mutex: " + std::to_string(GetLastError()));
+		for (PlayerSocket* p : m_players)
+			p->OnMatchDisconnect();
+	}
 }
 
 

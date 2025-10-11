@@ -79,7 +79,7 @@ PlayerSocket::ProcessMessages()
 				SendGenericMessage<MessageServerStatus>(MsgServerStatus());
 				break;
 			}
-			case STATE_PROXY_DISCONNECTED: // Reconnect proxy (after: find new opponent, received corrupted data)
+			case STATE_PROXY_DISCONNECTED: // Disconnected proxy (after: disconnected from match, find new opponent, received corrupted data)
 			{
 				assert(!m_inLobby);
 
@@ -89,7 +89,11 @@ PlayerSocket::ProcessMessages()
 					throw std::runtime_error("MsgProxyServiceRequest: Message is invalid!");
 
 				if (msgServiceRequestConnect.reason != MsgProxyServiceRequest::REASON_CONNECT)
-					throw std::runtime_error("MsgProxyServiceRequest: Reason is not client connection!");
+				{
+					if (msgServiceRequestConnect.reason == MsgProxyServiceRequest::REASON_DISCONNECT)
+						break;
+					throw std::runtime_error("MsgProxyServiceRequest: Reason is not client connection or disconnection!");
+				}
 
 				SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_CONNECT);
 				break;
@@ -217,6 +221,15 @@ PlayerSocket::OnDisconnected()
 	m_inLobby = false;
 	m_state = STATE_DISCONNECTING;
 	ResetEvent(m_acceptsGameMessagesEvent);
+}
+
+void
+PlayerSocket::OnMatchDisconnect()
+{
+	if (!m_match)
+		return;
+	m_match = nullptr;
+	SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_DISCONNECT);
 }
 
 

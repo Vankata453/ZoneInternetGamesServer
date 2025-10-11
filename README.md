@@ -111,7 +111,8 @@ Fully supported, according to my testing.
 >
 >   The reason for this is that AI player logic has originally been developed server-side.
 >   Since this server does not support game logic, they cannot be supported, hence the match is ended
->   by disconnecting all players, causing an "Error communicating with server" error on their game clients.
+>   by disconnecting all players, causing "Error communicating with server" and "Your opponent has left the game"
+>   error messages on Windows 7 and XP game clients respectively.
 >
 > * **Since the server does not support game logic, it will send over any valid event messages, regardless of their legitimacy.**
 >
