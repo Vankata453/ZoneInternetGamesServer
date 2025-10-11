@@ -252,7 +252,7 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 
 		case MessageChatMessage:
 		{
-			const std::pair<MsgChatMessage, Array<char, 128>> msgChat =
+			std::pair<MsgChatMessage, Array<char, 128>> msgChat =
 				player.OnMatchAwaitGameMessage<MsgChatMessage, MessageChatMessage, char, 128>();
 			if (msgChat.first.userID != player.GetID())
 				throw std::runtime_error("Backgammon::MsgChatMessage: Incorrect user ID!");
@@ -267,15 +267,18 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 				throw std::runtime_error("Backgammon::MsgChatMessage: Non-null-terminated chat message!");
 
 			const std::wstring chatMsg(chatMsgRaw, chatMsgLen - 1);
-			if (!ValidateCommonChatMessage(chatMsg) &&
-				chatMsg != L"/80 Nice move" &&
-				chatMsg != L"/81 Nice roll" &&
-				chatMsg != L"/82 Not again!")
-			{
+			const uint8_t msgID = ValidateChatMessage(chatMsg, 80, 82);
+			if (!msgID)
 				throw std::runtime_error("Backgammon::MsgChatMessage: Invalid chat message!");
-			}
 
-			BroadcastGameMessage<MessageChatMessage>(msgChat.first, msgChat.second);
+			// XP games initially check for a wide character at the end of the message string, which is equal to the message ID.
+			// Since we have already verified that the message ID (/{id}) at the start of the string is valid,
+			// we can safely just send over the corresponding character.
+			Array<char, ROUND_DATA_LENGTH_UINT32(4)> msgIDArr;
+			msgIDArr[2] = msgID; // 1st byte of 2nd WCHAR
+			msgIDArr.SetLength(4);
+			msgChat.first.messageLength = 4;
+			BroadcastGameMessage<MessageChatMessage>(msgChat.first, msgIDArr);
 			break;
 		}
 		default:

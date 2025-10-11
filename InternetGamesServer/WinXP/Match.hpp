@@ -58,6 +58,10 @@ public:
 	virtual void ProcessIncomingGameMessage(PlayerSocket& player, uint32 type) = 0;
 
 protected:
+	// Returns message ID, 0 on failure
+	static uint8_t ValidateChatMessage(const std::wstring& chatMsg, uint8_t customRangeStart, uint8_t customRangeEnd);
+
+protected:
 	/** Sending utilities */
 	template<uint32 Type, typename T>
 	void BroadcastGenericMessage(const T& msgApp, int excludePlayerSeat = -1, int len = sizeof(T))
@@ -128,9 +132,6 @@ protected:
 		if (!ReleaseMutex(m_broadcastMutex))
 			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
 	}
-
-	/** Other static utilities */
-	static bool ValidateCommonChatMessage(const std::wstring& chatMsg);
 
 protected:
 	State m_state;

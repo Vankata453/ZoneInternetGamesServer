@@ -203,21 +203,30 @@ Match::ProcessMessage(const MsgChatSwitch& msg)
 }
 
 
-bool
-Match::ValidateCommonChatMessage(const std::wstring& chatMsg)
+uint8_t // Returns message ID, 0 on failure
+Match::ValidateChatMessage(const std::wstring& chatMsg, uint8_t customRangeStart, uint8_t customRangeEnd)
 {
-	return chatMsg == L"/1 Nice try" || chatMsg == L"/2 Good job" ||
-		chatMsg == L"/3 Good game" || chatMsg == L"/4 Good luck!" ||
-		chatMsg == L"/5 It's your turn" || chatMsg == L"/6 I'm thinking..." ||
-		chatMsg == L"/7 Play again?" || chatMsg == L"/8 Yes" ||
-		chatMsg == L"/9 No" || chatMsg == L"/10 Hello" ||
-		chatMsg == L"/11 Goodbye" || chatMsg == L"/12 Thank you" ||
-		chatMsg == L"/13 You're welcome" || chatMsg == L"/14 It was luck" ||
-		chatMsg == L"/15 Be right back..." || chatMsg == L"/16 Okay, I'm back" ||
-		chatMsg == L"/17 Are you still there?" || chatMsg == L"/18 Sorry, I have to go now" ||
-		chatMsg == L"/19 I'm going to play at zone.com" || chatMsg == L"/20 :-)" ||
-		chatMsg == L"/21 :-(" || chatMsg == L"/22 Uh oh..." ||
-		chatMsg == L"/23 Oops!" || chatMsg == L"/24 Ouch!";
+	if (chatMsg.empty() || chatMsg[0] != L'/')
+		return 0;
+
+	try
+	{
+		size_t lastIDPos;
+		const int msgID = std::stoi(chatMsg.substr(1), &lastIDPos);
+
+		if (lastIDPos + 1 < chatMsg.size() && !std::isspace(chatMsg[lastIDPos + 1]))
+			return 0;
+
+		if ((msgID >= 1 && msgID <= 24) || // Common messages
+			(msgID >= customRangeStart && msgID <= customRangeEnd)) // Custom (per-game) messages
+			return msgID;
+	}
+	catch (const std::exception&)
+	{
+		return 0;
+	}
+
+	return 0;
 }
 
 }

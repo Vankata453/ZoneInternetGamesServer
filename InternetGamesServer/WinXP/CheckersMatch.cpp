@@ -233,16 +233,18 @@ CheckersMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 				throw std::runtime_error("Checkers::MsgChatMessage: Non-null-terminated chat message!");
 
 			const std::wstring chatMsg(chatMsgRaw, chatMsgLen - 1);
-			if (!ValidateCommonChatMessage(chatMsg) &&
-				chatMsg != L"/40 Nice move" &&
-				chatMsg != L"/41 Good jump" &&
-				chatMsg != L"/42 Good double-jump" &&
-				chatMsg != L"/43 King me!")
-			{
+			const uint8_t msgID = ValidateChatMessage(chatMsg, 40, 43);
+			if (!msgID)
 				throw std::runtime_error("Checkers::MsgChatMessage: Invalid chat message!");
-			}
 
-			BroadcastGameMessage<MessageChatMessage>(msgChat.first, msgChat.second);
+			// XP games initially check for a wide character at the end of the message string, which is equal to the message ID.
+			// Since we have already verified that the message ID (/{id}) at the start of the string is valid,
+			// we can safely just send over the corresponding character.
+			Array<char, ROUND_DATA_LENGTH_UINT32(4)> msgIDArr;
+			msgIDArr[2] = msgID; // 1st byte of 2nd WCHAR
+			msgIDArr.SetLength(4);
+			msgChat.first.messageLength = 4;
+			BroadcastGameMessage<MessageChatMessage>(msgChat.first, msgIDArr);
 			break;
 		}
 		default:
