@@ -58,7 +58,7 @@ public:
 		if (receivedLen == 0)
 			throw ClientDisconnected();
 		else if (receivedLen < 0)
-			throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+			throw std::runtime_error("\"recv\" failed: " + std::to_string(WSAGetLastError()));
 
 		m_log << "[RECEIVED]: " << data << "\n\n" << std::endl;
 
@@ -75,7 +75,7 @@ public:
 		if (receivedLen == 0)
 			throw ClientDisconnected();
 		else if (receivedLen < 0)
-			throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+			throw std::runtime_error("\"recv\" failed: " + std::to_string(WSAGetLastError()));
 
 		decryptor(&data, len, decryptKey);
 
@@ -95,7 +95,7 @@ public:
 		if (receivedLen == 0)
 			throw ClientDisconnected();
 		else if (receivedLen < 0)
-			throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+			throw std::runtime_error("\"recv\" failed: " + std::to_string(WSAGetLastError()));
 
 		decryptor(&data, len, decryptKey);
 
@@ -118,7 +118,7 @@ public:
 
 		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), len, 0);
 		if (sentLen == SOCKET_ERROR)
-			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
+			throw std::runtime_error("\"send\" failed: " + std::to_string(WSAGetLastError()));
 
 		m_log << "[SENT]: " << data << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
 
@@ -136,7 +136,7 @@ public:
 
 		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), len, 0);
 		if (sentLen == SOCKET_ERROR)
-			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
+			throw std::runtime_error("\"send\" failed: " + std::to_string(WSAGetLastError()));
 
 		m_log << logBuf.str() << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
 
@@ -155,7 +155,7 @@ public:
 
 		const int sentLen = send(m_socket, reinterpret_cast<const char*>(&data), len, 0);
 		if (sentLen == SOCKET_ERROR)
-			throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
+			throw std::runtime_error("\"send\" failed: " + std::to_string(WSAGetLastError()));
 
 		m_log << logBuf.str() << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
 

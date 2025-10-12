@@ -152,7 +152,7 @@ Socket::SocketHandler(void* socket_)
 				const int sentLen = send(socket.GetRaw(), reinterpret_cast<const char*>(XP_AD_BANNER_DATA.data()),
 					static_cast<int>(XP_AD_BANNER_DATA.size()), 0);
 				if (sentLen == SOCKET_ERROR)
-					throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
+					throw std::runtime_error("\"send\" failed: " + std::to_string(WSAGetLastError()));
 				*logStream << "[SENT]: [RAW AD BANNER PNG]\n(BYTES SENT=" << sentLen << ")\n\n" << std::endl;
 
 				throw std::runtime_error("Banner ad image sent over.");
@@ -242,7 +242,7 @@ Socket::ReceiveData(char* data, int len)
 	if (receivedLen == 0)
 		throw ClientDisconnected();
 	else if (receivedLen < 0)
-		throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+		throw std::runtime_error("\"recv\" failed: " + std::to_string(WSAGetLastError()));
 
 	m_log << "[RECEIVED]: ";
 	m_log.write(data, receivedLen);
@@ -295,7 +295,7 @@ Socket::ReceiveData()
 	{
 		throw ClientDisconnected();
 	}
-	throw std::runtime_error("\"recv\" failed: " + WSAGetLastError());
+	throw std::runtime_error("\"recv\" failed: " + std::to_string(WSAGetLastError()));
 }
 
 
@@ -304,7 +304,7 @@ Socket::SendData(const char* data, int len)
 {
 	const int sentLen = send(m_socket, data, len, 0);
 	if (sentLen == SOCKET_ERROR)
-		throw std::runtime_error("\"send\" failed: " + WSAGetLastError());
+		throw std::runtime_error("\"send\" failed: " + std::to_string(WSAGetLastError()));
 
 	m_log << "[SENT]: ";
 	m_log.write(data, sentLen);

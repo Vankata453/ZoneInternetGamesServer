@@ -129,6 +129,11 @@ int main(int argc, char* argv[])
 		// Connected to socket successfully
 		std::cout << "[SOCKET] Accepted connection from " << Socket::GetAddressString(ClientSocket) << "." << std::endl;
 
+		// Set recv/send timeout for client socket - 60 seconds
+		const DWORD timeout = 60000;
+		setsockopt(ClientSocket, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
+		setsockopt(ClientSocket, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
+
 		// Create a thread to handle the socket
 		DWORD nSocketThreadID;
 		if (!CreateThread(0, 0, Socket::SocketHandler, (void*)ClientSocket, 0, &nSocketThreadID))
