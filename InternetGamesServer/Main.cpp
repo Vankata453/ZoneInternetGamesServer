@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
 		SOCKET ClientSocket = accept(ListenSocket, NULL, NULL);
 		if (ClientSocket == INVALID_SOCKET)
 		{
-			std::cout << "[SOCKET] \"accept\" failed: " << WSAGetLastError() << std::endl;;
+			std::cout << "[SOCKET] \"accept\" failed: " << WSAGetLastError() << std::endl;
 			continue;
 		}
 
@@ -131,15 +131,30 @@ int main(int argc, char* argv[])
 
 		// Set recv/send timeout for client socket - 60 seconds
 		const DWORD timeout = 60000;
-		setsockopt(ClientSocket, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
-		setsockopt(ClientSocket, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
+		if (setsockopt(ClientSocket, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout)) != 0)
+		{
+			std::cout << "[SOCKET] \"setsockopt\" for recv() timeout failed: " << WSAGetLastError() << std::endl;
+			if (shutdown(ClientSocket, SD_BOTH) == SOCKET_ERROR)
+				std::cout << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+			continue;
+		}
+		if (setsockopt(ClientSocket, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout)) != 0)
+		{
+			std::cout << "[SOCKET] \"setsockopt\" for send() timeout failed: " << WSAGetLastError() << std::endl;
+			if (shutdown(ClientSocket, SD_BOTH) == SOCKET_ERROR)
+				std::cout << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+			continue;
+		}
 
 		// Create a thread to handle the socket
 		DWORD nSocketThreadID;
-		if (!CreateThread(0, 0, Socket::SocketHandler, (void*)ClientSocket, 0, &nSocketThreadID))
+		if (!CreateThread(0, 0, Socket::SocketHandler, reinterpret_cast<LPVOID>(ClientSocket), 0, &nSocketThreadID))
 		{
 			std::cout << "[SOCKET] Couldn't create a thread to handle socket from " << Socket::GetAddressString(ClientSocket)
 				<< ": " << GetLastError() << std::endl;
+			if (shutdown(ClientSocket, SD_BOTH) == SOCKET_ERROR)
+				std::cout << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+			continue;
 		}
 	}
 
