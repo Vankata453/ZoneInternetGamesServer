@@ -58,67 +58,67 @@ PlayerSocket::ProcessMessages()
 		if (m_incomingGenericMsg.GetType() == MessageConnectionKeepAlive)
 		{
 			AwaitIncomingGenericFooter();
-			continue;
 		}
-
-		switch (m_state)
+		else
 		{
-			case STATE_INITIALIZED:
+			switch (m_state)
 			{
-				AwaitProxyHiMessages();
-				SendProxyHelloMessages();
-				break;
-			}
-			case STATE_UNCONFIGURED:
-			{
-				AwaitClientConfig();
-
-				m_match = MatchManager::Get().FindLobby(*this);
-				m_state = STATE_WAITINGFOROPPONENTS;
-				break;
-			}
-			case STATE_PROXY_DISCONNECTED: // Disconnected proxy (after: disconnected from match, find new opponent, received corrupted data)
-			{
-				assert(!m_inLobby);
-
-				/* Await connect request and send response */
-				const MsgProxyServiceRequest msgServiceRequestConnect = AwaitIncomingGenericMessage<MsgProxyServiceRequest, 1>();
-				if (!ValidateProxyMessage<MessageProxyServiceRequest>(msgServiceRequestConnect))
-					throw std::runtime_error("MsgProxyServiceRequest: Message is invalid!");
-
-				if (msgServiceRequestConnect.reason != MsgProxyServiceRequest::REASON_CONNECT)
+				case STATE_INITIALIZED:
 				{
-					if (msgServiceRequestConnect.reason == MsgProxyServiceRequest::REASON_DISCONNECT)
-						break;
-					throw std::runtime_error("MsgProxyServiceRequest: Reason is not client connection or disconnection!");
+					AwaitProxyHiMessages();
+					SendProxyHelloMessages();
+					break;
 				}
-
-				SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_CONNECT);
-				break;
-			}
-			case STATE_STARTING_GAME:
-			{
-				switch (WaitForSingleObject(m_acceptsGameMessagesEvent, 5000))
+				case STATE_UNCONFIGURED:
 				{
+					AwaitClientConfig();
+
+					m_match = MatchManager::Get().FindLobby(*this);
+					m_state = STATE_WAITINGFOROPPONENTS;
+					break;
+				}
+				case STATE_PROXY_DISCONNECTED: // Disconnected proxy (after: disconnected from match, find new opponent, received corrupted data)
+				{
+					assert(!m_inLobby);
+
+					/* Await connect request and send response */
+					const MsgProxyServiceRequest msgServiceRequestConnect = AwaitIncomingGenericMessage<MsgProxyServiceRequest, 1>();
+					if (!ValidateProxyMessage<MessageProxyServiceRequest>(msgServiceRequestConnect))
+						throw std::runtime_error("MsgProxyServiceRequest: Message is invalid!");
+
+					if (msgServiceRequestConnect.reason != MsgProxyServiceRequest::REASON_CONNECT)
+					{
+						if (msgServiceRequestConnect.reason == MsgProxyServiceRequest::REASON_DISCONNECT)
+							break;
+						throw std::runtime_error("MsgProxyServiceRequest: Reason is not client connection or disconnection!");
+					}
+
+					SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_CONNECT);
+					break;
+				}
+				case STATE_STARTING_GAME:
+				{
+					switch (WaitForSingleObject(m_acceptsGameMessagesEvent, 5000))
+					{
 					case WAIT_OBJECT_0:
 						break;
 					case WAIT_TIMEOUT:
 						throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Timed out waiting for \"accepts game messages\" event!");
 					default:
 						throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): An error occured waiting for \"accepts game messages\" event: " + std::to_string(GetLastError()));
+					}
+					// Fallthrough (game messages are now accepted)
 				}
-				// Fallthrough (game messages are now accepted)
-			}
-			case STATE_PLAYING:
-			{
-				switch (m_incomingGenericMsg.GetType())
+				case STATE_PLAYING:
 				{
+					switch (m_incomingGenericMsg.GetType())
+					{
 					case MessageGameMessage:
 					{
 						AwaitIncomingGameMessageHeader();
 
 						XPPlayerSocketMatchGuard
-						m_match->ProcessIncomingGameMessage(*this, m_incomingGameMsg.GetType());
+							m_match->ProcessIncomingGameMessage(*this, m_incomingGameMsg.GetType());
 						break;
 					}
 					case MessageChatSwitch:
@@ -132,7 +132,7 @@ PlayerSocket::ProcessMessages()
 						m_config.chatEnabled = msgChatSwitch.chatEnabled;
 
 						XPPlayerSocketMatchGuard
-						m_match->ProcessMessage(msgChatSwitch);
+							m_match->ProcessMessage(msgChatSwitch);
 						break;
 					}
 					case 1: // Disconnect proxy (find new opponent, received corrupted data)
@@ -154,11 +154,21 @@ PlayerSocket::ProcessMessages()
 					}
 					default:
 						throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Generic message of unknown type received: " + std::to_string(m_incomingGenericMsg.GetType()));
+					}
+					break;
 				}
-				break;
+				default:
+					throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Message was received, but current state (" + std::to_string(m_state) + ") does not process any!");
 			}
-			default:
-				throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Message was received, but current state (" + std::to_string(m_state) + ") does not process any!");
+		}
+
+		// Time out the client in states not involving participation in a match
+		if (m_state != STATE_WAITINGFOROPPONENTS &&
+			m_state != STATE_PLAYING &&
+			m_state.GetSecondsSinceLastChange() >= 60)
+		{
+			throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Timeout: Client has not switched from state "
+				+ std::to_string(m_state) + " for 60 seconds or more!");
 		}
 	}
 }

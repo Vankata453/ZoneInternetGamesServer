@@ -3,6 +3,7 @@
 #include "../PlayerSocket.hpp"
 
 #include "Match.hpp"
+#include "../Util.hpp"
 
 namespace Win7 {
 
@@ -49,7 +50,7 @@ private:
 	std::vector<std::string> GetResponse(const std::vector<std::string>& receivedData);
 
 private:
-	State m_state;
+	ChangeTimeTracker<State> m_state;
 
 	std::string m_guid;
 	std::string m_puid;

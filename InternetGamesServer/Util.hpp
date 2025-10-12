@@ -177,6 +177,39 @@ std::ostream& operator<<(std::ostream& os, const Array<T, Size>& arr)
 	return os << ']';
 }
 
+template<typename T>
+class ChangeTimeTracker final
+{
+public:
+	ChangeTimeTracker() :
+		val(),
+		timeLastChange(std::time(nullptr))
+	{}
+	ChangeTimeTracker(T defaultVal) :
+		val(std::move(defaultVal)),
+		timeLastChange(std::time(nullptr))
+	{}
+
+	inline const T& Get() const { return val; }
+	inline operator const T&() const { return val; }
+
+	inline std::time_t GetTimeLastChange() const { return timeLastChange; }
+	inline std::time_t GetSecondsSinceLastChange() const { return std::time(nullptr) - timeLastChange; }
+
+	void operator=(const T& otherVal)
+	{
+		if (val == otherVal)
+			return;
+
+		val = otherVal;
+		timeLastChange = std::time(nullptr);
+	}
+
+private:
+	T val;
+	std::time_t timeLastChange;
+};
+
 /** Struct padding */
 #define STRUCT_PADDING(x) private: char _struct_padding_bytes[x];
 

@@ -8,6 +8,7 @@
 #include "Protocol/Init.hpp"
 #include "Protocol/Proxy.hpp"
 #include "Security.hpp"
+#include "../Util.hpp"
 
 namespace WinXP {
 
@@ -597,7 +598,7 @@ private:
 	};
 
 private:
-	State m_state;
+	ChangeTimeTracker<State> m_state;
 
 	const uint32 m_ID;
 	Match::Game m_game;

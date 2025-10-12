@@ -4,9 +4,7 @@
 #include <stdexcept>
 #include <sstream>
 
-#include "Match.hpp"
 #include "../MatchManager.hpp"
-#include "../Util.hpp"
 
 namespace Win7 {
 
@@ -40,6 +38,15 @@ PlayerSocket::ProcessMessages()
 
 		for (const std::vector<std::string>& receivedLineData : receivedData)
 			m_socket.SendData(GetResponse(receivedLineData));
+
+		// Time out the client in states not involving participation in a match
+		if (m_state != STATE_WAITINGFOROPPONENTS &&
+			m_state != STATE_PLAYING &&
+			m_state.GetSecondsSinceLastChange() >= 60)
+		{
+			throw std::runtime_error("Win7::PlayerSocket::ProcessMessages(): Timeout: Client has not switched from state "
+				+ std::to_string(m_state) + " for 60 seconds or more!");
+		}
 	}
 }
 
@@ -51,72 +58,72 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 
 	switch (m_state)
 	{
-	case STATE_INITIALIZED:
-		if (receivedData.size() >= 6 && StartsWith(receivedData[0], "JOIN Session="))
-		{
-			ParseSasTicket(receivedData[2]);
-			ParseGasTicket(receivedData[3]);
-			ParsePasTicket(receivedData[4]);
-
-			// Find/Create a lobby (pending match), based on the game to be played and skill level
-			m_match = MatchManager::Get().FindLobby(*this);
-
-			m_state = STATE_JOINING;
-			m_guid = StringSplit(receivedData[0], "=")[1];
-			return { ConstructJoinContextMessage() };
-		}
-		break;
-
-	case STATE_JOINING:
-		if (StartsWith(receivedData[0], "PLAY match"))
-		{
-			m_state = STATE_WAITINGFOROPPONENTS;
-			return { ConstructReadyMessage(), ConstructStateMessage(m_match->ConstructReadyXML()) };
-		}
-		break;
-
-	case STATE_PLAYING:
-		if (StartsWith(receivedData[0], "CALL GameReady")) // Game is ready, start it
-		{
-			// Send a game start message
-			const StateSTag startTag = StateSTag::ConstructGameStart();
-			std::vector<std::string> results = {
-				ConstructStateMessage(m_match->ConstructStateXML({ &startTag }))
-			};
-
-			// Include any additional messages, given on game start, by the match
-			const std::vector<std::string> stateXMLs = m_match->ConstructGameStartMessagesXML(*this);
-			for (const std::string& stateXML : stateXMLs)
+		case STATE_INITIALIZED:
+			if (receivedData.size() >= 6 && StartsWith(receivedData[0], "JOIN Session="))
 			{
-				const StateSTag stateTag = StateSTag::ConstructEventReceive(stateXML);
-				results.push_back(ConstructStateMessage(m_match->ConstructStateXML({ &stateTag })));
+				ParseSasTicket(receivedData[2]);
+				ParseGasTicket(receivedData[3]);
+				ParsePasTicket(receivedData[4]);
+
+				// Find/Create a lobby (pending match), based on the game to be played and skill level
+				m_match = MatchManager::Get().FindLobby(*this);
+
+				m_state = STATE_JOINING;
+				m_guid = StringSplit(receivedData[0], "=")[1];
+				return { ConstructJoinContextMessage() };
 			}
+			break;
 
-			return results;
-		}
-		else if (receivedData[0] == "CALL EventSend messageID=EventSend" && receivedData.size() > 1 &&
-			StartsWith(receivedData[1], "XMLDataString=")) // An event is being sent, let the Match send it to all other players
-		{
-			m_match->EventSend(*this, DecodeURL(receivedData[1].substr(14))); // Remove "XMLDataString=" from the beginning
-		}
-		else if (StartsWith(receivedData[0], "CALL Chat") && receivedData.size() > 1) // A chat message was sent, let the Match send it to all players
-		{
-			StateChatTag tag;
-			tag.userID = m_guid.substr(1, m_guid.size() - 2); // Remove braces from beginning and end
-			tag.nickname = m_puid;
-			tag.text = receivedData[0].substr(20); // Remove "CALL Chat sChatText=" from the beginning
-			tag.fontFace = DecodeURL(receivedData[1].substr(10)); // Remove "sFontFace=" from the beginning
-			tag.fontFlags = receivedData[2].substr(13); // Remove "arfFontFlags=" from the beginning
-			tag.fontColor = receivedData[3].substr(11); // Remove "eFontColor=" from the beginning
-			tag.fontCharSet = receivedData[4].substr(11); // Remove "eFontCharSet=" from the beginning
+		case STATE_JOINING:
+			if (StartsWith(receivedData[0], "PLAY match"))
+			{
+				m_state = STATE_WAITINGFOROPPONENTS;
+				return { ConstructReadyMessage(), ConstructStateMessage(m_match->ConstructReadyXML()) };
+			}
+			break;
 
-			m_match->Chat(std::move(tag));
-		}
-		else if (receivedData[0] == "LEAVE") // Client has left the game, disconnect it from the server
-		{
-			Disconnect();
-		}
-		break;
+		case STATE_PLAYING:
+			if (StartsWith(receivedData[0], "CALL GameReady")) // Game is ready, start it
+			{
+				// Send a game start message
+				const StateSTag startTag = StateSTag::ConstructGameStart();
+				std::vector<std::string> results = {
+					ConstructStateMessage(m_match->ConstructStateXML({ &startTag }))
+				};
+
+				// Include any additional messages, given on game start, by the match
+				const std::vector<std::string> stateXMLs = m_match->ConstructGameStartMessagesXML(*this);
+				for (const std::string& stateXML : stateXMLs)
+				{
+					const StateSTag stateTag = StateSTag::ConstructEventReceive(stateXML);
+					results.push_back(ConstructStateMessage(m_match->ConstructStateXML({ &stateTag })));
+				}
+
+				return results;
+			}
+			else if (receivedData[0] == "CALL EventSend messageID=EventSend" && receivedData.size() > 1 &&
+				StartsWith(receivedData[1], "XMLDataString=")) // An event is being sent, let the Match send it to all other players
+			{
+				m_match->EventSend(*this, DecodeURL(receivedData[1].substr(14))); // Remove "XMLDataString=" from the beginning
+			}
+			else if (StartsWith(receivedData[0], "CALL Chat") && receivedData.size() > 1) // A chat message was sent, let the Match send it to all players
+			{
+				StateChatTag tag;
+				tag.userID = m_guid.substr(1, m_guid.size() - 2); // Remove braces from beginning and end
+				tag.nickname = m_puid;
+				tag.text = receivedData[0].substr(20); // Remove "CALL Chat sChatText=" from the beginning
+				tag.fontFace = DecodeURL(receivedData[1].substr(10)); // Remove "sFontFace=" from the beginning
+				tag.fontFlags = receivedData[2].substr(13); // Remove "arfFontFlags=" from the beginning
+				tag.fontColor = receivedData[3].substr(11); // Remove "eFontColor=" from the beginning
+				tag.fontCharSet = receivedData[4].substr(11); // Remove "eFontCharSet=" from the beginning
+
+				m_match->Chat(std::move(tag));
+			}
+			else if (receivedData[0] == "LEAVE") // Client has left the game, disconnect it from the server
+			{
+				Disconnect();
+			}
+			break;
 	}
 	return {};
 }
