@@ -123,29 +123,32 @@ ReversiMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 		}
 		case MatchState::ENDED:
 		{
-			MsgCheckIn msgCheckIn = player.OnMatchAwaitGameMessage<MsgCheckIn, MessageCheckIn>();
-			if (msgCheckIn.protocolSignature != XPReversiProtocolSignature)
-				throw std::runtime_error("Reversi::MsgCheckIn: Invalid protocol signature!");
-			if (msgCheckIn.protocolVersion != XPReversiProtocolVersion)
-				throw std::runtime_error("Reversi::MsgCheckIn: Incorrect protocol version!");
-			// msgCheckIn.playerID should be undefined
-			if (msgCheckIn.seat != player.m_seat)
-				throw std::runtime_error("Reversi::MsgCheckIn: Incorrect player seat!");
-
-			MsgNewGameVote msgNewGameVote;
-			msgNewGameVote.seat = player.m_seat;
-			BroadcastGameMessage<MessageNewGameVote>(msgNewGameVote);
-
-			msgCheckIn.playerID = player.GetID();
-			BroadcastGameMessage<MessageCheckIn>(msgCheckIn);
-
-			m_playersCheckedIn[player.m_seat] = true;
-			if (m_playersCheckedIn[0] && m_playersCheckedIn[1])
+			if (type == MessageCheckIn)
 			{
-				m_matchState = MatchState::PLAYING;
-				m_state = STATE_PLAYING;
+				MsgCheckIn msgCheckIn = player.OnMatchAwaitGameMessage<MsgCheckIn, MessageCheckIn>();
+				if (msgCheckIn.protocolSignature != XPReversiProtocolSignature)
+					throw std::runtime_error("Reversi::MsgCheckIn: Invalid protocol signature!");
+				if (msgCheckIn.protocolVersion != XPReversiProtocolVersion)
+					throw std::runtime_error("Reversi::MsgCheckIn: Incorrect protocol version!");
+				// msgCheckIn.playerID should be undefined
+				if (msgCheckIn.seat != player.m_seat)
+					throw std::runtime_error("Reversi::MsgCheckIn: Incorrect player seat!");
+
+				MsgNewGameVote msgNewGameVote;
+				msgNewGameVote.seat = player.m_seat;
+				BroadcastGameMessage<MessageNewGameVote>(msgNewGameVote);
+
+				msgCheckIn.playerID = player.GetID();
+				BroadcastGameMessage<MessageCheckIn>(msgCheckIn);
+
+				m_playersCheckedIn[player.m_seat] = true;
+				if (m_playersCheckedIn[0] && m_playersCheckedIn[1])
+				{
+					m_matchState = MatchState::PLAYING;
+					m_state = STATE_PLAYING;
+				}
+				return;
 			}
-			return;
 		}
 	}
 
