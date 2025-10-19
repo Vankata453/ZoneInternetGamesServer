@@ -2,10 +2,13 @@
 
 #include "Match.hpp"
 
-#include <array>
-#include <random>
+#include "..\WinCommon\SpadesUtil.hpp"
 
 namespace Win7 {
+
+using namespace Spades;
+
+constexpr uint16_t ZPA_UNSET_CARD = 0xFFFF;
 
 class SpadesMatch final : public Match
 {
@@ -26,8 +29,6 @@ protected:
 private:
 	void ResetHand();
 
-	void UpdateTeamPoints();
-
 private:
 	enum BidValues
 	{
@@ -36,27 +37,9 @@ private:
 		BID_DOUBLE_NIL = -2
 	};
 
-public:
+private:
 	typedef uint16_t Card;
 	typedef std::vector<Card> CardArray;
-
-	class CardTrick final
-	{
-	public:
-		CardTrick();
-
-		void Reset();
-		void Set(int player, Card card);
-
-		bool FollowsSuit(Card card, const CardArray& hand) const;
-
-		bool IsFinished() const;
-		int GetWinner() const;
-
-	private:
-		Card m_leadCard;
-		std::array<Card, 4> m_playerCards;
-	};
 
 private:
 	std::mt19937 m_rng;
@@ -68,18 +51,18 @@ private:
 	};
 	MatchState m_matchState;
 
-	std::array<int, 2> m_teamPoints;
-	std::array<uint8_t, 2> m_teamBags;
+	std::array<int16_t, 2> m_teamPoints;
+	std::array<int16_t, 2> m_teamBags;
 
 	int m_handDealer;
 	int m_nextBidPlayer;
-	std::array<int, 4> m_playerBids;
+	std::array<int8_t, 4> m_playerBids;
 	std::array<CardArray, 4> m_playerCards;
 	int m_playerTurn;
 	int m_playerTrickTurn;
-	std::array<uint8_t, 4> m_playerTricksTaken;
+	std::array<int16_t, 4> m_playerTricksTaken;
 
-	CardTrick m_currentTrick;
+	CardTrick<Card, ZPA_UNSET_CARD> m_currentTrick;
 
 private:
 	SpadesMatch(const SpadesMatch&) = delete;

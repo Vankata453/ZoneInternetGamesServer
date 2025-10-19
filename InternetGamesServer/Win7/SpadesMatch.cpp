@@ -5,41 +5,23 @@
 #include "PlayerSocket.hpp"
 #include "../Util.hpp"
 
-#define SPADES_LOG_TEAM_POINTS 0 // DEBUG: Print data about points/bags calculation for a team when a hand ends, to the console
-
-#if SPADES_LOG_TEAM_POINTS
-#include <iostream>
-#endif
-
-static const std::uniform_int_distribution<> s_playerDistribution(0, 3);
-
-constexpr uint16_t ZPA_UNSET_CARD = 0xFFFF;
-
 static inline uint16_t MakeZPACardValue(uint8_t suit, uint8_t rank)
 {
 	assert(suit < 4 && rank < 13);
 	return (suit << 8) | rank;
 }
 
-enum class CardSuit
+static Spades::CardSuit GetZPACardValueSuit(uint16_t value)
 {
-	DIAMONDS = 0,
-	CLUBS = 1,
-	HEARTS = 2,
-	SPADES = 3
-};
-
-static inline CardSuit GetZPACardValueSuit(uint16_t value)
-{
-	return static_cast<CardSuit>(value >> 8);
+	return static_cast<Spades::CardSuit>(value >> 8);
 }
 
-static inline uint8_t GetZPACardValueRank(uint16_t value)
+static uint8_t GetZPACardValueRank(uint16_t value)
 {
 	return value & 0xFF;
 }
 
-static inline bool IsValidZPACardValue(uint16_t value)
+static bool IsValidZPACardValue(uint16_t value)
 {
 	return (value >> 8) < 4 && // Suit
 		(value & 0xFF) < 13; // Rank
@@ -47,87 +29,6 @@ static inline bool IsValidZPACardValue(uint16_t value)
 
 
 namespace Win7 {
-
-SpadesMatch::CardTrick::CardTrick() :
-	m_leadCard(),
-	m_playerCards()
-{
-	Reset();
-}
-
-void
-SpadesMatch::CardTrick::Reset()
-{
-	m_leadCard = ZPA_UNSET_CARD;
-	m_playerCards = { ZPA_UNSET_CARD, ZPA_UNSET_CARD, ZPA_UNSET_CARD, ZPA_UNSET_CARD };
-}
-
-void
-SpadesMatch::CardTrick::Set(int player, Card card)
-{
-	assert(!IsFinished());
-
-	if (std::all_of(m_playerCards.begin(), m_playerCards.end(), [](Card card) { return card == ZPA_UNSET_CARD; }))
-		m_leadCard = card;
-	m_playerCards[player] = card;
-}
-
-bool
-SpadesMatch::CardTrick::FollowsSuit(Card card, const CardArray& hand) const
-{
-	if (m_leadCard == ZPA_UNSET_CARD)
-		return true;
-
-	const CardSuit leadSuit = GetZPACardValueSuit(m_leadCard);
-	if (GetZPACardValueSuit(card) == leadSuit)
-		return true;
-
-	return std::none_of(hand.begin(), hand.end(),
-		[leadSuit](Card pCard)
-		{
-			return GetZPACardValueSuit(pCard) == leadSuit;
-		});
-}
-
-bool
-SpadesMatch::CardTrick::IsFinished() const
-{
-	if (std::none_of(m_playerCards.begin(), m_playerCards.end(), [](Card card) { return card == ZPA_UNSET_CARD; }))
-	{
-		assert(std::all_of(m_playerCards.begin(), m_playerCards.end(), IsValidZPACardValue));
-		return true;
-	}
-	return false;
-}
-
-int
-SpadesMatch::CardTrick::GetWinner() const
-{
-	const bool hasSpades = std::any_of(m_playerCards.begin(), m_playerCards.end(),
-		[](Card card) {
-			return GetZPACardValueSuit(card) == CardSuit::SPADES;
-		});
-	const CardSuit targetSuit = hasSpades ? CardSuit::SPADES : GetZPACardValueSuit(m_leadCard);
-
-	int maxRank = -1;
-	int maxRankPlayer = -1;
-	for (int i = 0; i < m_playerCards.size(); ++i)
-	{
-		const Card card = m_playerCards[i];
-		if (GetZPACardValueSuit(card) == targetSuit)
-		{
-			const int rank = static_cast<int>(GetZPACardValueRank(card));
-			if (rank > maxRank)
-			{
-				maxRank = rank;
-				maxRankPlayer = i;
-			}
-		}
-	}
-	assert(maxRankPlayer >= 0);
-	return maxRankPlayer;
-}
-
 
 SpadesMatch::SpadesMatch(PlayerSocket& player) :
 	Match(player),
@@ -142,7 +43,7 @@ SpadesMatch::SpadesMatch(PlayerSocket& player) :
 	m_playerTurn(),
 	m_playerTrickTurn(),
 	m_playerTricksTaken(),
-	m_currentTrick()
+	m_currentTrick(IsValidZPACardValue, GetZPACardValueSuit, GetZPACardValueRank)
 {
 	ResetHand();
 }
@@ -166,101 +67,13 @@ SpadesMatch::ResetHand()
 
 	std::array<Card, 52> allCards;
 	for (uint8_t i = 0; i < allCards.size(); ++i)
-		allCards[i] = MakeZPACardValue(i / 13, i % 13);
+		allCards[i] = MakeZPACardValue(i / SpadesNumCardsInHand, i % SpadesNumCardsInHand);
 
 	std::shuffle(allCards.begin(), allCards.end(), m_rng);
 
 	for (size_t i = 0; i < m_playerCards.size(); ++i)
-		m_playerCards[i] = CardArray(allCards.begin() + i * 13, allCards.begin() + (i + 1) * 13);
-}
-
-void
-SpadesMatch::UpdateTeamPoints()
-{
-	// Handle Nil/Double Nil for each player
-	std::array<int, 4> playerNilBonuses = { 0, 0, 0, 0 };
-	std::array<uint8_t, 4> playerNilBags = { 0, 0, 0, 0 };
-	for (int i = 0; i < 4; ++i)
-	{
-		if (m_playerBids[i] == 0) // Nil
-		{
-			if (m_playerTricksTaken[i] == 0)
-			{
-				playerNilBonuses[i] = 100;
-			}
-			else
-			{
-				playerNilBonuses[i] = -100;
-				playerNilBags[i] = m_playerTricksTaken[i];
-			}
-		}
-		else if (m_playerBids[i] == BID_DOUBLE_NIL) // Double Nil
-		{
-			if (m_playerTricksTaken[i] == 0)
-			{
-				playerNilBonuses[i] = 200;
-			}
-			else
-			{
-				playerNilBonuses[i] = -200;
-				playerNilBags[i] = m_playerTricksTaken[i];
-			}
-		}
-	}
-
-	// Score each team
-	for (int team = 0; team < 2; ++team)
-	{
-		const int p1 = team == 0 ? 0 : 1;
-		const int p2 = p1 + 2;
-
-		int points = playerNilBonuses[p1] + playerNilBonuses[p2];
-		uint8_t bags = m_teamBags[team] + playerNilBags[p1] + playerNilBags[p2];
-
-		// Contract scoring
-		const int contract = max(0, m_playerBids[p1]) + max(0, m_playerBids[p2]);
-		const int tricksNonNil = static_cast<int>(
-			(m_playerBids[p1] > 0 ? m_playerTricksTaken[p1] : 0) +
-			(m_playerBids[p2] > 0 ? m_playerTricksTaken[p2] : 0));
-		if (tricksNonNil >= contract)
-		{
-			points += contract * 10;
-			bags += tricksNonNil - contract; // Only non-Nil overtricks count towards bags
-		}
-		else
-		{
-			points -= contract * 10;
-		}
-
-		const int tricksAll = static_cast<int>(m_playerTricksTaken[p1] + m_playerTricksTaken[p2]);
-		const int overtricksAll = tricksAll - contract; // Overtricks for points are calculated using all tricks taken, Nil or not
-		if (overtricksAll > 0)
-			points += overtricksAll;
-
-		// Bag penalty
-		if (bags >= 10)
-		{
-			points -= (bags / 10) * 100;
-			bags %= 10;
-		}
-
-#if SPADES_LOG_TEAM_POINTS
-		std::cout << std::dec
-			<< "Team " << (team + 1)
-			<< " Bid: " << contract
-			<< " Tricks: " << tricksAll
-			<< " TricksNonNil: " << tricksNonNil
-			<< " Overtricks: " << (tricksAll - contract)
-			<< " NilPenalty: " << (playerNilBonuses[p1] + playerNilBonuses[p2])
-			<< " BagsBefore: " << static_cast<int>(m_teamBags[team])
-			<< " BagsAfter: " << static_cast<int>(bags)
-			<< " ScoreDelta: " << points
-			<< std::endl;
-#endif
-
-		m_teamPoints[team] += points;
-		m_teamBags[team] = bags;
-	}
+		m_playerCards[i] = CardArray(allCards.begin() + i * SpadesNumCardsInHand,
+			allCards.begin() + (i + 1) * SpadesNumCardsInHand);
 }
 
 
@@ -410,9 +223,14 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 								m_playerTurn = m_currentTrick.GetWinner();
 								++m_playerTricksTaken[m_playerTurn];
 
-								if (m_playerCards.at(0).empty())
+								if (cards.empty())
 								{
-									UpdateTeamPoints();
+									const std::array<TrickScore, 2> score =
+										CalculateTrickScore(m_playerBids, m_playerTricksTaken, m_teamBags, BID_DOUBLE_NIL, true);
+									m_teamPoints[0] += score[0].points;
+									m_teamPoints[1] += score[1].points;
+									m_teamBags[0] = score[0].bags;
+									m_teamBags[1] = score[1].bags;
 
 									if (m_teamPoints[0] >= 500 || m_teamPoints[1] <= -200 ||
 										m_teamPoints[1] >= 500 || m_teamPoints[0] <= -200)

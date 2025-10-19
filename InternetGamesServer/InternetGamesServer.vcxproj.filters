@@ -66,7 +66,13 @@
     <ClCompile Include="WinXP\CheckersMatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="WinXP\SpadesMatch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="WinXP\ReversiMatch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WinCommon\SpadesUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -137,10 +143,19 @@
     <ClInclude Include="WinXP\Protocol\Checkers.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WinXP\SpadesMatch.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinXP\Protocol\Spades.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="WinXP\ReversiMatch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="WinXP\Protocol\Reversi.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinCommon\SpadesUtil.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -159,6 +174,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="InternetGamesServer.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\XPAdBanner.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

@@ -90,7 +90,9 @@ Fully supported, according to my testing.
 
 #### Internet Spades (Windows XP)
 
-To-be-done!
+Fully supported, according to my testing.
+
+![Internet Spades (XP)](docs/img/README_SpadesXPPreview.png)
 
 #### Internet Hearts (Windows XP)
 

@@ -163,12 +163,14 @@
     <ClCompile Include="Win7\StateTags.cpp" />
     <ClCompile Include="Util.cpp" />
     <ClCompile Include="Win7\PlayerSocket.cpp" />
+    <ClCompile Include="WinCommon\SpadesUtil.cpp" />
     <ClCompile Include="WinXP\BackgammonMatch.cpp" />
     <ClCompile Include="WinXP\CheckersMatch.cpp" />
     <ClCompile Include="WinXP\Match.cpp" />
     <ClCompile Include="WinXP\PlayerSocket.cpp" />
     <ClCompile Include="WinXP\ReversiMatch.cpp" />
     <ClCompile Include="WinXP\Security.cpp" />
+    <ClCompile Include="WinXP\SpadesMatch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Match.hpp" />
@@ -183,6 +185,7 @@
     <ClInclude Include="Win7\StateTags.hpp" />
     <ClInclude Include="Util.hpp" />
     <ClInclude Include="Win7\PlayerSocket.hpp" />
+    <ClInclude Include="WinCommon\SpadesUtil.hpp" />
     <ClInclude Include="WinXP\BackgammonMatch.hpp" />
     <ClInclude Include="WinXP\CheckersMatch.hpp" />
     <ClInclude Include="WinXP\Defines.hpp" />
@@ -195,14 +198,17 @@
     <ClInclude Include="WinXP\Protocol\Init.hpp" />
     <ClInclude Include="WinXP\Protocol\Proxy.hpp" />
     <ClInclude Include="WinXP\Protocol\Reversi.hpp" />
+    <ClInclude Include="WinXP\Protocol\Spades.hpp" />
     <ClInclude Include="WinXP\ReversiMatch.hpp" />
     <ClInclude Include="WinXP\Security.hpp" />
+    <ClInclude Include="WinXP\SpadesMatch.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="InternetGamesServer.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="InternetGamesServer.ico" />
+    <Image Include="res\XPAdBanner.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

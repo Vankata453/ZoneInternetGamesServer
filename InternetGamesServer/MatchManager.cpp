@@ -14,6 +14,7 @@
 #include "WinXP/CheckersMatch.hpp"
 #include "WinXP/PlayerSocket.hpp"
 #include "WinXP/ReversiMatch.hpp"
+#include "WinXP/SpadesMatch.hpp"
 
 MatchManager MatchManager::s_instance;
 
@@ -219,8 +220,8 @@ MatchManager::CreateLobby(WinXP::PlayerSocket& player)
 					m_matches_winxp.push_back(std::make_unique<WinXP::CheckersMatch>(player));
 					break;
 
-				case WinXP::Match::Game::SPADES: // TODO
-					m_matches_winxp.push_back(std::make_unique<WinXP::BackgammonMatch>(player));
+				case WinXP::Match::Game::SPADES:
+					m_matches_winxp.push_back(std::make_unique<WinXP::SpadesMatch>(player));
 					break;
 
 				case WinXP::Match::Game::HEARTS: // TODO
