@@ -66,17 +66,20 @@ std::array<TrickScore, 2> CalculateTrickScore(const std::array<int8_t, 4>& playe
 			(playerBids[p2] > 0 ? playerTricksTaken[p2] : 0);
 		if (tricksNonNil >= contract)
 		{
-			teamScore.pointsBase += contract * 10;
+			teamScore.pointsBase = contract * 10;
 			points += teamScore.pointsBase;
 
-			teamScore.pointsBagBonus = tricksNonNil - contract; // Win7: Only non-Nil overtricks count towards bags
-			bags += teamScore.pointsBagBonus;
+			const int16_t overtricksNonNil = tricksNonNil - contract;
+			bags += overtricksNonNil; // Only non-Nil overtricks count towards bags
 			if (!countNilOvertricks) // WinXP: Overtricks for points are calculated using only non-Nil overtricks
-				points += teamScore.pointsBagBonus;
+			{
+				teamScore.pointsBagBonus = overtricksNonNil;
+				points += overtricksNonNil;
+			}
 		}
 		else
 		{
-			teamScore.pointsBase += contract * -10;
+			teamScore.pointsBase = contract * -10;
 			points += teamScore.pointsBase;
 		}
 
@@ -85,7 +88,10 @@ std::array<TrickScore, 2> CalculateTrickScore(const std::array<int8_t, 4>& playe
 			const int16_t tricksAll = playerTricksTaken[p1] + playerTricksTaken[p2];
 			const int16_t overtricksAll = tricksAll - contract;
 			if (overtricksAll > 0)
+			{
+				teamScore.pointsBagBonus = overtricksAll;
 				points += overtricksAll;
+			}
 		}
 
 		// Bag penalty
