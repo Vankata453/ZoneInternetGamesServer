@@ -35,7 +35,7 @@ CheckersMatch::Reset()
 
 
 void
-CheckersMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
+CheckersMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 {
 	using namespace Checkers;
 
@@ -251,7 +251,7 @@ CheckersMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 			break;
 		}
 		default:
-			throw std::runtime_error("CheckersMatch::ProcessIncomingGameMessage(): Game message of unknown type received: " + std::to_string(type));
+			throw std::runtime_error("CheckersMatch::ProcessIncomingGameMessageImpl(): Game message of unknown type received: " + std::to_string(type));
 	}
 }
 

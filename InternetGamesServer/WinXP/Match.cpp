@@ -51,6 +51,7 @@ Match::Match(PlayerSocket& player) :
 	::Match<PlayerSocket>(player),
 	m_state(STATE_WAITINGFORPLAYERS),
 	m_skillLevel(player.GetSkillLevel()),
+	m_processMessageMutex(CreateMutex(nullptr, false, nullptr)),
 	m_broadcastMutex(CreateMutex(nullptr, false, nullptr)),
 	m_endTime(0)
 {
@@ -64,6 +65,7 @@ Match::~Match()
 		p->OnMatchDisconnect();
 
 	CloseHandle(m_broadcastMutex);
+	CloseHandle(m_processMessageMutex);
 }
 
 
@@ -186,6 +188,26 @@ void
 Match::ProcessMessage(const MsgChatSwitch& msg)
 {
 	BroadcastGenericMessage<MessageChatSwitch>(msg);
+}
+
+void
+Match::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
+{
+	if (WaitForSingleObject(m_processMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned process message mutex
+		throw std::runtime_error("WinXP::Match::ProcessIncomingGameMessage(): Got ownership of an abandoned process message mutex: " + std::to_string(GetLastError()));
+
+	try
+	{
+		ProcessIncomingGameMessageImpl(player, type);
+	}
+	catch (...)
+	{
+		ReleaseMutex(m_processMessageMutex);
+		throw;
+	}
+
+	if (!ReleaseMutex(m_processMessageMutex))
+		throw std::runtime_error("WinXP::Match::ProcessIncomingGameMessage(): Couldn't release process message mutex: " + std::to_string(GetLastError()));
 }
 
 

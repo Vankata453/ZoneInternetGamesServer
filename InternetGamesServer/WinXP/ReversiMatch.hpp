@@ -15,8 +15,9 @@ public:
 
 	Game GetGame() const override { return Game::REVERSI; }
 
+protected:
 	/** Processing messages */
-	void ProcessIncomingGameMessage(PlayerSocket& player, uint32 type) override;
+	void ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type) override;
 
 private:
 	void Reset();

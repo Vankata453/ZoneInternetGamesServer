@@ -27,7 +27,7 @@ BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
 
 
 void
-BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
+BackgammonMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 {
 	using namespace Backgammon;
 
@@ -232,14 +232,14 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 					trans[0].tag != SharedState || trans[0].value != StateGameSettings ||
 					trans[1].tag != SharedActiveSeat || trans[1].value != 0)
 				{
-					throw std::runtime_error("BackgammonMatch::ProcessIncomingGameMessage(): Invalid initial state transaction!");
+					throw std::runtime_error("BackgammonMatch::ProcessIncomingGameMessageImpl(): Invalid initial state transaction!");
 				}
 				m_playerStates[0] = MatchPlayerState::AWAITING_MATCH_START;
 				return;
 			}
 			else if (m_playerStates[player.m_seat] <= MatchPlayerState::AWAITING_MATCH_START)
 			{
-				throw std::runtime_error("BackgammonMatch::ProcessIncomingGameMessage(): Invalid transaction during initialization phase!");
+				throw std::runtime_error("BackgammonMatch::ProcessIncomingGameMessageImpl(): Invalid transaction during initialization phase!");
 			}
 			else
 			{
@@ -282,7 +282,7 @@ BackgammonMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 			break;
 		}
 		default:
-			throw std::runtime_error("BackgammonMatch::ProcessIncomingGameMessage(): Game message of unknown type received: " + std::to_string(type));
+			throw std::runtime_error("BackgammonMatch::ProcessIncomingGameMessageImpl(): Game message of unknown type received: " + std::to_string(type));
 	}
 }
 

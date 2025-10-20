@@ -87,7 +87,7 @@ SpadesMatch::ResetHand()
 
 
 void
-SpadesMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
+SpadesMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 {
 	using namespace Spades;
 
@@ -378,7 +378,7 @@ SpadesMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 			break;
 		}
 		default:
-			throw std::runtime_error("SpadesMatch::ProcessIncomingGameMessage(): Game message of unknown type received: " + std::to_string(type));
+			throw std::runtime_error("SpadesMatch::ProcessIncomingGameMessageImpl(): Game message of unknown type received: " + std::to_string(type));
 	}
 }
 

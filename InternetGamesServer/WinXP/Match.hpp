@@ -55,9 +55,12 @@ public:
 
 	/** Processing messages */
 	void ProcessMessage(const MsgChatSwitch& msg);
-	virtual void ProcessIncomingGameMessage(PlayerSocket& player, uint32 type) = 0;
+	void ProcessIncomingGameMessage(PlayerSocket& player, uint32 type);
 
 protected:
+	/** Processing messages */
+	virtual void ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type) = 0;
+
 	// Returns message ID, 0 on failure
 	static uint8_t ValidateChatMessage(const std::wstring& chatMsg, uint8_t customRangeStart, uint8_t customRangeEnd);
 
@@ -139,7 +142,8 @@ protected:
 	const SkillLevel m_skillLevel;
 
 private:
-	HANDLE m_broadcastMutex; // Mutex to prevent simultaneous broadcasting of multiple messages to players
+	HANDLE m_processMessageMutex; // Mutex to prevent simultaneous processing of multiple messages from several players
+	HANDLE m_broadcastMutex; // Mutex to prevent simultaneous broadcasting of multiple messages to players (otherwise they could get mashed up)
 
 	std::time_t m_endTime;
 

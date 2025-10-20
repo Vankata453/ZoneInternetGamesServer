@@ -31,7 +31,7 @@ ReversiMatch::Reset()
 
 
 void
-ReversiMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
+ReversiMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 {
 	using namespace Reversi;
 
@@ -191,7 +191,7 @@ ReversiMatch::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 			break;
 		}
 		default:
-			throw std::runtime_error("ReversiMatch::ProcessIncomingGameMessage(): Game message of unknown type received: " + std::to_string(type));
+			throw std::runtime_error("ReversiMatch::ProcessIncomingGameMessageImpl(): Game message of unknown type received: " + std::to_string(type));
 	}
 }
 
