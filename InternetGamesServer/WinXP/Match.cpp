@@ -115,10 +115,12 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 		(m_state == STATE_GAMEOVER && m_players.size() == GetRequiredPlayerCount() - 1))
 	{
 		std::cout << "[MATCH] " << m_guid << ": A player left, closing match!" << std::endl;
-		m_state = STATE_ENDED;
 
 		for (PlayerSocket* p : m_players)
 			p->OnMatchDisconnect();
+		m_players.clear();
+
+		m_state = STATE_ENDED;
 	}
 }
 
