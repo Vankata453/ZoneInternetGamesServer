@@ -8,14 +8,12 @@ namespace WinXP {
 
 using namespace ::Spades;
 
-constexpr int8_t UNSET_CARD = 0x7F;
-
 class SpadesMatch final : public Match
 {
 public:
 	SpadesMatch(PlayerSocket& player);
 
-	size_t GetRequiredPlayerCount() const override { return 4; }
+	size_t GetRequiredPlayerCount() const override { return SpadesNumPlayers; }
 	Game GetGame() const override { return Game::SPADES; }
 
 protected:
@@ -61,7 +59,7 @@ private:
 	int16 m_playerTrickTurn;
 	std::array<int16_t, 4> m_playerTricksTaken;
 
-	CardTrick<Card, UNSET_CARD> m_currentTrick;
+	CardTrick<Card, SpadesUnsetCard> m_currentTrick;
 
 private:
 	SpadesMatch(const SpadesMatch&) = delete;

@@ -155,6 +155,8 @@ SpadesMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 					MsgBid msgBid = player.OnMatchAwaitGameMessage<MsgBid, MessageBid>();
 					if (msgBid.seat != player.m_seat)
 						throw std::runtime_error("Spades::MsgBid: Incorrect player seat!");
+					if ((msgBid.bid < 0 || msgBid.bid > 13) && msgBid.bid != MsgBid::BID_DOUBLE_NIL)
+						throw std::runtime_error("Spades::MsgBid: Invalid bid value!");
 
 					bool moreBidsToSend = m_nextBidPlayer != m_handDealer ||
 						std::all_of(m_playerBids.begin(), m_playerBids.end(),

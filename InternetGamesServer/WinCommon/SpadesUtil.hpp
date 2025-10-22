@@ -6,7 +6,10 @@
 
 namespace Spades {
 
+#define SpadesNumPlayers 4
 #define SpadesNumCardsInHand 13
+
+#define SpadesUnsetCard 0x7F
 
 static const std::uniform_int_distribution<> s_playerDistribution(0, 3);
 

@@ -57,20 +57,20 @@ private:
 
 struct MsgStartGame final
 {
-	uint32 playerIDs[4] = {};
+	uint32 playerIDs[SpadesNumPlayers] = {};
 	uint32 gameOptions = 0;
 	int16 numPointsInGame = 500;
 
 	void ConvertToHostEndian()
 	{
-		for (BYTE i = 0; i < 4; ++i)
+		for (BYTE i = 0; i < SpadesNumPlayers; ++i)
 			HOST_ENDIAN_LONG(playerIDs[i])
 		HOST_ENDIAN_LONG(gameOptions)
 		HOST_ENDIAN_SHORT(numPointsInGame)
 	}
 	void ConvertToNetworkEndian()
 	{
-		for (BYTE i = 0; i < 4; ++i)
+		for (BYTE i = 0; i < SpadesNumPlayers; ++i)
 			NETWORK_ENDIAN_LONG(playerIDs[i])
 		NETWORK_ENDIAN_LONG(gameOptions)
 		NETWORK_ENDIAN_SHORT(numPointsInGame)
@@ -209,7 +209,7 @@ struct MsgEndHand final
 
 private:
 	int16 padding = 0;
-	char _unused1[4] = {};
+	char _unused1[SpadesNumPlayers] = {};
 
 public:
 	int16 points[2] = {};
@@ -237,7 +237,7 @@ public:
 
 struct MsgEndGame final
 {
-	char winners[4] = {};
+	char winners[SpadesNumPlayers] = {};
 
 	void ConvertToHostEndian() {}
 	void ConvertToNetworkEndian() {}
@@ -274,12 +274,11 @@ static std::ostream& operator<<(std::ostream& out, const MsgCheckIn& m)
 
 static std::ostream& operator<<(std::ostream& out, const MsgStartGame& m)
 {
-	out << "Spades::MsgStartGame:";
-	return out
-		<< "  playerIDs[0] = " << m.playerIDs[0]
-		<< "  playerIDs[1] = " << m.playerIDs[1]
-		<< "  playerIDs[2] = " << m.playerIDs[2]
-		<< "  playerIDs[3] = " << m.playerIDs[3]
+	out << "Spades::MsgStartGame:"
+		<< "  playerIDs = {";
+	for (uint8_t i = 0; i < SpadesNumPlayers; ++i)
+		out << (i == 0 ? " " : ", ") << static_cast<int>(m.playerIDs[i]);
+	return out << " }"
 		<< "  gameOptions = " << m.gameOptions
 		<< "  numPointsInGame = " << m.numPointsInGame;
 }
@@ -299,7 +298,7 @@ static std::ostream& operator<<(std::ostream& out, const MsgStartBid& m)
 		<< "  dealer = " << m.dealer
 		<< "  hand = {";
 	for (uint8_t i = 0; i < SpadesNumCardsInHand; ++i)
-		out << (i == 0 ? " " : ", ") << m.hand[i];
+		out << (i == 0 ? " " : ", ") << static_cast<int>(m.hand[i]);
 	return out << " }";
 }
 
@@ -316,7 +315,7 @@ static std::ostream& operator<<(std::ostream& out, const MsgBid& m)
 	return out
 		<< "  seat = " << m.seat
 		<< "  nextBidder = " << m.nextBidder
-		<< "  bid = " << m.bid;
+		<< "  bid = " << static_cast<int>(m.bid);
 }
 
 static std::ostream& operator<<(std::ostream& out, const MsgStartPlay& m)
@@ -332,7 +331,7 @@ static std::ostream& operator<<(std::ostream& out, const MsgPlay& m)
 	return out
 		<< "  seat = " << m.seat
 		<< "  nextPlayer = " << m.nextPlayer
-		<< "  card = " << m.card;
+		<< "  card = " << static_cast<int>(m.card);
 }
 
 static std::ostream& operator<<(std::ostream& out, const MsgEndHand& m)
@@ -356,12 +355,11 @@ static std::ostream& operator<<(std::ostream& out, const MsgEndHand& m)
 
 static std::ostream& operator<<(std::ostream& out, const MsgEndGame& m)
 {
-	out << "Spades::MsgEndGame:";
-	return out
-		<< "  winners[0] = " << m.winners[0]
-		<< "  winners[1] = " << m.winners[1]
-		<< "  winners[2] = " << m.winners[2]
-		<< "  winners[3] = " << m.winners[3];
+	out << "Spades::MsgEndGame:"
+		<< "  winners = {";
+	for (uint8_t i = 0; i < SpadesNumPlayers; ++i)
+		out << (i == 0 ? " " : ", ") << static_cast<int>(m.winners[i]);
+	return out << " }";
 }
 
 static std::ostream& operator<<(std::ostream& out, const MsgNewGameVote& m)
