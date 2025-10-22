@@ -37,7 +37,11 @@ struct MsgServerStatus final
 struct MsgUserInfoResponse final
 {
 	uint32 ID = 0;
-	char username[32];
+
+private:
+	char _unused[32];
+
+public:
 	LCID language = 0;
 };
 
@@ -116,7 +120,6 @@ static std::ostream& operator<<(std::ostream& out, const MsgUserInfoResponse& m)
 	out << "MsgUserInfoResponse:";
 	return out
 		<< "  ID = " << m.ID
-		<< "  username = " << m.username
 		<< "  language = " << m.language;
 }
 

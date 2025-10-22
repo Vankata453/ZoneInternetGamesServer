@@ -100,12 +100,12 @@ PlayerSocket::ProcessMessages()
 				{
 					switch (WaitForSingleObject(m_acceptsGameMessagesEvent, 5000))
 					{
-					case WAIT_OBJECT_0:
-						break;
-					case WAIT_TIMEOUT:
-						throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Timed out waiting for \"accepts game messages\" event!");
-					default:
-						throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): An error occured waiting for \"accepts game messages\" event: " + std::to_string(GetLastError()));
+						case WAIT_OBJECT_0:
+							break;
+						case WAIT_TIMEOUT:
+							throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Timed out waiting for \"accepts game messages\" event!");
+						default:
+							throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): An error occured waiting for \"accepts game messages\" event: " + std::to_string(GetLastError()));
 					}
 					// Fallthrough (game messages are now accepted)
 				}
@@ -118,7 +118,7 @@ PlayerSocket::ProcessMessages()
 						AwaitIncomingGameMessageHeader();
 
 						XPPlayerSocketMatchGuard
-							m_match->ProcessIncomingGameMessage(*this, m_incomingGameMsg.GetType());
+						m_match->ProcessIncomingGameMessage(*this, m_incomingGameMsg.GetType());
 						break;
 					}
 					case MessageChatSwitch:
@@ -132,7 +132,7 @@ PlayerSocket::ProcessMessages()
 						m_config.chatEnabled = msgChatSwitch.chatEnabled;
 
 						XPPlayerSocketMatchGuard
-							m_match->ProcessMessage(msgChatSwitch);
+						m_match->ProcessMessage(msgChatSwitch);
 						break;
 					}
 					case 1: // Disconnect proxy (find new opponent, received corrupted data)
@@ -185,7 +185,6 @@ PlayerSocket::OnGameStart(const std::vector<PlayerSocket*>& matchPlayers)
 	MsgUserInfoResponse msgUserInfo;
 	msgUserInfo.ID = m_ID;
 	msgUserInfo.language = m_config.userLanguage;
-	snprintf(msgUserInfo.username, sizeof(msgUserInfo.username), "Player %d", m_seat);
 
 	const int16 totalPlayerCount = static_cast<int16>(m_match->GetRequiredPlayerCount());
 	MsgGameStart msgGameStart;
