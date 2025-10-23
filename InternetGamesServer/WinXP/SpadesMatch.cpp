@@ -321,7 +321,6 @@ SpadesMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 				if (m_playersCheckedIn[0] && m_playersCheckedIn[1] && m_playersCheckedIn[2] && m_playersCheckedIn[3])
 				{
 					m_playersCheckedIn = {};
-					m_matchState = MatchState::BIDDING;
 					m_state = STATE_PLAYING;
 
 					Reset();

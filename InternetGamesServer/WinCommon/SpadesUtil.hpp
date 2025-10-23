@@ -1,8 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <random>
+#include <vector>
 
 namespace Spades {
 
@@ -41,6 +43,8 @@ public:
 		Reset();
 	}
 
+	inline bool IsEmpty() const { return m_leadCard == UnsetVal; }
+
 	void Reset()
 	{
 		m_leadCard = UnsetVal;
@@ -50,7 +54,7 @@ public:
 	{
 		assert(!IsFinished());
 
-		if (std::all_of(m_playerCards.begin(), m_playerCards.end(), [](C card) { return card == UnsetVal; }))
+		if (IsEmpty())
 			m_leadCard = card;
 		m_playerCards[player] = card;
 	}
@@ -80,7 +84,7 @@ public:
 		}
 		return false;
 	}
-	int GetWinner() const
+	int16_t GetWinner() const
 	{
 		const bool hasSpades = std::any_of(m_playerCards.begin(), m_playerCards.end(),
 			[this](C card) {
@@ -88,15 +92,15 @@ public:
 			});
 		const CardSuit targetSuit = hasSpades ? CardSuit::SPADES : m_getCardSuitFunc(m_leadCard);
 
-		int maxRank = -1;
-		int maxRankPlayer = -1;
-		for (int i = 0; i < m_playerCards.size(); ++i)
+		uint8_t maxRank = 0;
+		int16_t maxRankPlayer = -1;
+		for (int16_t i = 0; i < SpadesNumPlayers; ++i)
 		{
 			const C card = m_playerCards[i];
 			if (m_getCardSuitFunc(card) == targetSuit)
 			{
-				const int rank = static_cast<int>(m_getCardRankFunc(card));
-				if (rank > maxRank)
+				const uint8_t rank = m_getCardRankFunc(card);
+				if (rank >= maxRank)
 				{
 					maxRank = rank;
 					maxRankPlayer = i;
@@ -109,7 +113,7 @@ public:
 
 private:
 	C m_leadCard;
-	std::array<C, 4> m_playerCards;
+	std::array<C, SpadesNumPlayers> m_playerCards;
 
 	IsCardValidFunc m_isCardValidFunc;
 	GetCardSuitFunc m_getCardSuitFunc;
