@@ -96,7 +96,9 @@ Fully supported, according to my testing.
 
 #### Internet Hearts (Windows XP)
 
-To-be-done!
+Fully supported, according to my testing.
+
+![Internet Hearts (XP)](docs/img/README_HeartsXPPreview.png)
 
 #### Internet Reversi (Windows XP)
 

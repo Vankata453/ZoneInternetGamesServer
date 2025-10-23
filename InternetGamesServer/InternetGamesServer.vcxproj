@@ -166,6 +166,7 @@
     <ClCompile Include="WinCommon\SpadesUtil.cpp" />
     <ClCompile Include="WinXP\BackgammonMatch.cpp" />
     <ClCompile Include="WinXP\CheckersMatch.cpp" />
+    <ClCompile Include="WinXP\HeartsMatch.cpp" />
     <ClCompile Include="WinXP\Match.cpp" />
     <ClCompile Include="WinXP\PlayerSocket.cpp" />
     <ClCompile Include="WinXP\ReversiMatch.cpp" />
@@ -190,11 +191,13 @@
     <ClInclude Include="WinXP\CheckersMatch.hpp" />
     <ClInclude Include="WinXP\Defines.hpp" />
     <ClInclude Include="WinXP\Endian.hpp" />
+    <ClInclude Include="WinXP\HeartsMatch.hpp" />
     <ClInclude Include="WinXP\Match.hpp" />
     <ClInclude Include="WinXP\PlayerSocket.hpp" />
     <ClInclude Include="WinXP\Protocol\Backgammon.hpp" />
     <ClInclude Include="WinXP\Protocol\Checkers.hpp" />
     <ClInclude Include="WinXP\Protocol\Game.hpp" />
+    <ClInclude Include="WinXP\Protocol\Hearts.hpp" />
     <ClInclude Include="WinXP\Protocol\Init.hpp" />
     <ClInclude Include="WinXP\Protocol\Proxy.hpp" />
     <ClInclude Include="WinXP\Protocol\Reversi.hpp" />

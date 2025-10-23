@@ -12,6 +12,7 @@
 #include "Win7/SpadesMatch.hpp"
 #include "WinXP/BackgammonMatch.hpp"
 #include "WinXP/CheckersMatch.hpp"
+#include "WinXP/HeartsMatch.hpp"
 #include "WinXP/PlayerSocket.hpp"
 #include "WinXP/ReversiMatch.hpp"
 #include "WinXP/SpadesMatch.hpp"
@@ -224,8 +225,8 @@ MatchManager::CreateLobby(WinXP::PlayerSocket& player)
 					m_matches_winxp.push_back(std::make_unique<WinXP::SpadesMatch>(player));
 					break;
 
-				case WinXP::Match::Game::HEARTS: // TODO
-					m_matches_winxp.push_back(std::make_unique<WinXP::BackgammonMatch>(player));
+				case WinXP::Match::Game::HEARTS:
+					m_matches_winxp.push_back(std::make_unique<WinXP::HeartsMatch>(player));
 					break;
 
 				case WinXP::Match::Game::REVERSI:
