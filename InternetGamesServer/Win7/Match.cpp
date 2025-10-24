@@ -102,6 +102,9 @@ Match::JoinPlayer(PlayerSocket& player)
 void
 Match::DisconnectedPlayer(PlayerSocket& player)
 {
+	if (m_state == STATE_ENDED)
+		return;
+
 	RemovePlayer(player);
 
 	// End the match on no players, marking it as to-be-removed from MatchManager
@@ -120,11 +123,14 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 	//       (even though since the game has ended anyway, it's not really important).
 	if (m_state == STATE_PLAYING)
 	{
+		// Set ENDED state before disconnecting players, so that this function no longer executes,
+		// preventing recursion which leads to a segfault when trying to disconnect an already disconnected and destroyed socket.
+		m_state = STATE_ENDED;
+
 		// Disconnect any remaining players
 		for (PlayerSocket* p : m_players)
 			p->Disconnect();
-
-		m_state = STATE_ENDED;
+		m_players.clear();
 	}
 #endif
 }
@@ -179,6 +185,9 @@ Match::Update()
 void
 Match::EventSend(const PlayerSocket& caller, const std::string& xml)
 {
+	if (m_state != STATE_PLAYING)
+		return;
+
 	/* Get event XML element */
 	tinyxml2::XMLDocument eventDoc;
 	tinyxml2::XMLError status = eventDoc.Parse(xml.c_str());
@@ -229,6 +238,9 @@ Match::EventSend(const PlayerSocket& caller, const std::string& xml)
 void
 Match::Chat(StateChatTag tag)
 {
+	if (m_state != STATE_PLAYING && m_state != STATE_GAMEOVER)
+		return;
+
 	// Validate the chat event
 	if (tag.text != "SYS_CHATON" && // Chat turned on
 		tag.text != "SYS_CHATOFF" && // Chat turned off
@@ -258,13 +270,6 @@ Match::Chat(StateChatTag tag)
 	// Send the event to all other players
 	for (PlayerSocket* p : m_players)
 		p->OnChat(&tag);
-}
-
-
-std::vector<Match::QueuedEvent>
-Match::ProcessEvent(const tinyxml2::XMLElement&, const PlayerSocket&)
-{
-	return {};
 }
 
 

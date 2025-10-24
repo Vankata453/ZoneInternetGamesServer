@@ -83,7 +83,7 @@ protected:
 	virtual void AppendToGameInitXML(XMLPrinter& printer, PlayerSocket* caller) const {}
 
 	/** Process event and return a custom response. */
-	virtual std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller);
+	virtual std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller) = 0;
 
 protected:
 	State m_state;
