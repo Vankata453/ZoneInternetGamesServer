@@ -337,10 +337,7 @@ HeartsMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 				if (m_currentTrick.IsFinished())
 				{
 					m_playerTurn = m_currentTrick.GetWinner();
-
-					const int16 points = m_currentTrick.GetPoints();
-					m_playerHandPoints[m_playerTurn] += points;
-					m_playerTotalPoints[m_playerTurn] += points;
+					m_playerHandPoints[m_playerTurn] += m_currentTrick.GetPoints();
 
 					if (cards.empty())
 					{
@@ -358,6 +355,9 @@ HeartsMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 								break;
 							}
 						}
+
+						for (int16 seat = 0; seat < HeartsNumPlayers; ++seat)
+							m_playerTotalPoints[seat] += m_playerHandPoints[seat];
 
 						MsgEndHand msgEndHand;
 						std::memcpy(msgEndHand.points, m_playerHandPoints.data(), sizeof(msgEndHand.points));
