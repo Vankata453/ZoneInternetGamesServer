@@ -51,8 +51,6 @@ private:
 	};
 
 private:
-	std::mt19937 m_rng;
-
 	enum class MatchState
 	{
 		INITIALIZING,

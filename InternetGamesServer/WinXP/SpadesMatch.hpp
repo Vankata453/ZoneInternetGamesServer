@@ -29,8 +29,6 @@ private:
 	typedef std::vector<Card> CardArray;
 
 private:
-	std::mt19937 m_rng;
-
 	enum class MatchState
 	{
 		INITIALIZING,

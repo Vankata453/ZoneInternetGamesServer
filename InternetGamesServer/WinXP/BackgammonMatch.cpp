@@ -19,7 +19,6 @@ BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
 	m_matchState(MatchState::INITIALIZING),
 	m_playerStates({ MatchPlayerState::AWAITING_CHECKIN, MatchPlayerState::AWAITING_CHECKIN }),
 	m_playerCheckInMsgs(),
-	m_rng(std::random_device()()),
 	m_initialRollStarted(false),
 	m_doubleCubeValue(1),
 	m_doubleCubeOwnerSeat(-1)
@@ -134,8 +133,8 @@ BackgammonMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 typ
 
 					MsgDiceRollResponse msgDiceRollResponse;
 					msgDiceRollResponse.seat = player.m_seat;
-					msgDiceRollResponse.dice1.val = s_dieDistribution(m_rng);
-					msgDiceRollResponse.dice2.val = s_dieDistribution(m_rng);
+					msgDiceRollResponse.dice1.val = s_dieDistribution(g_rng);
+					msgDiceRollResponse.dice2.val = s_dieDistribution(g_rng);
 
 					BroadcastGameMessage<MessageDiceRollResponse>(msgDiceRollResponse);
 					return;

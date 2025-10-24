@@ -2,12 +2,12 @@
 
 #include <array>
 #include <cassert>
-#include <random>
 #include <stdexcept>
 #include <sstream>
 #include <iostream>
 
-#include "../../MatchManager.hpp"
+#include "../MatchManager.hpp"
+#include "../Util.hpp"
 
 namespace WinXP {
 
@@ -28,9 +28,8 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	m_match(),
 	m_seat(-1)
 {
-	std::mt19937 rng(std::random_device{}());
-	const_cast<uint32&>(m_ID) = std::uniform_int_distribution<uint32>{}(rng);
-	const_cast<uint32&>(m_securityKey) = std::uniform_int_distribution<uint32>{}(rng);
+	const_cast<uint32&>(m_ID) = std::uniform_int_distribution<uint32>{}(g_rng);
+	const_cast<uint32&>(m_securityKey) = std::uniform_int_distribution<uint32>{}(g_rng);
 }
 
 PlayerSocket::~PlayerSocket()

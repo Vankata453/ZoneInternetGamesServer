@@ -3,7 +3,6 @@
 #include <cassert>
 #include <ctime>
 #include <ostream>
-#include <random>
 #include <sstream>
 
 /** String utilities */
@@ -151,14 +150,16 @@ void NewElementWithText(XMLPrinter& printer, const std::string& name, std::strin
 
 
 /** Random generation */
+static std::random_device g_rngDevice;
+std::mt19937 g_rng(g_rngDevice());
+
 std::vector<int> GenerateUniqueRandomNums(int start, int end)
 {
 	std::vector<int> result;
 	for (int i = start; i <= end; i++)
 		result.push_back(i);
 
-	std::random_device rd;
-	std::shuffle(result.begin(), result.end(), rd);
+	std::shuffle(result.begin(), result.end(), g_rngDevice);
 
 	return result;
 }

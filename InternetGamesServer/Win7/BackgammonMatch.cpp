@@ -9,7 +9,6 @@ namespace Win7 {
 
 BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
 	Match(player),
-	m_rng(std::random_device()()),
 	m_homeTableStones(0, 0),
 	m_lastMovePlayer(-1),
 	m_lastMoveHomeTableStone(false),
@@ -45,7 +44,7 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 		{
 			if (!strcmp(elMethod->GetText(), "GenerateValues")) // Generate dice values
 			{
-				const std::pair<int, int> dieValues = { s_dieDistribution(m_rng), s_dieDistribution(m_rng) };
+				const std::pair<int, int> dieValues = { s_dieDistribution(g_rng), s_dieDistribution(g_rng) };
 
 				return {
 					QueuedEvent(
@@ -66,11 +65,11 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 					return {};
 				}
 
-				const std::pair<int, int> firstDieValues = { s_dieDistribution(m_rng), s_dieDistribution(m_rng) };
-				std::pair<int, int> secondDieValues = { s_dieDistribution(m_rng), s_dieDistribution(m_rng) };
+				const std::pair<int, int> firstDieValues = { s_dieDistribution(g_rng), s_dieDistribution(g_rng) };
+				std::pair<int, int> secondDieValues = { s_dieDistribution(g_rng), s_dieDistribution(g_rng) };
 				while (firstDieValues.first == firstDieValues.second && secondDieValues.first == secondDieValues.second)
 				{
-					secondDieValues = { s_dieDistribution(m_rng), s_dieDistribution(m_rng) };
+					secondDieValues = { s_dieDistribution(g_rng), s_dieDistribution(g_rng) };
 				}
 
 				return {

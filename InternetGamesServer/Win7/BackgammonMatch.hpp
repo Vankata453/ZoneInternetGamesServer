@@ -22,8 +22,6 @@ private:
 	void ClearGameState();
 
 private:
-	std::mt19937 m_rng;
-
 	std::pair<int, int> m_homeTableStones;
 	int m_lastMovePlayer;
 	bool m_lastMoveHomeTableStone;

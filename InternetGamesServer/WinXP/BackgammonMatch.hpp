@@ -49,8 +49,6 @@ private:
 
 	std::array<Backgammon::MsgCheckIn, 2> m_playerCheckInMsgs;
 
-	std::mt19937 m_rng;
-
 	bool m_initialRollStarted;
 	int m_doubleCubeValue;
 	int16 m_doubleCubeOwnerSeat;

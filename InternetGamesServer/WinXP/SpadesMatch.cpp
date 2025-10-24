@@ -30,7 +30,6 @@ static const std::uniform_int_distribution<> s_playerDistribution(0, 3);
 
 SpadesMatch::SpadesMatch(PlayerSocket& player) :
 	Match(player),
-	m_rng(std::random_device()()),
 	m_matchState(),
 	m_playersCheckedIn({}),
 	m_playerCards(),
@@ -54,7 +53,7 @@ SpadesMatch::Reset()
 {
 	m_teamPoints = { 0, 0 };
 	m_teamBags = { 0, 0 };
-	m_handDealer = s_playerDistribution(m_rng);
+	m_handDealer = s_playerDistribution(g_rng);
 	ResetHand();
 }
 
@@ -78,7 +77,7 @@ SpadesMatch::ResetHand()
 	for (Card i = 0; i < allCards.size(); ++i)
 		allCards[i] = i;
 
-	std::shuffle(allCards.begin(), allCards.end(), m_rng);
+	std::shuffle(allCards.begin(), allCards.end(), g_rng);
 
 	for (size_t i = 0; i < m_playerCards.size(); ++i)
 		m_playerCards[i] = CardArray(allCards.begin() + i * SpadesNumCardsInHand,

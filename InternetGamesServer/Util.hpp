@@ -3,6 +3,7 @@
 #include <string>
 #include <cassert>
 #include <ostream>
+#include <random>
 #include <vector>
 
 #include <winsock2.h>
@@ -90,6 +91,8 @@ inline void NewElementWithText(XMLPrinter& printer, const std::string& name, T v
 };
 
 /** Random generation */
+extern std::mt19937 g_rng;
+
 std::vector<int> GenerateUniqueRandomNums(int start, int end);
 
 /** Printing */

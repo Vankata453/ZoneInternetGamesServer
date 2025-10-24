@@ -134,7 +134,6 @@ HeartsMatch::CardTrick::GetPoints() const
 
 HeartsMatch::HeartsMatch(PlayerSocket& player) :
 	Match(player),
-	m_rng(std::random_device()()),
 	m_matchState(),
 	m_playersCheckedIn({}),
 	m_playerCards(),
@@ -174,7 +173,7 @@ HeartsMatch::ResetHand()
 	for (Card i = 0; i < allCards.size(); ++i)
 		allCards[i] = i;
 
-	std::shuffle(allCards.begin(), allCards.end(), m_rng);
+	std::shuffle(allCards.begin(), allCards.end(), g_rng);
 
 	for (size_t i = 0; i < m_playerCards.size(); ++i)
 		m_playerCards[i] = CardArray(allCards.begin() + i * HeartsNumCardsInHand,

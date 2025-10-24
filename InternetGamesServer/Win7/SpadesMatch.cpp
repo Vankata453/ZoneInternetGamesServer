@@ -32,11 +32,10 @@ namespace Win7 {
 
 SpadesMatch::SpadesMatch(PlayerSocket& player) :
 	Match(player),
-	m_rng(std::random_device()()),
 	m_matchState(MatchState::BIDDING),
 	m_teamPoints({ 0, 0 }),
 	m_teamBags({ 0, 0 }),
-	m_handDealer(s_playerDistribution(m_rng)),
+	m_handDealer(s_playerDistribution(g_rng)),
 	m_nextBidPlayer(),
 	m_playerBids(),
 	m_playerCards(),
@@ -69,7 +68,7 @@ SpadesMatch::ResetHand()
 	for (uint8_t i = 0; i < allCards.size(); ++i)
 		allCards[i] = MakeZPACardValue(i / SpadesNumCardsInHand, i % SpadesNumCardsInHand);
 
-	std::shuffle(allCards.begin(), allCards.end(), m_rng);
+	std::shuffle(allCards.begin(), allCards.end(), g_rng);
 
 	for (size_t i = 0; i < m_playerCards.size(); ++i)
 		m_playerCards[i] = CardArray(allCards.begin() + i * SpadesNumCardsInHand,
