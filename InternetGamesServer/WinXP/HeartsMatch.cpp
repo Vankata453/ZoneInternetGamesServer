@@ -205,7 +205,7 @@ HeartsMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 				throw std::runtime_error("Hearts::MsgCheckIn: Incorrect player seat!");
 
 			m_playersCheckedIn[player.m_seat] = true;
-			if (m_playersCheckedIn[0] && m_playersCheckedIn[1] && m_playersCheckedIn[2] && m_playersCheckedIn[3])
+			if (ARRAY_EACH_TRUE(m_playersCheckedIn))
 			{
 				m_playersCheckedIn = {};
 				m_matchState = MatchState::PASSING;
@@ -253,7 +253,7 @@ HeartsMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 				BroadcastGameMessage<MessagePass>(msgPass);
 
 				m_playersPassedCards[player.m_seat] = true;
-				if (m_playersPassedCards[0] && m_playersPassedCards[1] && m_playersPassedCards[2] && m_playersPassedCards[3])
+				if (ARRAY_EACH_TRUE(m_playersPassedCards))
 				{
 					m_playerTurn = -1;
 					for (int16 seat = 0; seat < HeartsNumPlayers; ++seat)
@@ -434,7 +434,7 @@ HeartsMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 				BroadcastGameMessage<MessageNewGameVote>(msgNewGameVote);
 
 				m_playersCheckedIn[player.m_seat] = true;
-				if (m_playersCheckedIn[0] && m_playersCheckedIn[1] && m_playersCheckedIn[2] && m_playersCheckedIn[3])
+				if (ARRAY_EACH_TRUE(m_playersCheckedIn))
 				{
 					m_playersCheckedIn = {};
 					m_state = STATE_PLAYING;

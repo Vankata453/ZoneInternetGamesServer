@@ -242,3 +242,6 @@ static constexpr size_t AdjustedSize = AdjustedSizeHelper<T>::value;
 
 /** Macros */
 #define ROUND_DATA_LENGTH_UINT32(len) ((len + 3) & ~0x3)
+
+#define ARRAY_EACH_TRUE(arr) std::all_of(arr.begin(), arr.end(), [](bool b) { return b; })
+#define ARRAY_EACH_EQUALS(arr, val) std::all_of(arr.begin(), arr.end(), [](auto b) { return b == val; })

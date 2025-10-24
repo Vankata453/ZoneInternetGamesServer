@@ -111,7 +111,7 @@ SpadesMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 				throw std::runtime_error("Spades::MsgCheckIn: Incorrect player seat!");
 
 			m_playersCheckedIn[player.m_seat] = true;
-			if (m_playersCheckedIn[0] && m_playersCheckedIn[1] && m_playersCheckedIn[2] && m_playersCheckedIn[3])
+			if (ARRAY_EACH_TRUE(m_playersCheckedIn))
 			{
 				m_playersCheckedIn = {};
 				m_matchState = MatchState::BIDDING;
@@ -318,7 +318,7 @@ SpadesMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 				BroadcastGameMessage<MessageNewGameVote>(msgNewGameVote);
 
 				m_playersCheckedIn[player.m_seat] = true;
-				if (m_playersCheckedIn[0] && m_playersCheckedIn[1] && m_playersCheckedIn[2] && m_playersCheckedIn[3])
+				if (ARRAY_EACH_TRUE(m_playersCheckedIn))
 				{
 					m_playersCheckedIn = {};
 					m_state = STATE_PLAYING;
