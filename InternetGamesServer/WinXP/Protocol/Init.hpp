@@ -59,18 +59,6 @@ struct MsgBaseApplication final
 	uint32 dataLength = 0;
 };
 
-template<size_t Len>
-struct MsgApplication final
-{
-	MsgApplication(uint32 dataLen) :
-		data(),
-		dataLength(dataLen)
-	{}
-
-	char data[Len];
-	const uint32 dataLength;
-};
-
 
 struct MsgConnectionHi final : public MsgBaseInternal
 {
@@ -126,16 +114,6 @@ static std::ostream& operator<<(std::ostream& out, const MsgBaseApplication& m)
 		<< "  signature = 0x" << std::hex << m.signature << std::dec
 		<< "  channel = " << m.channel
 		<< "  messageType = " << m.messageType
-		<< "  dataLength = " << m.dataLength;
-}
-
-template<size_t Len>
-static std::ostream& operator<<(std::ostream& out, const MsgApplication<Len>& m)
-{
-	out << "MsgApplication:"
-	    << "  data = ";
-	out.write(m.data, m.dataLength);
-	return out
 		<< "  dataLength = " << m.dataLength;
 }
 
