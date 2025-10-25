@@ -28,15 +28,30 @@ public:
 	// Handler for the thread of a socket
 	static DWORD WINAPI SocketHandler(void* socket);
 
+	// Used to request disconnection without an actual error having occured
+	class DisconnectSocket final : public std::exception
+	{
+	public:
+		DisconnectSocket(const std::string& err) :
+			m_err(err)
+		{}
+
+		const char* what() const override { return m_err.c_str(); }
+
+	private:
+		const std::string m_err;
+	};
+
+	static char* GetAddressString(IN_ADDR address);
+	static std::string GetAddressString(SOCKET socket, const char portSeparator = ':');
+
+private:
 	// Client disconnected exception
 	class ClientDisconnected final : public std::exception
 	{
 	public:
 		ClientDisconnected() throw() {}
 	};
-
-	static char* GetAddressString(IN_ADDR address);
-	static std::string GetAddressString(SOCKET socket, const char portSeparator = ':');
 
 public:
 	Socket(SOCKET socket, std::ostream& log);

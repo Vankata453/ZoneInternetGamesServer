@@ -107,7 +107,7 @@ Socket::SocketHandler(void* socket_)
 			else if (!strncmp("GET /windows/ad.asp", receivedBuf, strlen("GET /windows/ad.asp"))) // WINXP: Banner ad request
 			{
 				if (s_disableXPAdBanner)
-					throw std::runtime_error("Ignoring banner ad request: Disabled.");
+					throw DisconnectSocket("Ignoring banner ad request: Disabled.");
 
 				// Example of an old ad page: https://web.archive.org/web/20020205100250id_/http://zone.msn.com/windows/ad.asp
 				// The banner.png image will be returned by this server later, "example.com" is simply a dummy domain.
@@ -132,12 +132,12 @@ Socket::SocketHandler(void* socket_)
 				socket.SendData(adHttpHeader.c_str(), static_cast<int>(adHttpHeader.size()));
 				socket.SendData(adHtml.c_str(), static_cast<int>(adHtml.size()));
 
-				throw std::runtime_error("Banner ad sent over.");
+				throw DisconnectSocket("Banner ad sent over.");
 			}
 			else if (!strncmp("GET /banner.png", receivedBuf, strlen("GET /banner.png"))) // WINXP: Banner ad image request
 			{
 				if (s_disableXPAdBanner)
-					throw std::runtime_error("Ignoring banner ad image request: Disabled.");
+					throw DisconnectSocket("Ignoring banner ad image request: Disabled.");
 				if (XP_AD_BANNER_DATA.empty())
 					throw std::runtime_error("No banner ad image found!");
 
@@ -155,7 +155,7 @@ Socket::SocketHandler(void* socket_)
 					throw std::runtime_error("\"send\" failed: " + std::to_string(WSAGetLastError()));
 				*logStream << "[SENT]: [RAW AD BANNER PNG]\n(BYTES SENT=" << sentLen << ")\n\n" << std::endl;
 
-				throw std::runtime_error("Banner ad image sent over.");
+				throw DisconnectSocket("Banner ad image sent over.");
 			}
 			else
 			{
@@ -166,6 +166,12 @@ Socket::SocketHandler(void* socket_)
 		assert(player);
 		player->ProcessMessages();
 	}
+	catch (const DisconnectSocket& err) // Used to request disconnection without an actual error having occured
+	{
+		std::cout << "[SOCKET] Disconnecting socket " << socket.GetAddressString()
+			<< ": " << err.what() << std::endl;
+		return 0;
+	}
 	catch (const ClientDisconnected&)
 	{
 		std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
@@ -175,7 +181,7 @@ Socket::SocketHandler(void* socket_)
 	catch (const std::exception& err)
 	{
 		std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
-			<< ": " << err.what() << std::endl;;
+			<< ": " << err.what() << std::endl;
 		return 0;
 	}
 	return 0;
