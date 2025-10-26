@@ -25,6 +25,13 @@ public:
 		STATE_DISCONNECTING
 	};
 
+	enum class ClientVersion
+	{
+		INVALID,
+		WINME,
+		WINXP
+	};
+
 public:
 	PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage);
 	~PlayerSocket() override;
@@ -82,6 +89,9 @@ public:
 		}
 	}
 	void OnMatchDisconnect();
+
+	inline ClientVersion GetClientVersion() const { return m_clientVersion; }
+	inline bool IsWinME() const { return m_clientVersion == ClientVersion::WINME; }
 
 	Socket::Type GetType() const override { return Socket::WINXP; }
 	inline uint32 GetID() const { return m_ID; }
@@ -604,6 +614,7 @@ private:
 	Match::Game m_game;
 	const GUID m_machineGUID;
 	const uint32 m_securityKey;
+	ClientVersion m_clientVersion;
 	uint32 m_sequenceID;
 	bool m_inLobby;
 

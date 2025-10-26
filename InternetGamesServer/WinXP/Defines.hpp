@@ -14,6 +14,7 @@ typedef long int32;
 #define XPProxyProtocolSignature 0x726f7574
 #define XPProxyProtocolVersion 1
 #define XPProxyClientVersion 0x1082751
+#define MEProxyClientVersion 0x10020b5
 
 #define XPLobbyProtocolSignature 0x6c626279
 

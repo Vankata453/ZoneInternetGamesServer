@@ -1,17 +1,17 @@
 # Zone Internet Games Server
 
-This project aims to bring back the functionality of the Internet Games included in Windows 7 and XP, the servers for which were officially shut down on:
+This project aims to bring back the functionality of the Internet Games included in Windows 7 and XP/ME, the servers for which were officially shut down on:
 
-* **Windows XP**: July 31st, 2019
+* **Windows XP/ME**: July 31st, 2019
 * **Windows 7**: January 22nd, 2020
 
 Those games include:
 
-* Internet Backgammon (XP, 7)
-* Internet Checkers (XP, 7)
-* Internet Spades (XP, 7)
-* Internet Hearts (XP)
-* Internet Reversi (XP)
+* Internet Backgammon (XP/ME, 7)
+* Internet Checkers (XP/ME, 7)
+* Internet Spades (XP/ME, 7)
+* Internet Hearts (XP/ME)
+* Internet Reversi (XP/ME)
 
 ## Connecting an Internet Game to a hosted Internet Games Server
 
@@ -76,35 +76,35 @@ Fully supported, according to my testing.
 
 ![Internet Spades (7)](docs/img/README_SpadesPreview.png)
 
-#### Internet Backgammon (Windows XP)
+#### Internet Backgammon (Windows XP/ME)
 
 Fully supported, according to my testing.
 
-![Internet Backgammon (XP)](docs/img/README_BackgammonXPPreview.png)
+![Internet Backgammon (XP/ME)](docs/img/README_BackgammonXPPreview.png)
 
-#### Internet Checkers (Windows XP)
-
-Fully supported, according to my testing.
-
-![Internet Checkers (XP)](docs/img/README_CheckersXPPreview.png)
-
-#### Internet Spades (Windows XP)
+#### Internet Checkers (Windows XP/ME)
 
 Fully supported, according to my testing.
 
-![Internet Spades (XP)](docs/img/README_SpadesXPPreview.png)
+![Internet Checkers (XP/ME)](docs/img/README_CheckersXPPreview.png)
 
-#### Internet Hearts (Windows XP)
-
-Fully supported, according to my testing.
-
-![Internet Hearts (XP)](docs/img/README_HeartsXPPreview.png)
-
-#### Internet Reversi (Windows XP)
+#### Internet Spades (Windows XP/ME)
 
 Fully supported, according to my testing.
 
-![Internet Reversi (XP)](docs/img/README_ReversiXPPreview.png)
+![Internet Spades (XP/ME)](docs/img/README_SpadesXPPreview.png)
+
+#### Internet Hearts (Windows XP/ME)
+
+Fully supported, according to my testing.
+
+![Internet Hearts (XP/ME)](docs/img/README_HeartsXPPreview.png)
+
+#### Internet Reversi (Windows XP/ME)
+
+Fully supported, according to my testing.
+
+![Internet Reversi (XP/ME)](docs/img/README_ReversiXPPreview.png)
 
 
 > [!NOTE]
@@ -136,6 +136,8 @@ Fully supported, according to my testing.
 A DLL, which is to be injected into any of the 3 games, using the DLL Injector application.
 
 Both applications have two variants for Windows 7 and Windows XP games. The Windows XP one is only available in x86 builds.
+
+Both the Injector and the Client DLL are **not supported on Windows ME**.
 
 #### Functionality
 

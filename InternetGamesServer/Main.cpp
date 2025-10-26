@@ -1,5 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 
+#pragma comment(lib, "User32.lib")
 #pragma comment(lib, "Ws2_32.lib")
 
 #include <ws2tcpip.h>

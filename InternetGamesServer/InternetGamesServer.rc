@@ -62,6 +62,79 @@ IDI_APP_ICON            ICON                    "InternetGamesServer.ico"
 
 IDB_XP_AD_BANNER        PNG                     "res\\XPAdBanner.png"
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_XPCHAT_1            "Nice try"
+    IDS_XPCHAT_2            "Good job"
+    IDS_XPCHAT_3            "Good game"
+    IDS_XPCHAT_4            "Good luck!"
+    IDS_XPCHAT_5            "It's your turn"
+    IDS_XPCHAT_6            "I'm thinking..."
+    IDS_XPCHAT_7            "Play again?"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_XPCHAT_8            "Yes"
+    IDS_XPCHAT_9            "No"
+    IDS_XPCHAT_10           "Hello"
+    IDS_XPCHAT_11           "Goodbye"
+    IDS_XPCHAT_12           "Thank you"
+    IDS_XPCHAT_13           "You're welcome"
+    IDS_XPCHAT_14           "It was luck"
+    IDS_XPCHAT_15           "Be right back..."
+    IDS_XPCHAT_16           "Okay, I'm back"
+    IDS_XPCHAT_17           "Are you still there?"
+    IDS_XPCHAT_18           "Sorry, I have to go now"
+    IDS_XPCHAT_19           "I'm going to play at zone.com"
+    IDS_XPCHAT_20           ":-)"
+    IDS_XPCHAT_21           ":-("
+    IDS_XPCHAT_22           "Uh oh..."
+    IDS_XPCHAT_23           "Oops!"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_XPCHAT_24           "Ouch!"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_XPCHAT_BCKG_1       "Nice move"
+    IDS_XPCHAT_BCKG_2       "Nice roll"
+    IDS_XPCHAT_BCKG_3       "Not again!"
+    IDS_XPCHAT_CHKR_1       "Nice move"
+    IDS_XPCHAT_CHKR_2       "Good jump"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_XPCHAT_CHKR_3       "Good double-jump"
+    IDS_XPCHAT_CHKR_4       "King me!"
+    IDS_XPCHAT_SHVL_1       "Nice nil"
+    IDS_XPCHAT_SHVL_2       "Nice cover"
+    IDS_XPCHAT_SHVL_3       "Nice hand"
+    IDS_XPCHAT_SHVL_4       "Thanks partner"
+    IDS_XPCHAT_SHVL_5       "Sorry, my fault"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_XPCHAT_HRTZ_1       "Shooting the moon?"
+    IDS_XPCHAT_HRTZ_2       "Watch out"
+    IDS_XPCHAT_HRTZ_3       "Pass 3 cards please"
+    IDS_XPCHAT_RVSE_1       "Nice move"
+    IDS_XPCHAT_RVSE_2       "Didn't see that coming!"
+    IDS_XPCHAT_RVSE_3       "I got the corner!"
+    IDS_XPCHAT_RVSE_4       "Nice comeback"
+END
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 

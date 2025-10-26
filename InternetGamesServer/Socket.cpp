@@ -82,7 +82,7 @@ Socket::SocketHandler(void* socket_)
 
 				socket.SendData(SOCKET_WIN7_HI_RESPONSE, static_cast<int>(strlen(SOCKET_WIN7_HI_RESPONSE)));
 			}
-			else if (receivedLen == sizeof(WinXP::MsgConnectionHi)) // WINXP
+			else if (receivedLen == sizeof(WinXP::MsgConnectionHi)) // WINXP/WINME
 			{
 				WinXP::MsgConnectionHi hiMessage;
 				std::memcpy(&hiMessage, receivedBuf, receivedLen);

@@ -14,10 +14,11 @@ namespace WinXP {
 PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	::PlayerSocket(socket),
 	m_state(STATE_INITIALIZED),
-	m_ID(),
+	m_ID(std::uniform_int_distribution<uint32>{}(g_rng)),
 	m_game(Match::Game::INVALID),
 	m_machineGUID(hiMessage.machineGUID),
-	m_securityKey(),
+	m_securityKey(std::uniform_int_distribution<uint32>{}(g_rng)),
+	m_clientVersion(ClientVersion::INVALID),
 	m_sequenceID(0),
 	m_inLobby(false),
 	m_genericMessageMutex(CreateMutex(nullptr, false, nullptr)),
@@ -28,8 +29,6 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	m_match(),
 	m_seat(-1)
 {
-	const_cast<uint32&>(m_ID) = std::uniform_int_distribution<uint32>{}(g_rng);
-	const_cast<uint32&>(m_securityKey) = std::uniform_int_distribution<uint32>{}(g_rng);
 }
 
 PlayerSocket::~PlayerSocket()
@@ -66,6 +65,8 @@ PlayerSocket::ProcessMessages()
 				{
 					AwaitProxyHiMessages();
 					SendProxyHelloMessages();
+
+					assert(m_clientVersion != ClientVersion::INVALID);
 					break;
 				}
 				case STATE_UNCONFIGURED:
@@ -364,8 +365,18 @@ PlayerSocket::AwaitProxyHiMessages()
 
 	if (msg.hi.protocolVersion != XPProxyProtocolVersion)
 		throw std::runtime_error("MsgProxyHi: Incorrect protocol version!");
-	if (msg.hi.clientVersion != XPProxyClientVersion)
-		throw std::runtime_error("MsgProxyHi: Unsupported client version!");
+
+	switch (msg.hi.clientVersion)
+	{
+		case XPProxyClientVersion:
+			m_clientVersion = ClientVersion::WINXP;
+			break;
+		case MEProxyClientVersion:
+			m_clientVersion = ClientVersion::WINME;
+			break;
+		default:
+			throw std::runtime_error("MsgProxyHi: Unsupported client version!");
+	}
 
 	if (msg.serviceRequest.reason != MsgProxyServiceRequest::REASON_CONNECT)
 		throw std::runtime_error("MsgProxyServiceRequest: Reason is not client connection!");

@@ -1,6 +1,7 @@
 #include "BackgammonMatch.hpp"
 
 #include "PlayerSocket.hpp"
+#include "..\Resource.h"
 
 static const std::uniform_int_distribution<> s_dieDistribution(1, 6);
 
@@ -262,22 +263,36 @@ BackgammonMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 typ
 			const size_t chatMsgLen = msgChat.second.GetLength() / sizeof(WCHAR) - 1;
 			if (chatMsgLen <= 1)
 				throw std::runtime_error("Backgammon::MsgChatMessage: Empty chat message!");
-			if (chatMsgRaw[chatMsgLen - 1] != L'\0')
+			if (!player.IsWinME() && chatMsgRaw[chatMsgLen - 1] != L'\0')
 				throw std::runtime_error("Backgammon::MsgChatMessage: Non-null-terminated chat message!");
 
-			const std::wstring chatMsg(chatMsgRaw, chatMsgLen - 1);
+			const std::wstring chatMsg(chatMsgRaw, chatMsgLen);
 			const uint8_t msgID = ValidateChatMessage(chatMsg, 80, 82);
 			if (!msgID)
 				throw std::runtime_error("Backgammon::MsgChatMessage: Invalid chat message!");
 
-			// XP games initially check for a wide character at the end of the message string, which is equal to the message ID.
-			// Since we have already verified that the message ID (/{id}) at the start of the string is valid,
-			// we can safely just send over the corresponding character.
-			Array<char, ROUND_DATA_LENGTH_UINT32(4)> msgIDArr;
-			msgIDArr[2] = msgID; // 1st byte of 2nd WCHAR
-			msgIDArr.SetLength(4);
-			msgChat.first.messageLength = 4;
-			BroadcastGameMessage<MessageChatMessage>(msgChat.first, msgIDArr);
+
+			constexpr int extraMsgChars = 2; // +1 for null-separator, +1 for ID character at the end (read below)
+			msgChat.second = {};
+
+			// Windows ME versions of these games directly utilize the provided message string.
+			// A good compromise between safety and support is to send a ready message, based on its ID.
+			// Drawback of this is that no chat language other than English would be supported for ME.
+			const int msgLenW = LoadStringW(GetModuleHandle(NULL), IDS_XPCHAT_BEGIN + msgID,
+				reinterpret_cast<LPWSTR>(msgChat.second.raw),
+				static_cast<int>((msgChat.second.GetSize() - sizeof(WCHAR) * extraMsgChars) / sizeof(WCHAR)));
+			if (!msgLenW)
+				throw std::runtime_error("Backgammon::MessageChatMessage: Failed to load message string from resource!");
+
+			// Windows XP versions initially check for a wide character at the end of the message string, which is equal to the message ID.
+			// Since the end character and its ID will be prioritized over the actual string we provide,
+			// we should append it to the string to also send it over, so that at least XP can have multi-language support.
+			msgChat.second[(msgLenW + 1) * sizeof(WCHAR)] = msgID; // +1 because there should be a null-separator between the string and the ID
+
+			const int msgLen = (msgLenW + extraMsgChars) * sizeof(WCHAR);
+			msgChat.second.SetLength(msgLen);
+			msgChat.first.messageLength = static_cast<uint16>(msgLen);
+			BroadcastGameMessage<MessageChatMessage>(msgChat.first, msgChat.second);
 			break;
 		}
 		default:

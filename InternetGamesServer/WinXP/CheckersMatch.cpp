@@ -1,6 +1,7 @@
 #include "CheckersMatch.hpp"
 
 #include "PlayerSocket.hpp"
+#include "..\Resource.h"
 
 namespace WinXP {
 
@@ -9,7 +10,10 @@ namespace WinXP {
 
 #define XPCheckersProtocolSignature 0x43484B52
 #define XPCheckersProtocolVersion 2
-#define XPCheckersClientVersion 66050
+#define XPCheckersClientVersion 0x00010202
+
+#define MECheckersProtocolVersion 0x00010202
+#define MECheckersClientVersion 0x0062F850
 
 CheckersMatch::CheckersMatch(PlayerSocket& player) :
 	Match(player),
@@ -49,9 +53,9 @@ CheckersMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 			MsgCheckIn msgCheckIn = player.OnMatchAwaitGameMessage<MsgCheckIn, MessageCheckIn>();
 			if (msgCheckIn.protocolSignature != XPCheckersProtocolSignature)
 				throw std::runtime_error("Checkers::MsgCheckIn: Invalid protocol signature!");
-			if (msgCheckIn.protocolVersion != XPCheckersProtocolVersion)
+			if (msgCheckIn.protocolVersion != (player.IsWinME() ? MECheckersProtocolVersion : XPCheckersProtocolVersion))
 				throw std::runtime_error("Checkers::MsgCheckIn: Incorrect protocol version!");
-			if (msgCheckIn.clientVersion != XPCheckersClientVersion)
+			if (msgCheckIn.clientVersion != (player.IsWinME() ? MECheckersClientVersion : XPCheckersClientVersion))
 				throw std::runtime_error("Checkers::MsgCheckIn: Incorrect client version!");
 			// msgCheckIn.playerID should be undefined
 			if (msgCheckIn.seat != player.m_seat)
@@ -186,10 +190,18 @@ CheckersMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 			if (type == MessageCheckIn)
 			{
 				MsgCheckIn msgCheckIn = player.OnMatchAwaitGameMessage<MsgCheckIn, MessageCheckIn>();
-				if (msgCheckIn.protocolSignature != XPCheckersProtocolSignature)
-					throw std::runtime_error("Checkers::MsgCheckIn: Invalid protocol signature!");
-				if (msgCheckIn.protocolVersion != XPCheckersProtocolVersion)
-					throw std::runtime_error("Checkers::MsgCheckIn: Incorrect protocol version!");
+				if (player.IsWinME())
+				{
+					// msgCheckIn.protocolSignature should be undefined
+					// msgCheckIn.protocolVersion should be undefined
+				}
+				else
+				{
+					if (msgCheckIn.protocolSignature != XPCheckersProtocolSignature)
+						throw std::runtime_error("Checkers::MsgCheckIn: Invalid protocol signature!");
+					if (msgCheckIn.protocolVersion != XPCheckersProtocolVersion)
+						throw std::runtime_error("Checkers::MsgCheckIn: Incorrect protocol version!");
+				}
 				// msgCheckIn.playerID should be undefined
 				if (msgCheckIn.seat != player.m_seat)
 					throw std::runtime_error("Checkers::MsgCheckIn: Incorrect player seat!");
@@ -198,6 +210,11 @@ CheckersMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 				msgNewGameVote.seat = player.m_seat;
 				BroadcastGameMessage<MessageNewGameVote>(msgNewGameVote);
 
+				if (player.IsWinME())
+				{
+					msgCheckIn.protocolSignature = XPCheckersProtocolSignature;
+					msgCheckIn.protocolVersion = MECheckersProtocolVersion;
+				}
 				msgCheckIn.playerID = player.GetID();
 				BroadcastGameMessage<MessageCheckIn>(msgCheckIn);
 
@@ -232,22 +249,36 @@ CheckersMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 			const size_t chatMsgLen = msgChat.second.GetLength() / sizeof(WCHAR) - 1;
 			if (chatMsgLen <= 1)
 				throw std::runtime_error("Checkers::MsgChatMessage: Empty chat message!");
-			if (chatMsgRaw[chatMsgLen - 1] != L'\0')
+			if (!player.IsWinME() && chatMsgRaw[chatMsgLen - 1] != L'\0')
 				throw std::runtime_error("Checkers::MsgChatMessage: Non-null-terminated chat message!");
 
-			const std::wstring chatMsg(chatMsgRaw, chatMsgLen - 1);
+			const std::wstring chatMsg(chatMsgRaw, chatMsgLen);
 			const uint8_t msgID = ValidateChatMessage(chatMsg, 40, 43);
 			if (!msgID)
 				throw std::runtime_error("Checkers::MsgChatMessage: Invalid chat message!");
 
-			// XP games initially check for a wide character at the end of the message string, which is equal to the message ID.
-			// Since we have already verified that the message ID (/{id}) at the start of the string is valid,
-			// we can safely just send over the corresponding character.
-			Array<char, ROUND_DATA_LENGTH_UINT32(4)> msgIDArr;
-			msgIDArr[2] = msgID; // 1st byte of 2nd WCHAR
-			msgIDArr.SetLength(4);
-			msgChat.first.messageLength = 4;
-			BroadcastGameMessage<MessageChatMessage>(msgChat.first, msgIDArr);
+
+			constexpr int extraMsgChars = 2; // +1 for null-separator, +1 for ID character at the end (read below)
+			msgChat.second = {};
+
+			// Windows ME versions of these games directly utilize the provided message string.
+			// A good compromise between safety and support is to send a ready message, based on its ID.
+			// Drawback of this is that no chat language other than English would be supported for ME.
+			const int msgLenW = LoadStringW(GetModuleHandle(NULL), IDS_XPCHAT_BEGIN + msgID,
+				reinterpret_cast<LPWSTR>(msgChat.second.raw),
+				static_cast<int>((msgChat.second.GetSize() - sizeof(WCHAR) * extraMsgChars) / sizeof(WCHAR)));
+			if (!msgLenW)
+				throw std::runtime_error("Backgammon::MessageChatMessage: Failed to load message string from resource!");
+
+			// Windows XP versions initially check for a wide character at the end of the message string, which is equal to the message ID.
+			// Since the end character and its ID will be prioritized over the actual string we provide,
+			// we should append it to the string to also send it over, so that at least XP can have multi-language support.
+			msgChat.second[(msgLenW + 1) * sizeof(WCHAR)] = msgID; // +1 because there should be a null-separator between the string and the ID
+
+			const int msgLen = (msgLenW + extraMsgChars) * sizeof(WCHAR);
+			msgChat.second.SetLength(msgLen);
+			msgChat.first.messageLength = static_cast<uint16>(msgLen);
+			BroadcastGameMessage<MessageChatMessage>(msgChat.first, msgChat.second);
 			break;
 		}
 		default:
