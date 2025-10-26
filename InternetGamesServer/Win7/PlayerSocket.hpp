@@ -47,7 +47,7 @@ private:
 	std::string ConstructReadyMessage() const;
 	std::string ConstructStateMessage(const std::string& xml) const;
 
-	std::vector<std::string> GetResponse(const std::vector<std::string>& receivedData);
+	std::vector<std::string> GetResponse(const std::vector<std::string>& receivedData, bool& skipOtherLines);
 
 private:
 	ChangeTimeTracker<State> m_state;

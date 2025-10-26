@@ -36,8 +36,13 @@ PlayerSocket::ProcessMessages()
 		const std::vector<std::vector<std::string>> receivedData = m_socket.ReceiveData();
 		assert(!receivedData.empty());
 
+		bool skipLines = false;
 		for (const std::vector<std::string>& receivedLineData : receivedData)
-			m_socket.SendData(GetResponse(receivedLineData));
+		{
+			m_socket.SendData(GetResponse(receivedLineData, skipLines));
+			if (skipLines)
+				break;
+		}
 
 		// Time out the client in states not involving participation in a match
 		if (m_state != STATE_WAITINGFOROPPONENTS &&
@@ -51,10 +56,13 @@ PlayerSocket::ProcessMessages()
 }
 
 std::vector<std::string>
-PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
+PlayerSocket::GetResponse(const std::vector<std::string>& receivedData, bool& skipOtherLines)
 {
 	if (receivedData[0] == "LEAVE\r\n") // The client has requested to be disconnected from the server
+	{
 		Disconnect();
+		return {};
+	}
 
 	switch (m_state)
 	{
@@ -77,6 +85,7 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 		case STATE_JOINING:
 			if (StartsWith(receivedData[0], "PLAY match"))
 			{
+				skipOtherLines = true;
 				m_state = STATE_WAITINGFOROPPONENTS;
 				return { ConstructReadyMessage(), ConstructStateMessage(m_match->ConstructReadyXML()) };
 			}
@@ -105,6 +114,7 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 				StartsWith(receivedData[1], "XMLDataString=")) // An event is being sent, let the Match send it to all other players
 			{
 				m_match->EventSend(*this, DecodeURL(receivedData[1].substr(14))); // Remove "XMLDataString=" from the beginning
+				return {};
 			}
 			else if (StartsWith(receivedData[0], "CALL Chat") && receivedData.size() > 1) // A chat message was sent, let the Match send it to all players
 			{
@@ -118,14 +128,16 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData)
 				tag.fontCharSet = receivedData[4].substr(11); // Remove "eFontCharSet=" from the beginning
 
 				m_match->Chat(std::move(tag));
+				return {};
 			}
 			else if (receivedData[0] == "LEAVE") // Client has left the game, disconnect it from the server
 			{
 				Disconnect();
+				return {};
 			}
 			break;
 	}
-	return {};
+	throw std::runtime_error("Win7::PlayerSocket::GetResponse(): Invalid message for state " + std::to_string(m_state) + " received!");
 }
 
 
