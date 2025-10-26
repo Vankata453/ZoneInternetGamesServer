@@ -10,6 +10,10 @@ namespace WinXP {
 
 namespace Spades {
 
+#define XPSpadesProtocolSignature 0x7368766C
+#define XPSpadesProtocolVersion 4
+#define XPSpadesClientVersion 65536
+
 enum
 {
 	MessageCheckIn = 256,

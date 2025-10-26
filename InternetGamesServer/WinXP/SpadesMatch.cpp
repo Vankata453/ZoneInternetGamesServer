@@ -21,12 +21,6 @@ static bool IsValidXPCardValue(int8_t value)
 
 namespace WinXP {
 
-//#define XPSpadesIsSeatHost(seat) (seat == 0)
-
-#define XPSpadesProtocolSignature 0x7368766C
-#define XPSpadesProtocolVersion 4
-#define XPSpadesClientVersion 65536
-
 static const std::uniform_int_distribution<> s_playerDistribution(0, 3);
 
 SpadesMatch::SpadesMatch(PlayerSocket& player) :

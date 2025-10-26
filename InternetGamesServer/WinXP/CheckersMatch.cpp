@@ -8,13 +8,6 @@ namespace WinXP {
 #define XPCheckersInvertSeat(seat) (seat == 0 ? 1 : 0)
 #define XPCheckersIsSeatHost(seat) (seat == 0)
 
-#define XPCheckersProtocolSignature 0x43484B52
-#define XPCheckersProtocolVersion 2
-#define XPCheckersClientVersion 0x00010202
-
-#define MECheckersProtocolVersion 0x00010202
-#define MECheckersClientVersion 0x0062F850
-
 CheckersMatch::CheckersMatch(PlayerSocket& player) :
 	Match(player),
 	m_matchState(MatchState::AWAITING_START),

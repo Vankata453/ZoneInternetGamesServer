@@ -9,6 +9,13 @@ namespace WinXP {
 
 namespace Checkers {
 
+#define XPCheckersProtocolSignature 0x43484B52
+#define XPCheckersProtocolVersion 2
+#define XPCheckersClientVersion 0x00010202
+
+#define MECheckersProtocolVersion 0x00010202
+#define MECheckersClientVersion 0x0062F850
+
 enum
 {
 	MessageCheckIn = 256,

@@ -129,10 +129,6 @@ HeartsMatch::CardTrick::GetPoints() const
 }
 
 
-#define XPHeartsProtocolSignature 0x6872747A
-#define XPHeartsProtocolVersion 5
-#define XPHeartsClientVersion 66816
-
 HeartsMatch::HeartsMatch(PlayerSocket& player) :
 	Match(player),
 	m_matchState(),

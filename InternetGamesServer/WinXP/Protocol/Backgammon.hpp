@@ -9,6 +9,10 @@ namespace WinXP {
 
 namespace Backgammon {
 
+#define XPBackgammonProtocolSignature 0x42434B47
+#define XPBackgammonProtocolVersion 3
+#define XPBackgammonClientVersion 65536
+
 enum
 {
 	MessageChatMessage = 256,

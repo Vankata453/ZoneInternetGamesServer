@@ -8,13 +8,6 @@ namespace WinXP {
 #define XPReversiInvertSeat(seat) (seat == 0 ? 1 : 0)
 #define XPReversiIsSeatHost(seat) (seat == 0)
 
-#define XPReversiProtocolSignature 0x72767365
-#define XPReversiProtocolVersion 3
-#define XPReversiClientVersion 0x00010204
-
-#define MEReversiProtocolVersion 0x00010204
-#define MEReversiClientVersion 0x0062F850
-
 ReversiMatch::ReversiMatch(PlayerSocket& player) :
 	Match(player),
 	m_matchState(MatchState::AWAITING_START),

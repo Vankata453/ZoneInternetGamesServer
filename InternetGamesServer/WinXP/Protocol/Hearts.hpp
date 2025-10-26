@@ -9,6 +9,10 @@ namespace WinXP {
 
 namespace Hearts {
 
+#define XPHeartsProtocolSignature 0x6872747A
+#define XPHeartsProtocolVersion 5
+#define XPHeartsClientVersion 66816
+
 #define HeartsNumPlayers 4
 #define HeartsNumPointsInGame 100
 #define HeartsNumPointsInHand 26

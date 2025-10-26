@@ -11,10 +11,6 @@ namespace WinXP {
 #define XPBackgammonIsSeatHost(seat) (seat == 0)
 #define XPBackgammonMatchStateToNumString(state) std::to_string(static_cast<int>(state))
 
-#define XPBackgammonProtocolSignature 0x42434B47
-#define XPBackgammonProtocolVersion 3
-#define XPBackgammonClientVersion 65536
-
 BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
 	Match(player),
 	m_matchState(MatchState::INITIALIZING),
