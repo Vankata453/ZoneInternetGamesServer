@@ -44,21 +44,21 @@ INT_PTR CALLBACK ProcessMessage(HWND hDialog, UINT message, WPARAM wParam, LPARA
                     // Host string
 #ifdef XP_GAMES
                     CHAR host[256];
-                    if (!GetDlgItemTextA(hDialog, IDC_HOST, host, 256))
+                    if (!GetDlgItemTextA(hDialog, IDC_HOST, host, sizeof(host)))
 #else
                     WCHAR host[256];
-                    if (!GetDlgItemTextW(hDialog, IDC_HOST, host, 256))
+                    if (!GetDlgItemTextW(hDialog, IDC_HOST, host, sizeof(host)))
 #endif
                         printf("Couldn't get specified remote address host in remote address dialog.\n");
                     valHost = host;
 
                     // Port string
 #ifdef XP_GAMES
-                    CHAR port[5];
-                    if (!GetDlgItemTextA(hDialog, IDC_PORT, port, 5))
+                    CHAR port[6];
+                    if (!GetDlgItemTextA(hDialog, IDC_PORT, port, sizeof(port)))
 #else
-                    WCHAR port[5];
-                    if (!GetDlgItemTextW(hDialog, IDC_PORT, port, 5))
+                    WCHAR port[6];
+                    if (!GetDlgItemTextW(hDialog, IDC_PORT, port, sizeof(port)))
 #endif
                         printf("Couldn't get specified remote address port in remote address dialog.\n");
                     valPort = port;
