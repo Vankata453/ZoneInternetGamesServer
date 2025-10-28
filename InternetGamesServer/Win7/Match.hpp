@@ -46,7 +46,7 @@ public:
 	void DisconnectedPlayer(PlayerSocket& player);
 
 	/** Update match logic */
-	virtual void Update() override;
+	void Update();
 
 	/** Event handling */
 	void EventSend(const PlayerSocket& caller, const std::string& xml);

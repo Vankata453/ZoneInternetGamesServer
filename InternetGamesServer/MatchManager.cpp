@@ -59,6 +59,9 @@ MatchManager::Update()
 			{
 				const auto& match = *it;
 
+				if (match->GetState() != Win7::Match::STATE_ENDED)
+					match->Update();
+
 				// Close ended matches
 				if (match->GetState() == Win7::Match::STATE_ENDED)
 				{
@@ -67,13 +70,14 @@ MatchManager::Update()
 					it = m_matches_win7.erase(it);
 					continue;
 				}
-
-				match->Update();
 				++it;
 			}
 			for (auto it = m_matches_winxp.begin(); it != m_matches_winxp.end();)
 			{
 				const auto& match = *it;
+
+				if (match->GetState() != WinXP::Match::STATE_ENDED)
+					match->Update();
 
 				// Close ended matches
 				if (match->GetState() == WinXP::Match::STATE_ENDED)
@@ -83,8 +87,6 @@ MatchManager::Update()
 					it = m_matches_winxp.erase(it);
 					continue;
 				}
-
-				match->Update();
 				++it;
 			}
 

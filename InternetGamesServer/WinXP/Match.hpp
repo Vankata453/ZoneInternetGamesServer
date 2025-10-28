@@ -46,7 +46,7 @@ public:
 	void DisconnectedPlayer(PlayerSocket& player);
 
 	/** Update match logic */
-	virtual void Update() override;
+	void Update();
 
 	virtual Game GetGame() const = 0;
 	inline State GetState() const { return m_state; }

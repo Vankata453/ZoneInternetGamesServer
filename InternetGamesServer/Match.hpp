@@ -26,9 +26,6 @@ public:
 	}
 	virtual ~Match() = default;
 
-	/** Update match logic */
-	virtual void Update() = 0;
-
 	virtual size_t GetRequiredPlayerCount() const { return 2; }
 	inline REFGUID GetGUID() const { return m_guid; }
 
