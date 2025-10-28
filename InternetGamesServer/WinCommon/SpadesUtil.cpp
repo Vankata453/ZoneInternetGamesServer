@@ -110,10 +110,10 @@ std::array<TrickScore, 2> CalculateTrickScore(const std::array<int8_t, 4>& playe
 		if (countNilOvertricks)
 		{
 			std::cout << " Tricks: " << (playerTricksTaken[p1] + playerTricksTaken[p2])
-				<< " Overtricks: " << (tricksAll - contract);
+				<< " Overtricks: " << (playerTricksTaken[p1] + playerTricksTaken[p2] - contract);
 		}
 		std::cout << " NilPenalty: " << (playerNilBonuses[p1] + playerNilBonuses[p2])
-			<< " BagsBefore: " << static_cast<int>(m_teamBags[team])
+			<< " BagsBefore: " << static_cast<int>(teamBags[team])
 			<< " BagsAfter: " << static_cast<int>(bags)
 			<< " ScoreDelta: " << points
 			<< std::endl;
