@@ -33,6 +33,9 @@ INT_PTR CALLBACK ProcessMessage(HWND hDialog, UINT message, WPARAM wParam, LPARA
                 (screenRect.right - dialogRect.right + dialogRect.left) / 2, // X
                 (screenRect.bottom - dialogRect.bottom + dialogRect.top) / 2, // Y
                 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+
+            // Set default port for server as default value of port field
+            SetDlgItemText(hDialog, IDC_PORT, L"28805");
             break;
         }
         case WM_COMMAND:
@@ -62,14 +65,6 @@ INT_PTR CALLBACK ProcessMessage(HWND hDialog, UINT message, WPARAM wParam, LPARA
 #endif
                         printf("Couldn't get specified remote address port in remote address dialog.\n");
                     valPort = port;
-
-                    // Do not close the dialog, if a host and port aren't specified
-                    if (valHost.empty() || valPort.empty())
-                    {
-                        valHost.clear();
-                        valPort.clear();
-                        break;
-                    }
 
                     // Close the dialog, now that a host and port are set
                     DestroyWindow(hDialog);

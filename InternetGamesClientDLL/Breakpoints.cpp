@@ -131,12 +131,14 @@ LONG CALLBACK VectoredExceptionHandler(EXCEPTION_POINTERS* exceptionInfo)
         if (exceptionAddress == reinterpret_cast<DWORD_PTR>(inet_addr))
         {
             // Set custom address
-            strcpy(*reinterpret_cast<CHAR**>(params[0]), RemoteAddressDialog::valHost.c_str());
+            if (!RemoteAddressDialog::valHost.empty())
+                strcpy(*reinterpret_cast<CHAR**>(params[0]), RemoteAddressDialog::valHost.c_str());
         }
         else if (exceptionAddress == reinterpret_cast<DWORD_PTR>(htons))
         {
             // Set custom port
-            *reinterpret_cast<UINT16*>(params[0]) = static_cast<UINT16>(std::stoi(RemoteAddressDialog::valPort));
+            if (!RemoteAddressDialog::valPort.empty())
+                *reinterpret_cast<UINT16*>(params[0]) = static_cast<UINT16>(std::stoi(RemoteAddressDialog::valPort));
         }
 #else
         if (exceptionAddress == reinterpret_cast<DWORD_PTR>(GetAddrInfoW))
@@ -144,8 +146,10 @@ LONG CALLBACK VectoredExceptionHandler(EXCEPTION_POINTERS* exceptionInfo)
             if (!wcscmp(*reinterpret_cast<PCWSTR*>(params[0]), L"mpmatch.games.msn.com")) // Ensure the function is trying to connect to the default game server
             {
                 // Set custom address and port
-                wcscpy(*reinterpret_cast<WCHAR**>(params[0]), RemoteAddressDialog::valHost.c_str());
-                wcscpy(*reinterpret_cast<WCHAR**>(params[1]), RemoteAddressDialog::valPort.c_str());
+                if (!RemoteAddressDialog::valHost.empty())
+                    wcscpy(*reinterpret_cast<WCHAR**>(params[0]), RemoteAddressDialog::valHost.c_str());
+                if (!RemoteAddressDialog::valPort.empty())
+                    wcscpy(*reinterpret_cast<WCHAR**>(params[1]), RemoteAddressDialog::valPort.c_str());
 
                 // Set properties, required for connecting to the custom server
                 ADDRINFOW* addrInfo = *reinterpret_cast<ADDRINFOW**>(params[2]);
