@@ -125,7 +125,7 @@ Fully supported, according to my testing.
 
 #### Command line arguments
 
-* `-p` (`--port`): Port to host the server on. *Default: 80*
+* `-p` (`--port`): Port to host the server on. *Default: 28805*
 * `-l` (`--log`): Enables socket data logging. Allows for specifying a custom folder; if not specified, the *default "InternetGamesServer_logs"* folder is used.
 * `--skip-level-matching`: Allows matching players, disregarding their chosen skill level. 
 * `--log-ping-messages`: Log empty received messages by sockets, which are used for pinging the server.

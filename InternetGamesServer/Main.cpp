@@ -11,7 +11,7 @@
 #include "Socket.hpp"
 #include "Util.hpp"
 
-#define DEFAULT_PORT "80"
+#define DEFAULT_PORT "28805"
 #define DEFAULT_LOGS_DIRECTORY "InternetGamesServer_logs"
 
 int main(int argc, char* argv[])
