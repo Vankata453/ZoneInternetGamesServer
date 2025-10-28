@@ -262,53 +262,50 @@ Socket::ReceiveData()
 {
 	char receivedBuf[DEFAULT_BUFLEN];
 
-	while (true)
+	const int receivedLen = recv(m_socket, receivedBuf, DEFAULT_BUFLEN, 0);
+	if (receivedLen > 0)
 	{
-		const int receivedLen = recv(m_socket, receivedBuf, DEFAULT_BUFLEN, 0);
-		if (receivedLen > 0)
+		const std::string received(receivedBuf, receivedLen);
+		std::istringstream receivedStream(received);
+
+		std::vector<std::vector<std::string>> receivedEntries;
+		std::string receivedLine;
+		while (std::getline(receivedStream, receivedLine))
 		{
-			const std::string received(receivedBuf, receivedLen);
-			std::istringstream receivedStream(received);
-
-			std::vector<std::vector<std::string>> receivedEntries;
-			std::string receivedLine;
-			while (std::getline(receivedStream, receivedLine))
-			{
-				if (receivedLine.empty())
-					continue;
-
-				if (receivedLine.back() == '\r')
-				{
-					receivedLine.pop_back(); // Remove carriage return
-					if (receivedLine.empty())
-						continue;
-				}
-
-				receivedEntries.push_back(StringSplit(std::move(receivedLine), "&")); // Split data by "&" for easier parsing in certain cases
-			}
-
-			if (!s_logPingMessages && receivedEntries.empty())
+			if (receivedLine.empty())
 				continue;
 
-			m_log << "[RECEIVED]: " << std::endl;
-			for (const std::vector<std::string>& receivedLineEntries : receivedEntries)
+			if (receivedLine.back() == '\r')
 			{
-				for (const std::string& entry : receivedLineEntries)
-				{
-					m_log << entry << std::endl;
-				}
-				m_log << std::endl;
+				receivedLine.pop_back(); // Remove carriage return
+				if (receivedLine.empty())
+					continue;
 			}
-			m_log << '\n' << std::endl;
 
-			return receivedEntries;
+			receivedEntries.push_back(StringSplit(std::move(receivedLine), "&")); // Split data by "&" for easier parsing in certain cases
 		}
-		else if (receivedLen == 0)
+
+		if (!s_logPingMessages && receivedEntries.empty())
+			return {};
+
+		m_log << "[RECEIVED]: " << std::endl;
+		for (const std::vector<std::string>& receivedLineEntries : receivedEntries)
 		{
-			throw ClientDisconnected();
+			for (const std::string& entry : receivedLineEntries)
+			{
+				m_log << entry << std::endl;
+			}
+			m_log << std::endl;
 		}
-		throw std::runtime_error("\"recv\" failed: " + std::to_string(WSAGetLastError()));
+		m_log << '\n' << std::endl;
+
+		return receivedEntries;
 	}
+	else if (receivedLen == 0)
+	{
+		throw ClientDisconnected();
+	}
+	throw std::runtime_error("\"recv\" failed: " + std::to_string(WSAGetLastError()));
 }
 
 

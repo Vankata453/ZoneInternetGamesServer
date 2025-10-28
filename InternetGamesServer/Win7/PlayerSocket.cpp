@@ -32,9 +32,7 @@ PlayerSocket::ProcessMessages()
 {
 	while (true)
 	{
-		// Receive and send back data
 		const std::vector<std::vector<std::string>> receivedData = m_socket.ReceiveData();
-		assert(!receivedData.empty());
 
 		bool skipLines = false;
 		for (const std::vector<std::string>& receivedLineData : receivedData)
