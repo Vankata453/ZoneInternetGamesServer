@@ -130,12 +130,12 @@ PlayerSocket::GetResponse(const std::vector<std::string>& receivedData, bool& sk
 				m_match->Chat(std::move(tag));
 				return {};
 			}
-			else if (receivedData[0] == "LEAVE") // Client has left the game, disconnect it from the server
-			{
-				Disconnect();
-				return {};
-			}
 			break;
+	}
+	if (receivedData[0] == "LEAVE") // Client has left the game, disconnect it from the server
+	{
+		Disconnect();
+		return {};
 	}
 	throw std::runtime_error("Win7::PlayerSocket::GetResponse(): Invalid message for state " + std::to_string(m_state) + " received!");
 }
