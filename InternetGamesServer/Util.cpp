@@ -202,7 +202,7 @@ std::ostream& operator<<(std::ostream& os, REFGUID guid)
 	os << static_cast<short>(guid.Data4[7]);
 
 	os << '}';
-	os << std::nouppercase;
+	os << std::nouppercase << std::dec;
 
 	return os;
 }
