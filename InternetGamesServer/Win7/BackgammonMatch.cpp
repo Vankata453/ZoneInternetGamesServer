@@ -3,34 +3,79 @@
 #include "PlayerSocket.hpp"
 #include "../Util.hpp"
 
+#define BackgammonInvertRole(role) (role == 0 ? 1 : 0)
+#define BackgammonIsStoneIdxPlayer0(stoneIdx) (stoneIdx < BackgammonPlayerStones)
+#define BackgammonIsStoneIdxPlayer1(stoneIdx) (stoneIdx >= BackgammonPlayerStones && stoneIdx < BackgammonPlayerStones * 2)
+
 static const std::uniform_int_distribution<> s_dieDistribution(1, 6);
 
 namespace Win7 {
 
 BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
 	Match(player),
-	m_homeTableStones(0, 0),
-	m_lastMovePlayer(-1),
-	m_lastMoveHomeTableStone(false),
-	m_initialRollStarted(false),
-	m_doubleRequested(false),
-	m_resignRequested(false),
-	m_startNextGameState(StartNextGameState::DENIED),
+	m_playerPoints(),
+	m_crawfordGame(),
+	m_stones(),
+	m_lastMoveStone(),
+	m_lastMoveSourcePos(),
+	m_lastMoveBlotSourcePos(),
+	m_playersBorneOff(),
+	m_initialRollStarted(),
+	m_doubleRequested(),
+	m_doubleCubeValue(),
+	m_doubleCubeOwner(),
+	m_resignPointsOffered(),
+	m_gameState(),
 	m_startNextGameRequestedOnceBy(-1)
-{}
+{
+	ClearGameState();
+}
 
 
 void
 BackgammonMatch::ClearGameState()
 {
-	m_homeTableStones = { 0, 0 };
-	m_lastMovePlayer = -1;
-	m_lastMoveHomeTableStone = false;
+	m_stones = {
+		{
+			// Player 1
+			{ 18, 0 }, { 18, 1 }, { 18, 2 }, { 18, 3 }, { 18, 4 },
+			{ 16, 0 }, { 16, 1 }, { 16, 2 },
+			{ 11, 0 }, { 11, 1 }, { 11, 2 }, { 11, 3 }, { 11, 4 },
+			{ 0, 0 }, { 0, 1 },
+
+			// Player 2
+			{ 5, 0 }, { 5, 1 }, { 5, 2 }, { 5, 3 }, { 5, 4 },
+			{ 7, 0 }, { 7, 1 }, { 7, 2 },
+			{ 12, 0 }, { 12, 1 }, { 12, 2 }, { 12, 3 }, { 12, 4 },
+			{ 23, 0 }, { 23, 1 }
+		}
+	};
+	m_lastMoveStone = -1;
+	m_lastMoveSourcePos = { -1, -1 };
+	m_lastMoveBlotSourcePos = { -1, -1 };
+	m_playersBorneOff = {};
 	m_initialRollStarted = false;
 	m_doubleRequested = false;
-	m_resignRequested = false;
-	m_startNextGameState = StartNextGameState::DENIED;
+	m_doubleRequested = false;
+	m_doubleCubeValue = 1;
+	m_doubleCubeOwner = -1;
+	m_resignPointsOffered = 0;
+	m_gameState = GameState::PLAYING;
 	m_startNextGameRequestedOnceBy = -1;
+}
+
+void
+BackgammonMatch::AddGamePoints(int role, uint8_t points)
+{
+	assert(points > 0);
+	if ((m_playerPoints[role] += points) >= BackgammonMatchPoints)
+	{
+		m_state = STATE_GAMEOVER;
+		return;
+	}
+
+	m_crawfordGame = m_playerPoints[role] == BackgammonMatchPoints - 1 &&
+		m_playerPoints[BackgammonInvertRole(role)] < BackgammonMatchPoints - 1;
 }
 
 
@@ -39,6 +84,9 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 {
 	if (!strcmp(elEvent.Name(), "DiceManager"))
 	{
+		if (m_gameState != GameState::PLAYING)
+			throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"DiceManager\": Not in a game!");
+
 		const tinyxml2::XMLElement* elMethod = elEvent.FirstChildElement("Method");
 		if (!elMethod || !elMethod->GetText())
 			throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"DiceManager\": No 'Method' field or inner text!");
@@ -93,6 +141,9 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 	}
 	else if (!strcmp(elEvent.Name(), "Move"))
 	{
+		if (m_gameState != GameState::PLAYING)
+			throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"Move\": Not in a game!");
+
 		XMLPrinter sanitizedMoveMessage;
 		sanitizedMoveMessage.OpenElement("Message");
 		sanitizedMoveMessage.OpenElement("Move");
@@ -105,6 +156,12 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 
 			if (m_doubleRequested)
 				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"Move\": Double was already requested!");
+			if (m_doubleCubeValue >= 64)
+				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"Move\": Double is being requested after the limit of 64 has been reached!");
+			if (m_doubleCubeOwner != caller.m_role && m_doubleCubeOwner != -1)
+				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"Move\": This player cannot request double as they do not own the cube!");
+			if (m_crawfordGame)
+				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"Move\": Cannot request double during Crawford game!");
 
 			int doubleBy;
 			try
@@ -186,38 +243,109 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 			sanitizedMoveMessage.CloseElement("Move");
 			sanitizedMoveMessage.CloseElement("Message");
 
-			if (sourceX >= 0 && sourceX < 25 && targetX >= 0 && targetX < 25)
+			if (((sourceX >= 0 && sourceX < 25 && targetX >= 0 && targetX < 25) ||
+					targetX == (caller.m_role == 0 ? 25 : 26)) &&
+				targetY >= 0 && targetY < BackgammonPlayerStones)
 			{
-				m_lastMovePlayer = caller.m_role;
-				m_lastMoveHomeTableStone = false;
-				return {
-					sanitizedMoveMessage.print()
-				};
-			}
-			if (((caller.m_role == 0 && targetX == 25) || (caller.m_role == 1 && targetX == 26)) &&
-				targetY >= 0 && targetY < 15)
-			{
-				m_lastMovePlayer = caller.m_role;
-				m_lastMoveHomeTableStone = true;
-
-				int& homeTableStones = caller.m_role == 0 ? m_homeTableStones.first : m_homeTableStones.second;
-				++homeTableStones;
-
-				if (homeTableStones >= 15) // All stones are in the player's home board
+				int8_t stoneIdx = BackgammonPlayerStones * caller.m_role;
+				for (; stoneIdx < BackgammonPlayerStones * (1 + caller.m_role); ++stoneIdx)
 				{
-					m_startNextGameState = StartNextGameState::ALLOWED;
-					return {
-						sanitizedMoveMessage.print(),
-						QueuedEvent(
-							StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "BearOff," + std::to_string(caller.m_role)),
-							true)
-					};
+					const auto& stonePos = m_stones[stoneIdx];
+					if (stonePos.first == sourceX && (stonePos.second == sourceY || sourceX == BackgammonBarX))
+						break;
+				}
+				if (stoneIdx == BackgammonPlayerStones * (1 + caller.m_role))
+					throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"Move\": No stone of this player at provided source position!");
+
+				int8_t targetStoneIdx = 0;
+				for (; targetStoneIdx < BackgammonPlayerStones * 2; ++targetStoneIdx)
+				{
+					const auto& stonePos = m_stones[targetStoneIdx];
+					if (stonePos.first == targetX && stonePos.second == targetY && targetX != BackgammonBarX)
+						break;
+				}
+				bool blot = false;
+				if (targetStoneIdx != BackgammonPlayerStones * 2)
+				{
+					/* Check if a blot is taking place */
+					auto& stonePos = m_stones[targetStoneIdx];
+					if (stonePos.second == 0 && // Y == 0
+						(caller.m_role == 0 ? BackgammonIsStoneIdxPlayer1(targetStoneIdx) :
+							BackgammonIsStoneIdxPlayer0(targetStoneIdx)) && // Owned by other player
+						std::none_of(m_stones.begin(), m_stones.end(),
+							[t = stonePos](const auto& s) { return s.first == t.first && s.second != t.second; })) // No other stone on the same point (X)
+					{
+						blot = true;
+						m_lastMoveBlotSourcePos = stonePos;
+						stonePos.first = BackgammonBarX; // Set only X, we don't care about Y in bar
+					}
+					else
+					{
+						throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"Move\": Target position is occupied by another stone!");
+					}
+				}
+				if (!blot)
+					m_lastMoveBlotSourcePos = { -1, -1 };
+
+				m_lastMoveStone = stoneIdx;
+				m_lastMoveSourcePos = { sourceX, sourceY };
+				m_stones[stoneIdx] = { targetX, targetY };
+
+				const int8_t bearOffPos = (caller.m_role == 0 ? 25 : 26);
+				if (targetX == bearOffPos) // Bearing off?
+				{
+					m_playersBorneOff[caller.m_role] = true;
+
+					bool borneOffAll = true;
+					for (int8_t i = BackgammonPlayerStones * caller.m_role; i < BackgammonPlayerStones * (1 + caller.m_role); ++i)
+					{
+						const auto& stonePos = m_stones[i];
+						if (stonePos.first != bearOffPos)
+						{
+							borneOffAll = false;
+							break;
+						}
+					}
+					if (borneOffAll) // All stones are in the player's home board
+					{
+						uint8_t points = 1; // "Cube"
+						if (!m_playersBorneOff[BackgammonInvertRole(caller.m_role)]) // Opponent hasn't borne off this game
+						{
+							points = 2; // "Gammon"
+
+							for (int8_t i = BackgammonPlayerStones * BackgammonInvertRole(caller.m_role);
+								i < BackgammonPlayerStones * (1 + BackgammonInvertRole(caller.m_role)); ++i)
+							{
+								const auto& stonePos = m_stones[i];
+								if (stonePos.first == BackgammonBarX || // Opponent piece in bar
+									(stonePos.first >= (caller.m_role == 0 ? 0 : 18) &&
+										stonePos.second <= (caller.m_role == 0 ? 5 : 23))) // Opponent piece in our home board
+								{
+									points = 3; // "Backgammon"
+									break;
+								}
+							}
+						}
+
+						AddGamePoints(caller.m_role, points * m_doubleCubeValue);
+						m_gameState = GameState::START_NEXT;
+						return {
+							sanitizedMoveMessage.print(),
+							QueuedEvent(
+								StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "BearOff," + std::to_string(caller.m_role)),
+								true)
+						};
+					}
 				}
 				return {
 					sanitizedMoveMessage.print()
 				};
 			}
-			throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"Move\": Invalid source and/or target values!");
+			if (sourceX == -1 && sourceY == -1 && targetX == -1 && targetY == -1) // Player has no legal moves
+			{
+				return {};
+			}
+			throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"Move\": Invalid source and/or target value(s)!");
 		}
 	}
 	else if (!strcmp(elEvent.Name(), "GameLogic"))
@@ -225,6 +353,32 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 		const tinyxml2::XMLElement* elMethod = elEvent.FirstChildElement("Method");
 		if (!elMethod || !elMethod->GetText())
 			throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\": No 'Method' field or inner text!");
+
+		if (m_gameState != GameState::PLAYING)
+		{
+			if (!strcmp(elMethod->GetText(), "StartNextGame")) // Client has requested the start of the next game
+			{
+				switch (m_gameState)
+				{
+					case GameState::START_NEXT:
+					{
+						m_gameState = GameState::START_NEXT_REQUESTED_ONCE;
+						m_startNextGameRequestedOnceBy = caller.m_role;
+						break;
+					}
+					case GameState::START_NEXT_REQUESTED_ONCE:
+					{
+						if (m_startNextGameRequestedOnceBy == caller.m_role)
+							throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"StartNextGame\": This player has already requested next game!");
+
+						ClearGameState();
+						break;
+					}
+				}
+				return {};
+			}
+			throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\": Not in a game!");
+		}
 
 		if (!strcmp(elMethod->GetText(), "DoneMoving")) // Player has done all their moves this round
 		{
@@ -234,11 +388,25 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 		}
 		if (!strcmp(elMethod->GetText(), "UndoLast")) // Player has undone their last move
 		{
-			if (m_lastMovePlayer == caller.m_role && m_lastMoveHomeTableStone) // Player has moved stone from home table
+			if (caller.m_role == 0 ? BackgammonIsStoneIdxPlayer1(m_lastMoveStone) : BackgammonIsStoneIdxPlayer0(m_lastMoveStone))
+				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"UndoLast\": Last move was not done by this player!");
+
+			m_stones[m_lastMoveStone] = m_lastMoveSourcePos;
+			m_lastMoveStone = -1;
+			m_lastMoveSourcePos = { -1, -1 };
+			if (m_lastMoveBlotSourcePos.first > -1)
 			{
-				int& homeTableStones = m_lastMovePlayer == 0 ? m_homeTableStones.first : m_homeTableStones.second;
-				--homeTableStones;
-				m_lastMoveHomeTableStone = false;
+				for (int8_t i = BackgammonPlayerStones * BackgammonInvertRole(caller.m_role);
+					i < BackgammonPlayerStones * (1 + BackgammonInvertRole(caller.m_role)); ++i)
+				{
+					auto& stonePos = m_stones[i];
+					if (stonePos.first == BackgammonBarX)
+					{
+						stonePos = m_lastMoveBlotSourcePos;
+						break;
+					}
+				}
+				m_lastMoveBlotSourcePos = { -1, -1 };
 			}
 			return {
 				StateSTag::ConstructMethodMessage("GameLogic", "UndoLast")
@@ -248,8 +416,15 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 		{
 			if (!m_doubleRequested)
 				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"AcceptDouble\": No double has been requested!");
+			if (m_doubleCubeOwner == caller.m_role)
+				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"AcceptDouble\": This player is already cube owner!");
+			if (m_crawfordGame)
+				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"AcceptDouble\": Cannot double during Crawford game!");
 
 			m_doubleRequested = false;
+			assert(m_doubleCubeValue < 64);
+			m_doubleCubeValue *= 2;
+			m_doubleCubeOwner = caller.m_role;
 			return {
 				StateSTag::ConstructMethodMessage("GameLogic", "AcceptDouble")
 			};
@@ -258,9 +433,14 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 		{
 			if (!m_doubleRequested)
 				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"RejectDouble\": No double has been requested!");
+			if (m_doubleCubeOwner == caller.m_role)
+				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"RejectDouble\": This player is already cube owner!");
+			if (m_crawfordGame)
+				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"RejectDouble\": Cannot double during Crawford game!");
 
 			m_doubleRequested = false;
-			m_startNextGameState = StartNextGameState::ALLOWED;
+			AddGamePoints(BackgammonInvertRole(caller.m_role), m_doubleCubeValue);
+			m_gameState = GameState::START_NEXT;
 			return {
 				QueuedEvent(
 					StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "DoubleDecline," + std::string(caller.m_role == 0 ? "1" : "0")),
@@ -269,25 +449,35 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 		}
 		if (!strcmp(elMethod->GetText(), "RequestResign")) // Player has requested resign
 		{
-			if (m_resignRequested)
+			if (m_resignPointsOffered)
 				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"RequestResign\": Resign was already requested!");
 
 			const tinyxml2::XMLElement* elParams = elEvent.FirstChildElement("Params");
-			if (elParams && elParams->GetText())
+			if (!elParams || !elParams->GetText())
+				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"RequestResign\": No 'Params' field or inner text!");
+
+			try
 			{
-				const int pointsOffered = std::stoi(elParams->GetText());
-				if (pointsOffered >= 0)
-				{
-					m_resignRequested = true;
-					return {
-						StateSTag::ConstructMethodMessage("GameLogic", "RequestResign", std::to_string(pointsOffered))
-					};
-				}
+				m_resignPointsOffered = static_cast<uint8_t>(std::stoi(elParams->GetText()));
 			}
+			catch (const std::exception& err)
+			{
+				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"RequestResign\": Couldn't parse points offered value as integer: " + std::string(err.what()));
+			}
+			if (m_resignPointsOffered != m_doubleCubeValue &&
+				m_resignPointsOffered != m_doubleCubeValue * 2 &&
+				m_resignPointsOffered != m_doubleCubeValue * 3)
+			{
+				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"RequestResign\": Invalid points offered!");
+			}
+
+			return {
+				StateSTag::ConstructMethodMessage("GameLogic", "RequestResign", std::to_string(m_resignPointsOffered))
+			};
 		}
 		if (!strcmp(elMethod->GetText(), "AcceptResign")) // Player has accepted resign request of other player
 		{
-			if (!m_resignRequested)
+			if (!m_resignPointsOffered)
 				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"AcceptResign\": No resign has been requested!");
 
 			return {
@@ -296,54 +486,32 @@ BackgammonMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerS
 		}
 		if (!strcmp(elMethod->GetText(), "RejectResign")) // Player has rejected resign request of other player
 		{
-			if (!m_resignRequested)
+			if (!m_resignPointsOffered)
 				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\" -> \"RejectResign\": No resign has been requested!");
 
-			m_resignRequested = false;
+			m_resignPointsOffered = 0;
 			return {
 				StateSTag::ConstructMethodMessage("GameLogic", "RejectResign")
 			};
-		}
-		if (!strcmp(elMethod->GetText(), "StartNextGame")) // Client has requested the start of the next game
-		{
-			switch (m_startNextGameState)
-			{
-				case StartNextGameState::DENIED:
-				{
-					break;
-				}
-				case StartNextGameState::ALLOWED:
-				{
-					m_startNextGameState = StartNextGameState::REQUESTED_ONCE;
-					m_startNextGameRequestedOnceBy = caller.m_role;
-					break;
-				}
-				case StartNextGameState::REQUESTED_ONCE:
-				{
-					if (m_startNextGameRequestedOnceBy != caller.m_role)
-					{
-						ClearGameState();
-					}
-					break;
-				}
-			}
-			return {};
 		}
 		throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameLogic\": Unknown method!");
 	}
 	else if (!strcmp(elEvent.Name(), "GameManagement"))
 	{
+		if (m_gameState != GameState::PLAYING)
+			throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameManagement\": Not in a game!");
+
 		const tinyxml2::XMLElement* elMethod = elEvent.FirstChildElement("Method");
 		if (!elMethod || !elMethod->GetText())
 			throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameManagement\": No 'Method' field or inner text!");
 
 		if (!strcmp(elMethod->GetText(), "ResignGiven")) // Player has resigned
 		{
-			if (!m_resignRequested)
+			if (!m_resignPointsOffered)
 				throw std::runtime_error("BackgammonMatch::ProcessEvent(): \"GameManagement\" -> \"ResignGiven\": No resign has been requested!");
 
-			m_resignRequested = false;
-			m_startNextGameState = StartNextGameState::ALLOWED;
+			AddGamePoints(BackgammonInvertRole(caller.m_role), m_resignPointsOffered);
+			m_gameState = GameState::START_NEXT;
 			return {
 				QueuedEvent(
 					StateSTag::ConstructMethodMessage("GameManagement", "ServerGameOver", "PlayerResigned," + std::string(caller.m_role == 0 ? "1" : "0")),

@@ -2,9 +2,14 @@
 
 #include "Match.hpp"
 
-#include <random>
+#include <array>
 
 namespace Win7 {
+
+#define BackgammonMatchPoints 5
+#define BackgammonPlayerStones 15
+
+#define BackgammonBarX 24
 
 class BackgammonMatch final : public Match
 {
@@ -21,22 +26,31 @@ protected:
 private:
 	void ClearGameState();
 
+	void AddGamePoints(int role, uint8_t points);
+
 private:
-	std::pair<int, int> m_homeTableStones;
-	int m_lastMovePlayer;
-	bool m_lastMoveHomeTableStone;
+	std::array<uint8_t, 2> m_playerPoints;
+	bool m_crawfordGame; // "Crawford Rule", enabled for the game where the leading player is one point away (4) from winning the match
+
+	std::array<std::pair<int8_t, int8_t>, BackgammonPlayerStones * 2> m_stones; // Stones and their positions on the board
+	int8_t m_lastMoveStone;
+	std::pair<int8_t, int8_t> m_lastMoveSourcePos;
+	std::pair<int8_t, int8_t> m_lastMoveBlotSourcePos;
+	std::array<bool, 2> m_playersBorneOff;
 
 	bool m_initialRollStarted;
 	bool m_doubleRequested;
-	bool m_resignRequested;
+	uint8_t m_doubleCubeValue;
+	int m_doubleCubeOwner;
+	uint8_t m_resignPointsOffered;
 
-	enum class StartNextGameState
+	enum class GameState
 	{
-		DENIED,
-		ALLOWED,
-		REQUESTED_ONCE
+		PLAYING,
+		START_NEXT,
+		START_NEXT_REQUESTED_ONCE
 	};
-	StartNextGameState m_startNextGameState;
+	GameState m_gameState;
 	int m_startNextGameRequestedOnceBy;
 
 private:
