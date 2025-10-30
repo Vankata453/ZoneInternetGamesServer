@@ -64,12 +64,6 @@ Fully supported, according to my testing.
 
 ![Internet Checkers (7)](docs/img/README_CheckersPreview.png)
 
-> [!NOTE]
->
-> For Internet Checkers, the server doesn't know when a game has finished with a win,
-> so that leads to the drawback of causing an "Error communicating with server" message
-> after a game has finished with a win (even though since the game has ended anyway, it's not really important).
-
 #### Internet Spades (Windows 7)
 
 Fully supported, according to my testing.
