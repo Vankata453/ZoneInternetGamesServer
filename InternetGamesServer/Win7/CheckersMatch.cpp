@@ -3,10 +3,13 @@
 #include "PlayerSocket.hpp"
 #include "../Util.hpp"
 
+#define CheckersInvertRole(role) (role == 0 ? 1 : 0)
+
 namespace Win7 {
 
 CheckersMatch::CheckersMatch(PlayerSocket& player) :
 	Match(player),
+	m_playerCheckersLeft({ 12, 12 }),
 	m_drawOfferedBy(-1)
 {}
 
@@ -57,6 +60,21 @@ CheckersMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSoc
 		if (targetY < 0 || targetY >= 8)
 			throw std::runtime_error("CheckersMatch::ProcessEvent(): \"Move\": Invalid target Y value!");
 
+		const int xDiff = abs(sourceX - targetX);
+		const int yDiff = abs(sourceY - targetY);
+		if (xDiff != 1 || yDiff != 1)
+		{
+			if (xDiff == 2 && yDiff == 2) // Captured an opponent piece
+			{
+				if (--m_playerCheckersLeft[CheckersInvertRole(caller.m_role)] <= 0)
+					m_state = STATE_GAMEOVER;
+			}
+			else
+			{
+				throw std::runtime_error("CheckersMatch::ProcessEvent(): \"Move\": Invalid move!");
+			}
+		}
+
 		XMLPrinter sanitizedMoveMessage;
 		sanitizedMoveMessage.OpenElement("Message");
 		sanitizedMoveMessage.OpenElement("Move");
@@ -93,7 +111,7 @@ CheckersMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSoc
 		if (!strcmp(elMethod->GetText(), "OfferDraw")) // Player has offered a draw to their opponent
 		{
 			if (m_drawOfferedBy >= 0)
-				return {};
+				throw std::runtime_error("CheckersMatch::ProcessEvent(): \"GameManagement\" -> \"OfferDraw\": Draw already offered!");
 
 			m_drawOfferedBy = caller.m_role;
 			return {
@@ -102,8 +120,10 @@ CheckersMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSoc
 		}
 		if (!strcmp(elMethod->GetText(), "DrawAccept")) // Player has accepted a draw request by the opponent
 		{
-			if (m_drawOfferedBy < 0 || m_drawOfferedBy == caller.m_role)
-				return {};
+			if (m_drawOfferedBy < 0)
+				throw std::runtime_error("CheckersMatch::ProcessEvent(): \"GameManagement\" -> \"DrawAccept\": No draw was offered!");
+			if (m_drawOfferedBy == caller.m_role)
+				throw std::runtime_error("CheckersMatch::ProcessEvent(): \"GameManagement\" -> \"DrawAccept\": Draw was offered by this player!");
 
 			m_drawOfferedBy = -1;
 			m_state = STATE_GAMEOVER;
@@ -115,8 +135,10 @@ CheckersMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSoc
 		}
 		if (!strcmp(elMethod->GetText(), "DrawReject")) // Player has rejected a draw request by their opponent
 		{
-			if (m_drawOfferedBy < 0 || m_drawOfferedBy == caller.m_role)
-				return {};
+			if (m_drawOfferedBy < 0)
+				throw std::runtime_error("CheckersMatch::ProcessEvent(): \"GameManagement\" -> \"DrawReject\": No draw was offered!");
+			if (m_drawOfferedBy == caller.m_role)
+				throw std::runtime_error("CheckersMatch::ProcessEvent(): \"GameManagement\" -> \"DrawReject\": Draw was offered by this player!");
 
 			m_drawOfferedBy = -1;
 			return {

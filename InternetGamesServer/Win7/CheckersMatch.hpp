@@ -2,6 +2,8 @@
 
 #include "Match.hpp"
 
+#include <array>
+
 namespace Win7 {
 
 class CheckersMatch final : public Match
@@ -19,6 +21,8 @@ protected:
 	std::vector<QueuedEvent> ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocket& caller) override;
 
 private:
+	std::array<int8_t, 2> m_playerCheckersLeft;
+
 	int m_drawOfferedBy;
 
 private:
