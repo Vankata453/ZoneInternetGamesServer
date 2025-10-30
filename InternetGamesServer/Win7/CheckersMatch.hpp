@@ -23,7 +23,7 @@ protected:
 private:
 	std::array<int8_t, 2> m_playerCheckersLeft;
 
-	int m_drawOfferedBy;
+	int8_t m_drawOfferedBy;
 
 private:
 	CheckersMatch(const CheckersMatch&) = delete;

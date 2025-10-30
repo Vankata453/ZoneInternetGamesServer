@@ -26,7 +26,7 @@ public:
 	}
 	virtual ~Match() = default;
 
-	virtual size_t GetRequiredPlayerCount() const { return 2; }
+	virtual int8_t GetRequiredPlayerCount() const { return 2; }
 	inline REFGUID GetGUID() const { return m_guid; }
 
 protected:

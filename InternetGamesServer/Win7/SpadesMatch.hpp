@@ -16,7 +16,7 @@ public:
 	SpadesMatch(PlayerSocket& player);
 
 	Game GetGame() const override { return Game::SPADES; }
-	size_t GetRequiredPlayerCount() const override { return 4; }
+	int8_t GetRequiredPlayerCount() const override { return 4; }
 
 	std::vector<std::string> ConstructGameStartMessagesXML(const PlayerSocket& caller) const override;
 
@@ -52,15 +52,15 @@ private:
 	std::array<int16_t, 2> m_teamPoints;
 	std::array<int16_t, 2> m_teamBags;
 
-	int m_handDealer;
-	int m_nextBidPlayer;
+	int8_t m_handDealer;
+	int8_t m_nextBidPlayer;
 	std::array<int8_t, 4> m_playerBids;
 	std::array<CardArray, 4> m_playerCards;
-	int m_playerTurn;
-	int m_playerTrickTurn;
+	int8_t m_playerTurn;
+	int8_t m_playerTrickTurn;
 	std::array<int16_t, 4> m_playerTricksTaken;
 
-	CardTrick<Card, ZPA_UNSET_CARD> m_currentTrick;
+	CardTrick<Card, int8_t, ZPA_UNSET_CARD> m_currentTrick;
 
 private:
 	SpadesMatch(const SpadesMatch&) = delete;

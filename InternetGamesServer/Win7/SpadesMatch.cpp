@@ -120,7 +120,7 @@ SpadesMatch::ProcessEvent(const tinyxml2::XMLElement& elEvent, const PlayerSocke
 				{
 					const bool bidDoubleNil = bid == BID_DOUBLE_NIL;
 					if (m_playerBids[caller.m_role] != (bidDoubleNil ? BID_HAND_START : BID_SHOWN_CARDS))
-						return {};
+						throw std::runtime_error("SpadesMatch::ProcessEvent(): \"Move\": Player is not in a proper start bid state!");
 
 					bool moreBidsToSend = m_nextBidPlayer != m_handDealer ||
 						std::all_of(m_playerBids.begin(), m_playerBids.end(), [](int bid) { return bid <= BID_SHOWN_CARDS; });

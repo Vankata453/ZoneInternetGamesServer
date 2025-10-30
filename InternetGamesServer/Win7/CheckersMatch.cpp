@@ -3,9 +3,9 @@
 #include "PlayerSocket.hpp"
 #include "../Util.hpp"
 
-#define CheckersInvertRole(role) (role == 0 ? 1 : 0)
-
 namespace Win7 {
+
+#define CheckersInvertRole(role) (role == 0 ? 1 : 0)
 
 CheckersMatch::CheckersMatch(PlayerSocket& player) :
 	Match(player),

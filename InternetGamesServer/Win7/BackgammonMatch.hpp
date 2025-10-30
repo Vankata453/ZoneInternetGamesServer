@@ -9,8 +9,6 @@ namespace Win7 {
 #define BackgammonMatchPoints 5
 #define BackgammonPlayerStones 15
 
-#define BackgammonBarX 24
-
 class BackgammonMatch final : public Match
 {
 public:
@@ -26,7 +24,7 @@ protected:
 private:
 	void ClearGameState();
 
-	void AddGamePoints(int role, uint8_t points);
+	void AddGamePoints(int8_t role, uint8_t points);
 
 private:
 	std::array<uint8_t, 2> m_playerPoints;
@@ -41,7 +39,7 @@ private:
 	bool m_initialRollStarted;
 	bool m_doubleRequested;
 	uint8_t m_doubleCubeValue;
-	int m_doubleCubeOwner;
+	int8_t m_doubleCubeOwner;
 	uint8_t m_resignPointsOffered;
 
 	enum class GameState
@@ -51,7 +49,7 @@ private:
 		START_NEXT_REQUESTED_ONCE
 	};
 	GameState m_gameState;
-	int m_startNextGameRequestedOnceBy;
+	int8_t m_startNextGameRequestedOnceBy;
 
 private:
 	BackgammonMatch(const BackgammonMatch&) = delete;

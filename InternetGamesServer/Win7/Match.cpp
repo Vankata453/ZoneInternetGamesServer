@@ -151,7 +151,7 @@ Match::Update()
 				const int playerCount = static_cast<int>(m_players.size());
 				const std::vector<int> roles = GenerateUniqueRandomNums(0, playerCount - 1);
 				for (int i = 0; i < playerCount; i++)
-					const_cast<int&>(m_players[i]->m_role) = roles[i];
+					const_cast<int8_t&>(m_players[i]->m_role) = static_cast<int8_t>(roles[i]);
 
 				for (PlayerSocket* p : m_players)
 					p->OnGameStart();

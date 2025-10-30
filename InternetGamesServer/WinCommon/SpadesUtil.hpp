@@ -23,7 +23,7 @@ enum class CardSuit
 	SPADES = 3
 };
 
-template<typename C, C UnsetVal>
+template<typename C, typename P, C UnsetVal>
 class CardTrick final
 {
 	using IsCardValidFunc = bool (*)(C);
@@ -50,7 +50,7 @@ public:
 		m_leadCard = UnsetVal;
 		m_playerCards = { UnsetVal, UnsetVal, UnsetVal, UnsetVal };
 	}
-	void Set(int player, C card)
+	void Set(P player, C card)
 	{
 		assert(!IsFinished());
 
@@ -84,7 +84,7 @@ public:
 		}
 		return false;
 	}
-	int16_t GetWinner() const
+	P GetWinner() const
 	{
 		const bool hasSpades = std::any_of(m_playerCards.begin(), m_playerCards.end(),
 			[this](C card) {
@@ -93,8 +93,8 @@ public:
 		const CardSuit targetSuit = hasSpades ? CardSuit::SPADES : m_getCardSuitFunc(m_leadCard);
 
 		uint8_t maxRank = 0;
-		int16_t maxRankPlayer = -1;
-		for (int16_t i = 0; i < SpadesNumPlayers; ++i)
+		P maxRankPlayer = -1;
+		for (P i = 0; i < SpadesNumPlayers; ++i)
 		{
 			const C card = m_playerCards[i];
 			if (m_getCardSuitFunc(card) == targetSuit)

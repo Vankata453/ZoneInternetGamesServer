@@ -3,13 +3,15 @@
 #include "PlayerSocket.hpp"
 #include "../Util.hpp"
 
-#define BackgammonInvertRole(role) (role == 0 ? 1 : 0)
-#define BackgammonIsStoneIdxPlayer0(stoneIdx) (stoneIdx < BackgammonPlayerStones)
-#define BackgammonIsStoneIdxPlayer1(stoneIdx) (stoneIdx >= BackgammonPlayerStones && stoneIdx < BackgammonPlayerStones * 2)
-
 static const std::uniform_int_distribution<> s_dieDistribution(1, 6);
 
 namespace Win7 {
+
+#define BackgammonBarX 24
+
+#define BackgammonInvertRole(role) (role == 0 ? 1 : 0)
+#define BackgammonIsStoneIdxPlayer0(stoneIdx) (stoneIdx < BackgammonPlayerStones)
+#define BackgammonIsStoneIdxPlayer1(stoneIdx) (stoneIdx >= BackgammonPlayerStones && stoneIdx < BackgammonPlayerStones * 2)
 
 BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
 	Match(player),
@@ -56,7 +58,6 @@ BackgammonMatch::ClearGameState()
 	m_playersBorneOff = {};
 	m_initialRollStarted = false;
 	m_doubleRequested = false;
-	m_doubleRequested = false;
 	m_doubleCubeValue = 1;
 	m_doubleCubeOwner = -1;
 	m_resignPointsOffered = 0;
@@ -65,7 +66,7 @@ BackgammonMatch::ClearGameState()
 }
 
 void
-BackgammonMatch::AddGamePoints(int role, uint8_t points)
+BackgammonMatch::AddGamePoints(int8_t role, uint8_t points)
 {
 	assert(points > 0);
 	if ((m_playerPoints[role] += points) >= BackgammonMatchPoints)

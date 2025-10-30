@@ -13,7 +13,7 @@ class SpadesMatch final : public Match
 public:
 	SpadesMatch(PlayerSocket& player);
 
-	size_t GetRequiredPlayerCount() const override { return SpadesNumPlayers; }
+	int8_t GetRequiredPlayerCount() const override { return SpadesNumPlayers; }
 	Game GetGame() const override { return Game::SPADES; }
 
 protected:
@@ -41,8 +41,8 @@ private:
 	std::array<bool, 4> m_playersCheckedIn;
 	std::array<CardArray, 4> m_playerCards;
 
-	std::array<int16_t, 2> m_teamPoints;
-	std::array<int16_t, 2> m_teamBags;
+	std::array<int16, 2> m_teamPoints;
+	std::array<int16, 2> m_teamBags;
 
 	int16 m_handDealer;
 	int16 m_nextBidPlayer;
@@ -55,9 +55,9 @@ private:
 
 	int16 m_playerTurn;
 	int16 m_playerTrickTurn;
-	std::array<int16_t, 4> m_playerTricksTaken;
+	std::array<int16, 4> m_playerTricksTaken;
 
-	CardTrick<Card, SpadesUnsetCard> m_currentTrick;
+	CardTrick<Card, int16, SpadesUnsetCard> m_currentTrick;
 
 private:
 	SpadesMatch(const SpadesMatch&) = delete;

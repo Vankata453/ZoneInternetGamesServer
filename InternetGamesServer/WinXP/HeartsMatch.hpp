@@ -14,7 +14,7 @@ class HeartsMatch final : public Match
 public:
 	HeartsMatch(PlayerSocket& player);
 
-	size_t GetRequiredPlayerCount() const override { return HeartsNumPlayers; }
+	int8_t GetRequiredPlayerCount() const override { return HeartsNumPlayers; }
 	Game GetGame() const override { return Game::HEARTS; }
 
 protected:
