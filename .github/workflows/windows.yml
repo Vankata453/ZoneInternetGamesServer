@@ -74,7 +74,13 @@ jobs:
         run: |
           msbuild ZoneInternetGamesServer.sln /p:Configuration=$Env:BUILD_TYPE /p:Platform=$Env:ARCH
 
-      - name: Package
+      - name: Include Windows ME games patcher with build
+        env:
+          BUILD_DIR: ${{ (matrix.arch == 'x64' && 'x64/') || '' }}${{ matrix.build_type }}
+        run: |
+          copy InternetGamesPatcher_ME.vbs $Env:BUILD_DIR
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: "ZoneInternetGamesServer-Windows-${{ matrix.arch }}-${{ matrix.build_type }}-${{ github.sha }}-binaries"

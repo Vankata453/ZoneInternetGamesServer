@@ -15,31 +15,53 @@ Those games include:
 
 ## Connecting an Internet Game to a hosted Internet Games Server
 
+### On Windows XP/7
+
 1. Ensure you have access to a hosted [Internet Games Server](#internet-games-server), either on `localhost`, your local network or via the Internet.
 2. From the [latest release of this project](https://github.com/Vankata453/ZoneInternetGamesServer/releases), under "Assets", download the "Release" package for your architecture (x64 or x86).
+
+> [!NOTE]
+>
+> You must download the x86 package to get the Client DLL and Injector for Windows XP games.
+
 3. Extract the downloaded package, containing the [Internet Games Server](#internet-games-server), custom client DLL and injector.
 
 > [!NOTE]
 >
-> Ensure the custom client DLL (`InternetGamesClientDLL.dll`) and the injector (`DLLInjector.exe`) are in the same directory!
+> Ensure the custom client DLL (`InternetGamesClientDLL.dll` or `InternetGamesClientDLL_XP.dll`) and the injector (`DLLInjector.exe` or `DLLInjector_XP.exe`) are in the same directory!
 
-4. Start an Internet Game of your choice (preferably keep it on the initial info window).
-5. Run `DLLInjector.exe` with a [target game argument](#command-line-arguments-dll-injector) and a dialog to type a host and port to an [Internet Games Server](#internet-games-server) should appear!
+4. Start an Internet Game of your choice.
+5. Run the DLL Injector, supplying a [target game argument](#command-line-arguments-dll-injector) if using the variant for Windows 7 games (`DLLInjector.exe`). A dialog for you to enter a host and port to an [Internet Games Server](#internet-games-server) should appear!
 
 > [!WARNING]
 >
-> `DLLInjector.exe` is likely to be flagged by antivirus software as a threat, namely Win32/DefenseEvasion.A!ml. That is normal, since DLL Injecting is behaviour
+> `DLLInjector.exe` is likely to be flagged by antivirus software as a threat. That is normal, since DLL Injecting is behaviour
 > commonly used in malware to inject malicious code into other processes.
 >
-> DLL injecting, however, is required for preparing the Internet Games to connect to a custom server. Make sure you add `DLLInjector.exe` as an exception in your antivirus software!
+> DLL injecting, however, is required for preparing the Windows 7 Internet Games to connect to a custom server.
+> Make sure you add `DLLInjector.exe` as an exception in your antivirus software!
 
 > [!TIP]
 >
 > You can create a shortcut to `DLLInjector.exe` with a [target game argument](#command-line-arguments-dll-injector) for ease!
 
+### On Windows ME
+
+No supported DLL Injector or Client DLL are available for Windows ME.
+
+I could not get modifications to the `hosts` file to work on ME. Thus, as an alternative, you can patch the game executables and `CMNCLIM.DLL` (which specifies the port).
+
+Use the VBScript patcher for Windows ME (`InternetGamesPatcher_ME.vbs`) which is included in every build package of this project. Upon running it, you will be prompted to enter both a target host and port in separate dialogs. You can leave either one empty or press "Cancel" to not patch host/port.
+
+> [!NOTE]
+>
+> Patching the game executables comes with the drawback of a restricted host name length to 44 characters.
+
+The patcher creates .bak copies of the original game executables and `CMNCLIM.DLL`, so that if anything goes wrong, you can easily restore them.
+
 ## Includes
 
-This repository includes, or will include, the following:
+This repository includes the following:
 
 ### Internet Games Server
 
@@ -49,61 +71,44 @@ A Winsock server, which aims to make the Internet Games playable by acting as a 
 It matches players in lobbies, depending on the game being played, as well as the chosen skill level.
 It can manage many matches of any of the games at the same time.
 
-Each game has custom messages, which need to be supported by the server in order for it to function properly.
-The current progress on individual game support is the following:
+Each game has custom messages, which are supported by the server in order for it to function properly.
 
 #### Internet Backgammon (Windows 7)
-
-Fully supported, according to my testing.
 
 ![Internet Backgammon (7)](docs/img/README_BackgammonPreview.png)
 
 #### Internet Checkers (Windows 7)
 
-Fully supported, according to my testing.
-
 ![Internet Checkers (7)](docs/img/README_CheckersPreview.png)
 
 #### Internet Spades (Windows 7)
-
-Fully supported, according to my testing.
 
 ![Internet Spades (7)](docs/img/README_SpadesPreview.png)
 
 #### Internet Backgammon (Windows XP/ME)
 
-Fully supported, according to my testing.
-
 ![Internet Backgammon (XP/ME)](docs/img/README_BackgammonXPPreview.png)
 
 #### Internet Checkers (Windows XP/ME)
-
-Fully supported, according to my testing.
 
 ![Internet Checkers (XP/ME)](docs/img/README_CheckersXPPreview.png)
 
 #### Internet Spades (Windows XP/ME)
 
-Fully supported, according to my testing.
-
 ![Internet Spades (XP/ME)](docs/img/README_SpadesXPPreview.png)
 
 #### Internet Hearts (Windows XP/ME)
 
-Fully supported, according to my testing.
-
 ![Internet Hearts (XP/ME)](docs/img/README_HeartsXPPreview.png)
 
 #### Internet Reversi (Windows XP/ME)
-
-Fully supported, according to my testing.
 
 ![Internet Reversi (XP/ME)](docs/img/README_ReversiXPPreview.png)
 
 
 > [!NOTE]
 >
-> For all games, no matter supported or not, there are differences from original server behaviour:
+> For all games, there are differences from original server behaviour:
 >
 > * **If an opponent leaves the game, instead of replacing them with an AI player, the server ends the game.**
 >
@@ -131,7 +136,7 @@ A DLL, which is to be injected into any of the 3 games, using the DLL Injector a
 
 Both applications have two variants for Windows 7 and Windows XP games. The Windows XP one is only available in x86 builds.
 
-Both the Injector and the Client DLL are **not supported on Windows ME**.
+Both the Injector and the Client DLL are **not supported on Windows ME**. Use the [VBScript patcher](#on-windows-me) to configure host and port on Windows ME.
 
 #### Functionality
 
