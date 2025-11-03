@@ -25,7 +25,7 @@ Dim isCommandLine : isCommandLine = InStr(LCase(WScript.FullName), "cscript.exe"
 Dim fso : Set fso = CreateObject("Scripting.FileSystemObject")
 
 Dim prompt : prompt = "Enter a host (max. 44 characters) (leave blank to skip): "
-Dim userHostHex : userHostHex = GetUserStringInputAsUnicodeHex(prompt, 44)
+Dim userHost : userHost = GetUserStringInputAsUnicode(prompt, 44)
 
 prompt = "Enter a valid port (0-65535) (leave blank to skip): "
 Dim userPortHex : userPortHex = GetUserUInt16InputHex(prompt)
@@ -36,7 +36,7 @@ Dim game, parts, name, offset, byteLen, filePath, backupFilePath, fileStream
 If isCommandLine Then
   WScript.Echo "" ' Newline
 End If
-If userHostHex <> "" Then
+If userHost <> "" Then
   For Each game In games
     parts = Split(game, ":")
     If UBound(parts) < 2 Then
@@ -62,12 +62,14 @@ If userHostHex <> "" Then
 
         ' Open file stream
         Set fileStream = CreateObject("ADODB.Stream")
-        fileStream.Type = adTypeBinary
+        fileStream.Type = adTypeText
+        fileStream.Charset = "iso-8859-1"
         fileStream.Open
         fileStream.LoadFromFile filePath
 
         ' Patch offset in stream
-        ApplyPatch fileStream, offset, PadHexWithZeros(userHostHex, byteLen)
+        fileStream.Position = offset
+        fileStream.WriteText PadStringWithZeros(userHost, byteLen)
 
         ' Save to file and close stream
         fileStream.SaveToFile filePath, adSaveCreateOverWrite
@@ -97,6 +99,23 @@ If userPortHex <> "" Then
   If Not fso.FileExists(filePath) Then
     WScript.Echo "WARNING: " & filePath & " not found, skipping!"
   Else
+    ' Prepare a byte representation of the port number to be written to the DLL.
+    ' This works around VBScript’s inability to create a SAFEARRAY compatible
+    ' with ADODB.Stream.Write by using MSXML, which returns a SAFEARRAY when
+    ' decoding a hex value.
+    Dim xml, xmlPortNode
+    On Error Resume Next
+    Set xml = CreateObject("Microsoft.XMLDOM")
+    If Err.Number <> 0 Then
+      WScript.Echo "ERROR: Couldn't create Microsoft.XMLDOM object for Hex conversion, required for patching port!"
+      WScript.Quit 1
+    End If
+    On Error GoTo 0
+    Set xmlPortNode = xml.createElement("p")
+    xmlPortNode.DataType = "bin.hex"
+    xmlPortNode.Text = userPortHex & "0000" ' Add 2 more bytes to make it 4, as the port is represented as an int32.
+    ' xmlPortNode.nodeTypedValue is now a SAFEARRAY that contains the port, represented in bytes.
+
     If isCommandLine Then
       WScript.Echo "Patching " & filePath & "..."
     End If
@@ -114,7 +133,8 @@ If userPortHex <> "" Then
     fileStream.LoadFromFile filePath
 
     ' Patch offset in stream
-    ApplyPatch fileStream, offset, PadHexWithZeros(userPortHex, 4) ' 4 bytes, as int32 is used for the port
+    fileStream.Position = offset
+    fileStream.Write xmlPortNode.nodeTypedValue
 
     ' Save to file and close stream
     fileStream.SaveToFile filePath, adSaveCreateOverWrite
@@ -153,6 +173,30 @@ Function GetUserInput(msg)
   GetUserInput = s
 End Function
 
+Function GetUserStringInputAsUnicode(prompt, limit)
+  Dim inputStr
+  Do
+    inputStr = GetUserInput(prompt)
+    If inputStr = "" Then
+      GetUserStringInputAsUnicode = "" ' User skipped input
+      Exit Function
+    End If
+
+    If Len(inputStr) > limit Then
+        WScript.Echo "Input too long (max. " & limit & " characters). Try again."
+    Else
+      ' Create a Unicode-style byte representation of the input string
+      ' by inserting a zero (empty) byte after each character.
+      Dim unicodeStr, i
+      For i = 1 To Len(inputStr)
+        unicodeStr = unicodeStr & Mid(inputStr, i, 1) & Chr(0)
+      Next
+      GetUserStringInputAsUnicode = unicodeStr
+      Exit Function
+    End If
+  Loop
+End Function
+
 Function GetUserUInt16InputHex(prompt)
   Dim inputStr, value, hexStr, lo, hi
 
@@ -182,89 +226,16 @@ Function GetUserUInt16InputHex(prompt)
   Loop
 End Function
 
-Function GetUserStringInputAsUnicodeHex(prompt, limit)
-  Dim inputStr, hexStr, i, ch
-
-  Do
-    inputStr = GetUserInput(prompt)
-    If inputStr = "" Then
-      GetUserStringInputAsUnicodeHex = ""  ' user skipped
-      Exit Function
-    End If
-
-    If Len(inputStr) > limit Then
-        WScript.Echo "Input too long (max. " & limit & " characters). Try again."
-    Else
-      hexStr = ""
-      For i = 1 To Len(inputStr)
-        ch = Mid(inputStr, i, 1)
-        hexStr = hexStr & Right("00" & Hex(Asc(ch)), 2) & "00"
-      Next
-      ' Remove spaces, just in case
-      hexStr = Replace(hexStr, " ", "")
-      GetUserStringInputAsUnicodeHex = hexStr
-      Exit Function
-    End If
-  Loop
-End Function
-
-Function PadHexWithZeros(hexStr, totalBytes)
-  Dim currentBytes, needed, paddedHexStr, i
-  ' Calculate how many bytes are already in hexStr
-  currentBytes = Len(hexStr) / 2
-
-  If currentBytes >= totalBytes Then
-    PadHexWithZeros = hexStr ' Already long enough
+Function PadStringWithZeros(str, amount)
+  If Len(str) >= amount Then
+    PadStringWithZeros = str
     Exit Function
   End If
 
-  needed = totalBytes - currentBytes
-  paddedHexStr = hexStr
-  For i = 1 To needed
-    paddedHexStr = paddedHexStr & "00"
+  Dim padStr, i
+  padStr = str
+  For i = 1 To amount - Len(padStr)
+    padStr = padStr & Chr(0)
   Next
-
-  PadHexWithZeros = paddedHexStr
+  PadStringWithZeros = padStr
 End Function
-
-Function HexToString(h)
-  Dim j, s
-  s = ""
-  For j = 1 To Len(h) Step 2
-    s = s & ChrW(Eval("&H" & Mid(h, j, 2)))
-  Next
-  HexToString = s
-End Function
-
-Sub ApplyPatch(targetStream, offset, hexStr)
-  If Len(hexStr) = 0 Then Exit Sub
-    If (Len(hexStr) Mod 2) <> 0 Then
-      WScript.Echo "ERROR: Bad hex string length at offset " & offset
-      WScript.Quit 1
-    Exit Sub
-  End If
-
-  Dim small : Set small = CreateObject("ADODB.Stream")
-  Dim conv  : Set conv  = CreateObject("ADODB.Stream")
-
-  conv.Type = adTypeText
-  conv.Charset = "iso-8859-1" ' Handles bytes 00–FF safely
-  conv.Open
-  conv.WriteText HexToString(hexStr)
-  conv.Position = 0
-
-  small.Type = adTypeBinary
-  small.Open
-
-  conv.CopyTo small
-  conv.Close
-  Set conv = Nothing
-
-  small.Position = 0
-  targetStream.Position = offset
-  small.CopyTo targetStream
-  small.Close
-  Set small = Nothing
-
-  ' WScript.Echo "Patched offset 0x" & Hex(offset) & " (" & (Len(hexStr) \ 2) & " bytes)"
-End Sub

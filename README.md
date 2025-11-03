@@ -57,6 +57,8 @@ Use the VBScript patcher for Windows ME (`InternetGamesPatcher_ME.vbs`) which is
 >
 > Patching the game executables comes with the drawback of a restricted host name length to 44 characters.
 
+To use the patcher from the command line (more verbose): `cscript //nologo InternetGamesPatcher_ME.vbs`
+
 The patcher creates .bak copies of the original game executables and `CMNCLIM.DLL`, so that if anything goes wrong, you can easily restore them.
 
 ## Includes
@@ -115,7 +117,7 @@ Each game has custom messages, which are supported by the server in order for it
 >   The reason for this is that AI player logic has originally been developed server-side.
 >   Since this server does not support game logic, they cannot be supported, hence the match is ended
 >   by disconnecting all players, causing "Error communicating with server" and "Your opponent has left the game"
->   error messages on Windows 7 and XP game clients respectively.
+>   error messages on Windows 7 and XP/ME game clients respectively.
 >
 > * **Since the server does not support game logic, it will send over any valid event messages, regardless of their legitimacy.**
 >
@@ -175,4 +177,4 @@ For example, to inject the DLL into a second instance of the same game, provide 
 
 ## Credits
 
-* [codereversing.com](https://www.codereversing.com/archives/138) for providing some logs and tons of helpful information, regarding reverse-engineering the Internet Games.
+* [codereversing.com](https://www.codereversing.com/archives/138) for providing some logs and tons of helpful information, regarding reverse-engineering the Windows 7 Internet Games.
