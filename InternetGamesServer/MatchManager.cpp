@@ -65,7 +65,7 @@ MatchManager::Update()
 				// Close ended matches
 				if (match->GetState() == Win7::Match::STATE_ENDED)
 				{
-					std::cout << "[MATCH MANAGER] Closing ended Windows 7 " << Win7::Match::GameToNameString(match->GetGame())
+					SessionLog() << "[MATCH MANAGER] Closing ended Windows 7 " << Win7::Match::GameToNameString(match->GetGame())
 						<< " match " << match->GetGUID() << "!" << std::endl;
 					it = m_matches_win7.erase(it);
 					continue;
@@ -82,7 +82,7 @@ MatchManager::Update()
 				// Close ended matches
 				if (match->GetState() == WinXP::Match::STATE_ENDED)
 				{
-					std::cout << "[MATCH MANAGER] Closing ended Windows XP " << WinXP::Match::GameToNameString(match->GetGame())
+					SessionLog() << "[MATCH MANAGER] Closing ended Windows XP " << WinXP::Match::GameToNameString(match->GetGame())
 						<< " match " << match->GetGUID() << "!" << std::endl;
 					it = m_matches_winxp.erase(it);
 					continue;
@@ -120,7 +120,7 @@ MatchManager::FindLobby(Win7::PlayerSocket& player)
 	if (targetMatch)
 	{
 		targetMatch->JoinPlayer(player);
-		std::cout << "[MATCH MANAGER] Added " << player.GetAddressString()
+		SessionLog() << "[MATCH MANAGER] Added " << player.GetAddressString()
 			<< " to existing Windows 7 " << Win7::Match::GameToNameString(targetMatch->GetGame())
 			<< " match " << targetMatch->GetGUID() << '.' << std::endl;
 		return targetMatch;
@@ -128,7 +128,7 @@ MatchManager::FindLobby(Win7::PlayerSocket& player)
 
 	// No free lobby found - create a new one
 	Win7::Match* match = CreateLobby(player);
-	std::cout << "[MATCH MANAGER] Added " << player.GetAddressString()
+	SessionLog() << "[MATCH MANAGER] Added " << player.GetAddressString()
 		<< " to new Windows 7 " << Win7::Match::GameToNameString(match->GetGame())
 		<< " match " << match->GetGUID() << '.' << std::endl;
 	return match;
@@ -154,7 +154,7 @@ MatchManager::FindLobby(WinXP::PlayerSocket& player)
 	if (targetMatch)
 	{
 		targetMatch->JoinPlayer(player);
-		std::cout << "[MATCH MANAGER] Added " << player.GetAddressString()
+		SessionLog() << "[MATCH MANAGER] Added " << player.GetAddressString()
 			<< " to existing Windows XP " << WinXP::Match::GameToNameString(targetMatch->GetGame())
 			<< " match " << targetMatch->GetGUID() << '.' << std::endl;
 		return targetMatch;
@@ -162,7 +162,7 @@ MatchManager::FindLobby(WinXP::PlayerSocket& player)
 
 	// No free lobby found - create a new one
 	WinXP::Match* match = CreateLobby(player);
-	std::cout << "[MATCH MANAGER] Added " << player.GetAddressString()
+	SessionLog() << "[MATCH MANAGER] Added " << player.GetAddressString()
 		<< " to new Windows XP " << WinXP::Match::GameToNameString(match->GetGame())
 		<< " match " << match->GetGUID() << '.' << std::endl;
 	return match;

@@ -116,7 +116,7 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 		// If the game has already ended, notify all players that someone has left the match and "Play Again" is now impossible
 		(m_state == STATE_GAMEOVER && m_players.size() == GetRequiredPlayerCount() - 1))
 	{
-		std::cout << "[MATCH] " << m_guid << ": A player left, closing match!" << std::endl;
+		SessionLog() << "[MATCH] " << m_guid << ": A player left, closing match!" << std::endl;
 
 		for (PlayerSocket* p : m_players)
 			p->OnMatchDisconnect();
@@ -147,7 +147,7 @@ Match::Update()
 				for (PlayerSocket* p : m_players)
 					p->OnGameStart(m_players);
 
-				std::cout << "[MATCH] " << m_guid << ": Started match!" << std::endl;
+				SessionLog() << "[MATCH] " << m_guid << ": Started match!" << std::endl;
 				m_state = STATE_PLAYING;
 			}
 			break;
@@ -158,7 +158,7 @@ Match::Update()
 			{
 				assert(m_players.size() == GetRequiredPlayerCount());
 
-				std::cout << "[MATCH] " << m_guid << ": Playing state restored, cancelling game over close timer." << std::endl;
+				SessionLog() << "[MATCH] " << m_guid << ": Playing state restored, cancelling game over close timer." << std::endl;
 				m_endTime = 0;
 			}
 			break;
@@ -167,12 +167,12 @@ Match::Update()
 		{
 			if (m_endTime == 0)
 			{
-				std::cout << "[MATCH] " << m_guid << ": Game over, match will automatically close in 60 seconds!" << std::endl;
+				SessionLog() << "[MATCH] " << m_guid << ": Game over, match will automatically close in 60 seconds!" << std::endl;
 				m_endTime = std::time(nullptr);
 			}
 			else if (std::time(nullptr) - m_endTime >= 60) // A minute has passed since the match ended
 			{
-				std::cout << "[MATCH] " << m_guid << ": Match ended a minute ago, closing!" << std::endl;
+				SessionLog() << "[MATCH] " << m_guid << ": Match ended a minute ago, closing!" << std::endl;
 				m_state = STATE_ENDED;
 			}
 			break;

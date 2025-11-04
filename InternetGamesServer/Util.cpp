@@ -1,9 +1,33 @@
 #include "Util.hpp"
 
 #include <cassert>
+#include <chrono>
 #include <ctime>
+#include <iomanip>
 #include <ostream>
 #include <sstream>
+
+/** Logging */
+static const std::unique_ptr<std::ostream> s_sessionLog;
+static NullStream s_dummySessionLog;
+
+void SetSessionLog(std::unique_ptr<std::ostream> stream)
+{
+	const_cast<std::unique_ptr<std::ostream>&>(s_sessionLog) = std::move(stream);
+}
+
+std::ostream& SessionLog()
+{
+	if (!s_sessionLog)
+		return s_dummySessionLog;
+
+	const std::time_t timeNow = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+	std::tm localTime;
+	localtime_s(&localTime, &timeNow);
+
+	return *s_sessionLog << '(' << std::put_time(&localTime, "%d/%m/%Y %H:%M:%S") << ") ";
+}
 
 /** String utilities */
 bool StartsWith(const std::string& str, const std::string& prefix)

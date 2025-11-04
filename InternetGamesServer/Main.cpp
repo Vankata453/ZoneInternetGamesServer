@@ -6,6 +6,7 @@
 #include <ws2tcpip.h>
 
 #include <iostream>
+#include <fstream>
 
 #include "MatchManager.hpp"
 #include "Socket.hpp"
@@ -25,7 +26,7 @@ int main(int argc, char* argv[])
 		{
 			if (argc < i + 2 || argv[i + 1][0] == '-')
 			{
-				std::cout << "ERROR: Port number must be provided after \"-p\" or \"--port\"." << std::endl;
+				SessionLog() << "ERROR: Port number must be provided after \"-p\" or \"--port\"." << std::endl;
 				return -1;
 			}
 			port = argv[++i];
@@ -54,11 +55,26 @@ int main(int argc, char* argv[])
 
 	LoadXPAdBannerImage();
 
+	// Open session log file stream, if logging is enabled
+	if (!Socket::s_logsDirectory.empty())
+	{
+		std::ostringstream logFileName;
+		logFileName << Socket::s_logsDirectory << "\\SESSION_" << std::time(nullptr) << ".txt";
+
+		auto stream = std::make_unique<std::ofstream>(logFileName.str());
+		if (!stream->is_open())
+			throw std::runtime_error("Failed to open log file \"" + logFileName.str() + "\"!");
+		SetSessionLog(std::move(stream));
+	}
+
 	// Create a thread to update the logic of all matches
 	DWORD nMatchManagerThreadID;
 	if (!CreateThread(0, 0, MatchManager::UpdateHandler, nullptr, 0, &nMatchManagerThreadID))
 	{
-		std::cout << "Couldn't create a thread to update MatchManager: " << GetLastError() << std::endl;
+		std::ostringstream err;
+		err << "Couldn't create a thread to update MatchManager: " << GetLastError() << std::endl;
+		std::cout << err.str();
+		SessionLog() << err.str();
 		return 1;
 	}
 
@@ -67,7 +83,10 @@ int main(int argc, char* argv[])
 	HRESULT startupResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (startupResult != 0)
 	{
-		std::cout << "ERROR: Initialization failure: " << startupResult << std::endl;
+		std::ostringstream err;
+		err << "ERROR: Initialization failure: " << startupResult << std::endl;
+		std::cout << err.str();
+		SessionLog() << err.str();
 		return 1;
 	}
 
@@ -83,7 +102,11 @@ int main(int argc, char* argv[])
 	HRESULT addrResult = getaddrinfo(NULL, port, &hints, &result);
 	if (addrResult != 0)
 	{
-		std::cout << "\"getaddrinfo\" failed: " << WSAGetLastError() << std::endl;
+		std::ostringstream err;
+		err << "\"getaddrinfo\" failed: " << WSAGetLastError() << std::endl;
+		std::cout << err.str();
+		SessionLog() << err.str();
+
 		WSACleanup();
 		return 1;
 	}
@@ -93,7 +116,11 @@ int main(int argc, char* argv[])
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 	if (ListenSocket == INVALID_SOCKET)
 	{
-		std::cout << "Error at \"socket()\": " << WSAGetLastError() << std::endl;
+		std::ostringstream err;
+		err << "Error at \"socket()\": " << WSAGetLastError() << std::endl;
+		std::cout << err.str();
+		SessionLog() << err.str();
+
 		freeaddrinfo(result);
 		WSACleanup();
 		return 1;
@@ -101,7 +128,11 @@ int main(int argc, char* argv[])
 	HRESULT bindResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
 	if (bindResult == SOCKET_ERROR)
 	{
-		std::cout << "\"bind\" failed: " << WSAGetLastError() << std::endl;
+		std::ostringstream err;
+		err << "\"bind\" failed: " << WSAGetLastError() << std::endl;
+		std::cout << err.str();
+		SessionLog() << err.str();
+
 		freeaddrinfo(result);
 		closesocket(ListenSocket);
 		WSACleanup();
@@ -109,41 +140,52 @@ int main(int argc, char* argv[])
 	}
 	freeaddrinfo(result);
 
-	std::cout << "[MAIN] Listening on port " << port << "!" << std::endl << std::endl;
+	{
+		std::ostringstream out;
+		out << "[MAIN] Listening on port " << port << "!" << std::endl << std::endl;
+		std::cout << out.str();
+		SessionLog() << out.str();
+	}
 	while (true)
 	{
 		// Listen for a client socket connection
 		if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
 		{
-			std::cout << "[SOCKET] \"listen\" failed: " << WSAGetLastError() << std::endl;
-			break;
+			std::ostringstream err;
+			err << "[SOCKET] \"listen\" failed: " << WSAGetLastError() << std::endl;
+			std::cout << err.str();
+			SessionLog() << err.str();
+
+			closesocket(ListenSocket);
+			WSACleanup();
+			return 1;
 		}
 
 		// Accept the client socket
 		SOCKET ClientSocket = accept(ListenSocket, NULL, NULL);
 		if (ClientSocket == INVALID_SOCKET)
 		{
-			std::cout << "[SOCKET] \"accept\" failed: " << WSAGetLastError() << std::endl;
+			SessionLog() << "[SOCKET] \"accept\" failed: " << WSAGetLastError() << std::endl;
 			continue;
 		}
 
 		// Connected to socket successfully
-		std::cout << "[SOCKET] Accepted connection from " << Socket::GetAddressString(ClientSocket) << "." << std::endl;
+		SessionLog() << "[SOCKET] Accepted connection from " << Socket::GetAddressString(ClientSocket) << "." << std::endl;
 
 		// Set recv/send timeout for client socket - 60 seconds
 		const DWORD timeout = 60000;
 		if (setsockopt(ClientSocket, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout)) != 0)
 		{
-			std::cout << "[SOCKET] \"setsockopt\" for recv() timeout failed: " << WSAGetLastError() << std::endl;
+			SessionLog() << "[SOCKET] \"setsockopt\" for recv() timeout failed: " << WSAGetLastError() << std::endl;
 			if (shutdown(ClientSocket, SD_BOTH) == SOCKET_ERROR)
-				std::cout << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+				SessionLog() << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
 			continue;
 		}
 		if (setsockopt(ClientSocket, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout)) != 0)
 		{
-			std::cout << "[SOCKET] \"setsockopt\" for send() timeout failed: " << WSAGetLastError() << std::endl;
+			SessionLog() << "[SOCKET] \"setsockopt\" for send() timeout failed: " << WSAGetLastError() << std::endl;
 			if (shutdown(ClientSocket, SD_BOTH) == SOCKET_ERROR)
-				std::cout << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+				SessionLog() << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
 			continue;
 		}
 
@@ -151,10 +193,10 @@ int main(int argc, char* argv[])
 		DWORD nSocketThreadID;
 		if (!CreateThread(0, 0, Socket::SocketHandler, reinterpret_cast<LPVOID>(ClientSocket), 0, &nSocketThreadID))
 		{
-			std::cout << "[SOCKET] Couldn't create a thread to handle socket from " << Socket::GetAddressString(ClientSocket)
+			SessionLog() << "[SOCKET] Couldn't create a thread to handle socket from " << Socket::GetAddressString(ClientSocket)
 				<< ": " << GetLastError() << std::endl;
 			if (shutdown(ClientSocket, SD_BOTH) == SOCKET_ERROR)
-				std::cout << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+				SessionLog() << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
 			continue;
 		}
 	}

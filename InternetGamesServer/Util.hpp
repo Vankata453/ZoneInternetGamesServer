@@ -13,6 +13,10 @@
 /** Debug */
 #define LOG_DEBUG 0 // DEBUG: Log certain operations to console
 
+/** Logging */
+void SetSessionLog(std::unique_ptr<std::ostream> stream);
+std::ostream& SessionLog();
+
 /** String utilities */
 bool StartsWith(const std::string& str, const std::string& prefix);
 std::vector<std::string> StringSplit(std::string str, const std::string& delimiter);

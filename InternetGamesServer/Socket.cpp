@@ -168,19 +168,19 @@ Socket::SocketHandler(void* socket_)
 	}
 	catch (const DisconnectSocket& err) // Used to request disconnection without an actual error having occured
 	{
-		std::cout << "[SOCKET] Disconnecting socket " << socket.GetAddressString()
+		SessionLog() << "[SOCKET] Disconnecting socket " << socket.GetAddressString()
 			<< ": " << err.what() << std::endl;
 		return 0;
 	}
 	catch (const ClientDisconnected&)
 	{
-		std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
+		SessionLog() << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
 			<< ": Client has been disconnected." << std::endl;
 		return 0;
 	}
 	catch (const std::exception& err)
 	{
-		std::cout << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
+		SessionLog() << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
 			<< ": " << err.what() << std::endl;
 		return 0;
 	}
@@ -230,11 +230,11 @@ Socket::Disconnect()
 
 	m_disconnected = true; // Set early on to prevent another thread from disconnecting this socket again.
 
-	std::cout << "[SOCKET] Disconnecting from " << GetAddressString() << '.' << std::endl;
+	SessionLog() << "[SOCKET] Disconnecting from " << GetAddressString() << '.' << std::endl;
 
 	// Shut down the connection
 	if (shutdown(m_socket, SD_BOTH) == SOCKET_ERROR)
-		std::cout << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+		SessionLog() << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
 }
 
 
