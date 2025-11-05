@@ -151,6 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Command.cpp" />
     <ClCompile Include="Win7\BackgammonMatch.cpp" />
     <ClCompile Include="Win7\CheckersMatch.cpp" />
     <ClCompile Include="external\tinyxml2\tinyxml2.cpp" />
@@ -174,6 +175,7 @@
     <ClCompile Include="WinXP\SpadesMatch.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Command.hpp" />
     <ClInclude Include="Match.hpp" />
     <ClInclude Include="Win7\BackgammonMatch.hpp" />
     <ClInclude Include="Win7\CheckersMatch.hpp" />

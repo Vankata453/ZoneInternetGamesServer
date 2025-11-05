@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "Command.hpp"
 #include "MatchManager.hpp"
 #include "Socket.hpp"
 #include "Util.hpp"
@@ -147,6 +148,20 @@ int main(int argc, char* argv[])
 		SessionLog() << out.str();
 	}
 	FlushSessionLog();
+
+	// Create a thread to accept and respond to command input
+	DWORD nCommandProcessorThreadID;
+	if (!CreateThread(0, 0, CommandHandler, nullptr, 0, &nCommandProcessorThreadID))
+	{
+		std::ostringstream err;
+		err << "Couldn't create a thread to process command input!" << std::endl;
+		std::cout << err.str();
+		SessionLog() << err.str();
+
+		closesocket(ListenSocket);
+		WSACleanup();
+		return 1;
+	}
 
 	while (true)
 	{
