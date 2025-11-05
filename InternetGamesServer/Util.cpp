@@ -4,16 +4,15 @@
 #include <chrono>
 #include <ctime>
 #include <iomanip>
-#include <ostream>
 #include <sstream>
 
 /** Logging */
-static const std::unique_ptr<std::ostream> s_sessionLog;
+static std::unique_ptr<std::ofstream> s_sessionLog;
 static NullStream s_dummySessionLog;
 
-void SetSessionLog(std::unique_ptr<std::ostream> stream)
+void SetSessionLog(std::unique_ptr<std::ofstream> stream)
 {
-	const_cast<std::unique_ptr<std::ostream>&>(s_sessionLog) = std::move(stream);
+	s_sessionLog = std::move(stream);
 }
 
 std::ostream& SessionLog()
@@ -27,6 +26,11 @@ std::ostream& SessionLog()
 	localtime_s(&localTime, &timeNow);
 
 	return *s_sessionLog << '(' << std::put_time(&localTime, "%d/%m/%Y %H:%M:%S") << ") ";
+}
+
+void FlushSessionLog()
+{
+	s_sessionLog->flush();
 }
 
 /** String utilities */

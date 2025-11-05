@@ -146,6 +146,8 @@ int main(int argc, char* argv[])
 		std::cout << out.str();
 		SessionLog() << out.str();
 	}
+	FlushSessionLog();
+
 	while (true)
 	{
 		// Listen for a client socket connection

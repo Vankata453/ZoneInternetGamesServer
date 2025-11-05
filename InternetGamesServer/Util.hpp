@@ -2,7 +2,7 @@
 
 #include <string>
 #include <cassert>
-#include <ostream>
+#include <fstream>
 #include <random>
 #include <vector>
 
@@ -14,8 +14,9 @@
 #define LOG_DEBUG 0 // DEBUG: Log certain operations to console
 
 /** Logging */
-void SetSessionLog(std::unique_ptr<std::ostream> stream);
+void SetSessionLog(std::unique_ptr<std::ofstream> stream);
 std::ostream& SessionLog();
+void FlushSessionLog();
 
 /** String utilities */
 bool StartsWith(const std::string& str, const std::string& prefix);
