@@ -30,6 +30,7 @@ public:
 	virtual int8_t GetRequiredPlayerCount() const { return 2; }
 	inline unsigned int GetIndex() const { return m_index; }
 	inline REFGUID GetGUID() const { return m_guid; }
+	inline std::time_t GetCreationTime() const { return m_creationTime; }
 
 protected:
 	void AddPlayer(P& player)

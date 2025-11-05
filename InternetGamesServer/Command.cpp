@@ -101,14 +101,20 @@ DWORD WINAPI CommandHandler(void*)
 				std::cout
 					<< std::endl
 					<< std::left << std::setw(17) << "IP"
+					<< std::setw(21) << "Connected since"
 					<< std::setw(31) << "Type"
 					<< std::setw(27) << "State"
 					<< "Match Joined (GUID)" << std::endl
-					<< std::string(115, '-') << std::endl;
+					<< std::string(134, '-') << std::endl;
 				for (const Socket* socket : Socket::GetList())
 				{
+					const std::time_t connectionTime = socket->GetConnectionTime();
+					std::tm localConnectionTime;
+					localtime_s(&localConnectionTime, &connectionTime);
+
 					std::cout
 						<< std::setw(15) << socket->GetAddressString() << "  "
+						<< std::put_time(&localConnectionTime, "%d/%m/%Y %H:%M:%S") << "  "
 						<< std::setw(29) << Socket::TypeToString(socket->GetType()) << "  ";
 					if (socket->GetPlayerSocket())
 					{
@@ -144,17 +150,23 @@ DWORD WINAPI CommandHandler(void*)
 			{
 				std::cout
 					<< std::endl
-					<< std::left << std::setw(8) << "Index"
+					<< std::left << std::setw(12) << "Index"
 					<< std::setw(40) << "GUID"
+					<< std::setw(21) << "Created on"
 					<< std::setw(7) << "Type"
 					<< std::setw(25) << "State"
 					<< "Game" << std::endl
-					<< std::string(105, '-') << std::endl;
+					<< std::string(130, '-') << std::endl;
 				for (const auto& match : MatchManager::Get().GetMatchesWin7())
 				{
+					const std::time_t creationTime = match->GetCreationTime();
+					std::tm localCreationTime;
+					localtime_s(&localCreationTime, &creationTime);
+
 					std::cout
-						<< std::right << std::setw(6) << match->GetIndex() << "  "
+						<< std::right << std::setw(10) << match->GetIndex() << "  "
 						<< std::left << match->GetGUID() << "  "
+						<< std::put_time(&localCreationTime, "%d/%m/%Y %H:%M:%S") << "  "
 						<< std::setw(7) << "Win7"
 						<< std::setw(25) << Win7::Match::StateToString(match->GetState())
 						<< Win7::Match::GameToNameString(match->GetGame())
@@ -163,9 +175,14 @@ DWORD WINAPI CommandHandler(void*)
 				}
 				for (const auto& match : MatchManager::Get().GetMatchesWinXP())
 				{
+					const std::time_t creationTime = match->GetCreationTime();
+					std::tm localCreationTime;
+					localtime_s(&localCreationTime, &creationTime);
+
 					std::cout
-						<< std::right << std::setw(6) << match->GetIndex() << "  "
+						<< std::right << std::setw(10) << match->GetIndex() << "  "
 						<< std::left << match->GetGUID() << "  "
+						<< std::put_time(&localCreationTime, "%d/%m/%Y %H:%M:%S") << "  "
 						<< std::setw(7) << "WinXP"
 						<< std::setw(25) << WinXP::Match::StateToString(match->GetState())
 						<< WinXP::Match::GameToNameString(match->GetGame())

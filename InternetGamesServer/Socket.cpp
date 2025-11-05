@@ -241,6 +241,7 @@ Socket::GetAddressString(SOCKET socket, const char portSeparator)
 Socket::Socket(SOCKET socket, std::ostream& log) :
 	m_socket(socket),
 	m_log(log),
+	m_connectionTime(std::time(nullptr)),
 	m_disconnected(false),
 	m_type(UNKNOWN),
 	m_playerSocket(nullptr)
