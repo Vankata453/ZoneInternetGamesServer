@@ -11,6 +11,31 @@
 
 namespace WinXP {
 
+std::string
+PlayerSocket::StateToString(State state)
+{
+	switch (state)
+	{
+		case STATE_INITIALIZED:
+			return "STATE_INITIALIZED";
+		case STATE_UNCONFIGURED:
+			return "STATE_UNCONFIGURED";
+		case STATE_PROXY_DISCONNECTED:
+			return "STATE_PROXY_DISCONNECTED";
+		case STATE_WAITINGFOROPPONENTS:
+			return "STATE_WAITINGFOROPPONENTS";
+		case STATE_STARTING_GAME:
+			return "STATE_STARTING_GAME";
+		case STATE_PLAYING:
+			return "STATE_PLAYING";
+		case STATE_DISCONNECTING:
+			return "STATE_DISCONNECTING";
+		default:
+			return "<unknown>";
+	}
+}
+
+
 PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	::PlayerSocket(socket),
 	m_state(STATE_INITIALIZED),
@@ -158,7 +183,7 @@ PlayerSocket::ProcessMessages()
 					break;
 				}
 				default:
-					throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Message was received, but current state (" + std::to_string(m_state) + ") does not process any!");
+					throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Message was received, but current state (" + StateToString(m_state) + ") does not process any!");
 			}
 		}
 
@@ -167,8 +192,8 @@ PlayerSocket::ProcessMessages()
 			m_state != STATE_PLAYING &&
 			m_state.GetSecondsSinceLastChange() >= 60)
 		{
-			throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Timeout: Client has not switched from state "
-				+ std::to_string(m_state) + " for 60 seconds or more!");
+			throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Timeout: Client has not switched from state \""
+				+ StateToString(m_state) + "\" for 60 seconds or more!");
 		}
 	}
 }

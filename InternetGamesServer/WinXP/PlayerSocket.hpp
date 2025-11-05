@@ -24,6 +24,7 @@ public:
 		STATE_PLAYING,
 		STATE_DISCONNECTING
 	};
+	static std::string StateToString(State state);
 
 	enum class ClientVersion
 	{
@@ -93,12 +94,12 @@ public:
 	inline ClientVersion GetClientVersion() const { return m_clientVersion; }
 	inline bool IsWinME() const { return m_clientVersion == ClientVersion::WINME; }
 
-	Socket::Type GetType() const override { return Socket::WINXP; }
 	inline uint32 GetID() const { return m_ID; }
 	inline State GetState() const { return m_state; }
 	inline Match::Game GetGame() const { return m_game; }
 	inline Match::SkillLevel GetSkillLevel() const { return m_config.skillLevel; }
 	inline uint32 GetSecurityKey() const { return m_securityKey; }
+	inline Match* GetMatch() const { return m_match; }
 
 	MsgConnectionHello ConstructHelloMessage() const;
 

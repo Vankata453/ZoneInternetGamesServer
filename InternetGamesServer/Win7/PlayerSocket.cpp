@@ -8,6 +8,25 @@
 
 namespace Win7 {
 
+std::string
+PlayerSocket::StateToString(State state)
+{
+	switch (state)
+	{
+		case STATE_INITIALIZED:
+			return "STATE_INITIALIZED";
+		case STATE_JOINING:
+			return "STATE_JOINING";
+		case STATE_WAITINGFOROPPONENTS:
+			return "STATE_WAITINGFOROPPONENTS";
+		case STATE_PLAYING:
+			return "STATE_PLAYING";
+		default:
+			return "<unknown>";
+	}
+}
+
+
 PlayerSocket::PlayerSocket(Socket& socket) :
 	::PlayerSocket(socket),
 	m_state(STATE_INITIALIZED),

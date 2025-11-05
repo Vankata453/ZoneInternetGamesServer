@@ -16,6 +16,7 @@ public:
 		STATE_WAITINGFOROPPONENTS,
 		STATE_PLAYING
 	};
+	static std::string StateToString(State state);
 
 public:
 	PlayerSocket(Socket& socket);
@@ -28,11 +29,11 @@ public:
 	void OnEventReceive(const std::string& xml) const;
 	void OnChat(const StateChatTag* tag);
 
-	Socket::Type GetType() const override { return Socket::WIN7; }
 	inline State GetState() const { return m_state; }
 	inline std::string GetPUID() const { return m_puid; }
 	inline Match::Game GetGame() const { return m_game; }
 	inline Match::Level GetLevel() const { return m_level; }
+	inline Match* GetMatch() const { return m_match; }
 
 protected:
 	void OnDisconnected() override;

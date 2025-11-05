@@ -17,7 +17,7 @@ public:
 
 	void Disconnect();
 
-	virtual Socket::Type GetType() const = 0;
+	inline Socket::Type GetType() const { return m_socket.GetType(); }
 	inline std::string GetAddressString() const { return m_socket.GetAddressString(); }
 
 protected:

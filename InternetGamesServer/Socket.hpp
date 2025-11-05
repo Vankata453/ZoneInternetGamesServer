@@ -7,6 +7,8 @@
 #include <sstream>
 #include <vector>
 
+class PlayerSocket;
+
 void LoadXPAdBannerImage();
 
 /** SOCKET wrapper featuring general socket handling functions */
@@ -21,10 +23,18 @@ public:
 	{
 		UNKNOWN,
 		WIN7,
-		WINXP
+		WINXP,
+		WINXP_BANNER_AD_REQUEST,
+		WINXP_BANNER_AD_IMAGE_REQUEST,
 	};
+	static std::string TypeToString(Type type);
+
+private:
+	static std::vector<Socket*> s_socketList;
 
 public:
+	static inline const std::vector<Socket*>& GetList() { return s_socketList; }
+
 	// Handler for the thread of a socket
 	static DWORD WINAPI SocketHandler(void* socket);
 
@@ -56,6 +66,9 @@ private:
 public:
 	Socket(SOCKET socket, std::ostream& log);
 	~Socket();
+
+	inline Type GetType() const { return m_type; }
+	inline PlayerSocket* GetPlayerSocket() const { return m_playerSocket; }
 
 	void Disconnect();
 
@@ -186,6 +199,9 @@ private:
 	std::ostream& m_log;
 
 	bool m_disconnected;
+
+	Type m_type;
+	PlayerSocket* m_playerSocket;
 
 private:
 	Socket(const Socket&) = delete;

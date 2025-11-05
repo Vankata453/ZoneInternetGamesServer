@@ -6,9 +6,12 @@
 #include <string>
 
 #include "MatchManager.hpp"
+#include "Socket.hpp"
 #include "Util.hpp"
 #include "Win7/Match.hpp"
+#include "Win7/PlayerSocket.hpp"
 #include "WinXP/Match.hpp"
+#include "WinXP/PlayerSocket.hpp"
 
 DWORD WINAPI CommandHandler(void*)
 {
@@ -95,17 +98,58 @@ DWORD WINAPI CommandHandler(void*)
 			}
 			else if (StartsWith(cmd, "lc") || StartsWith(cmd, "LC") || StartsWith(cmd, "Lc") || StartsWith(cmd, "lC"))
 			{
-				std::cout << "TODO! List client sockets" << std::endl;
+				std::cout
+					<< std::endl
+					<< std::left << std::setw(17) << "IP"
+					<< std::setw(31) << "Type"
+					<< std::setw(27) << "State"
+					<< "Match Joined (GUID)" << std::endl
+					<< std::string(115, '-') << std::endl;
+				for (const Socket* socket : Socket::GetList())
+				{
+					std::cout
+						<< std::setw(15) << socket->GetAddressString() << "  "
+						<< std::setw(29) << Socket::TypeToString(socket->GetType()) << "  ";
+					if (socket->GetPlayerSocket())
+					{
+						switch (socket->GetType())
+						{
+							case Socket::WIN7:
+							{
+								const Win7::PlayerSocket* player = static_cast<Win7::PlayerSocket*>(socket->GetPlayerSocket());
+								std::cout << std::setw(25) << Win7::PlayerSocket::StateToString(player->GetState()) << "  ";
+								if (player->GetMatch())
+									std::cout << player->GetMatch()->GetGUID();
+								else
+									std::cout << "No";
+								break;
+							}
+							case Socket::WINXP:
+							{
+								const WinXP::PlayerSocket* player = static_cast<WinXP::PlayerSocket*>(socket->GetPlayerSocket());
+								std::cout << std::setw(25) << WinXP::PlayerSocket::StateToString(player->GetState()) << "  ";
+								if (player->GetMatch())
+									std::cout << player->GetMatch()->GetGUID();
+								else
+									std::cout << "No";
+								break;
+							}
+						}
+					}
+					std::cout << std::endl;
+				}
+				std::cout << std::endl;
 			}
 			else if (StartsWith(cmd, "lm") || StartsWith(cmd, "LM") || StartsWith(cmd, "Lm") || StartsWith(cmd, "lM"))
 			{
 				std::cout
+					<< std::endl
 					<< std::left << std::setw(8) << "Index"
 					<< std::setw(40) << "GUID"
 					<< std::setw(7) << "Type"
 					<< std::setw(25) << "State"
 					<< "Game" << std::endl
-					<< std::string(90, '-') << std::endl;
+					<< std::string(105, '-') << std::endl;
 				for (const auto& match : MatchManager::Get().GetMatchesWin7())
 				{
 					std::cout
@@ -128,6 +172,7 @@ DWORD WINAPI CommandHandler(void*)
 						<< " (" << WinXP::Match::SkillLevelToString(match->GetSkillLevel()) << ')'
 						<< std::endl;
 				}
+				std::cout << std::endl;
 			}
 			else
 			{

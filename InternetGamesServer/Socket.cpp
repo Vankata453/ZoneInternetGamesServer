@@ -23,6 +23,8 @@ std::string Socket::s_logsDirectory = "";
 bool Socket::s_logPingMessages = false;
 bool Socket::s_disableXPAdBanner = false;
 
+std::vector<Socket*> Socket::s_socketList = {};
+
 
 void LoadXPAdBannerImage()
 {
@@ -42,6 +44,25 @@ void LoadXPAdBannerImage()
 	if (!pData) return;
 
 	const_cast<std::vector<BYTE>&>(XP_AD_BANNER_DATA) = std::vector<BYTE>(pData, pData + size);
+}
+
+
+std::string
+Socket::TypeToString(Type type)
+{
+	switch (type)
+	{
+		case WIN7:
+			return "WIN7";
+		case WINXP:
+			return "WINXP";
+		case WINXP_BANNER_AD_REQUEST:
+			return "WINXP_BANNER_AD_REQUEST";
+		case WINXP_BANNER_AD_IMAGE_REQUEST:
+			return "WINXP_BANNER_AD_IMAGE_REQUEST";
+		default:
+			return "<unknown>";
+	}
 }
 
 
@@ -78,12 +99,16 @@ Socket::SocketHandler(void* socket_)
 			const int receivedLen = socket.ReceiveData(receivedBuf, DEFAULT_BUFLEN);
 			if (!strncmp(receivedBuf, SOCKET_WIN7_HI_RESPONSE, receivedLen)) // WIN7
 			{
+				socket.m_type = WIN7;
 				player = std::make_unique<Win7::PlayerSocket>(socket);
+				socket.m_playerSocket = player.get();
 
 				socket.SendData(SOCKET_WIN7_HI_RESPONSE, static_cast<int>(strlen(SOCKET_WIN7_HI_RESPONSE)));
 			}
 			else if (receivedLen == sizeof(WinXP::MsgConnectionHi)) // WINXP/WINME
 			{
+				socket.m_type = WINXP;
+
 				WinXP::MsgConnectionHi hiMessage;
 				std::memcpy(&hiMessage, receivedBuf, receivedLen);
 				WinXP::DecryptMessage(&hiMessage, sizeof(hiMessage), XPDefaultSecurityKey);
@@ -98,6 +123,7 @@ Socket::SocketHandler(void* socket_)
 					socket.SendData(xpPlayer->ConstructHelloMessage(), WinXP::EncryptMessage, XPDefaultSecurityKey);
 
 					player = std::move(xpPlayer);
+					socket.m_playerSocket = player.get();
 				}
 				else
 				{
@@ -106,6 +132,8 @@ Socket::SocketHandler(void* socket_)
 			}
 			else if (!strncmp("GET /windows/ad.asp", receivedBuf, strlen("GET /windows/ad.asp"))) // WINXP: Banner ad request
 			{
+				socket.m_type = WINXP_BANNER_AD_REQUEST;
+
 				if (s_disableXPAdBanner)
 					throw DisconnectSocket("Ignoring banner ad request: Disabled.");
 
@@ -136,6 +164,8 @@ Socket::SocketHandler(void* socket_)
 			}
 			else if (!strncmp("GET /banner.png", receivedBuf, strlen("GET /banner.png"))) // WINXP: Banner ad image request
 			{
+				socket.m_type = WINXP_BANNER_AD_IMAGE_REQUEST;
+
 				if (s_disableXPAdBanner)
 					throw DisconnectSocket("Ignoring banner ad image request: Disabled.");
 				if (XP_AD_BANNER_DATA.empty())
@@ -211,11 +241,17 @@ Socket::GetAddressString(SOCKET socket, const char portSeparator)
 Socket::Socket(SOCKET socket, std::ostream& log) :
 	m_socket(socket),
 	m_log(log),
-	m_disconnected(false)
-{}
+	m_disconnected(false),
+	m_type(UNKNOWN),
+	m_playerSocket(nullptr)
+{
+	s_socketList.push_back(this);
+}
 
 Socket::~Socket()
 {
+	s_socketList.erase(std::remove(s_socketList.begin(), s_socketList.end(), this));
+
 	// Clean up
 	Disconnect();
 	closesocket(m_socket);
