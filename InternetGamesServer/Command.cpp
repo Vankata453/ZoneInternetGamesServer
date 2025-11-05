@@ -1,10 +1,14 @@
 #include "Command.hpp"
 
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
 
+#include "MatchManager.hpp"
 #include "Util.hpp"
+#include "Win7/Match.hpp"
+#include "WinXP/Match.hpp"
 
 DWORD WINAPI CommandHandler(void*)
 {
@@ -92,7 +96,35 @@ DWORD WINAPI CommandHandler(void*)
 		}
 		else if (StartsWith(cmd, "lm") || StartsWith(cmd, "LM") || StartsWith(cmd, "Lm") || StartsWith(cmd, "lM"))
 		{
-			std::cout << "TODO! List active matches" << std::endl;
+			std::cout
+				<< std::left << std::setw(8) << "Index"
+				<< std::setw(40) << "GUID"
+				<< std::setw(7) << "Type"
+				<< std::setw(25) << "State"
+				<< "Game" << std::endl
+				<< std::string(90, '-') << std::endl;
+			for (const auto& match : MatchManager::Get().GetMatchesWin7())
+			{
+				std::cout
+					<< std::right << std::setw(6) << match->GetIndex() << "  "
+					<< std::left << match->GetGUID() << "  "
+					<< std::setw(7) << "Win7"
+					<< std::setw(25) << Win7::Match::StateToString(match->GetState())
+					<< Win7::Match::GameToNameString(match->GetGame())
+						<< " (" << Win7::Match::LevelToString(match->GetLevel()) << ')'
+					<< std::endl;
+			}
+			for (const auto& match : MatchManager::Get().GetMatchesWinXP())
+			{
+				std::cout
+					<< std::right << std::setw(6) << match->GetIndex() << "  "
+					<< std::left << match->GetGUID() << "  "
+					<< std::setw(7) << "WinXP"
+					<< std::setw(25) << WinXP::Match::StateToString(match->GetState())
+					<< WinXP::Match::GameToNameString(match->GetGame())
+						<< " (" << WinXP::Match::SkillLevelToString(match->GetSkillLevel()) << ')'
+					<< std::endl;
+			}
 		}
 		else
 		{

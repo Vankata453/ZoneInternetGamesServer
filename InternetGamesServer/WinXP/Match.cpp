@@ -44,6 +44,42 @@ Match::GameToNameString(Match::Game game)
 	}
 }
 
+std::string
+Match::SkillLevelToString(Match::SkillLevel level)
+{
+	switch (level)
+	{
+	case SkillLevel::BEGINNER:
+		return "BEGINNER";
+	case SkillLevel::INTERMEDIATE:
+		return "INTERMEDIATE";
+	case SkillLevel::EXPERT:
+		return "EXPERT";
+	default:
+		return "<invalid>";
+	}
+}
+
+std::string
+Match::StateToString(Match::State state)
+{
+	switch (state)
+	{
+		case STATE_WAITINGFORPLAYERS:
+			return "STATE_WAITINGFORPLAYERS";
+		case STATE_PENDINGSTART:
+			return "STATE_PENDINGSTART";
+		case STATE_PLAYING:
+			return "STATE_PLAYING";
+		case STATE_GAMEOVER:
+			return "STATE_GAMEOVER";
+		case STATE_ENDED:
+			return "STATE_ENDED";
+		default:
+			return "<unknown>";
+	}
+}
+
 
 #define MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE 0 // DEBUG: If a player leaves a match, do not disconnect other players.
 

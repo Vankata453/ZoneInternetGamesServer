@@ -52,6 +52,42 @@ Match::LevelFromPublicELO(const std::string& str)
 	return Level::INVALID;
 }
 
+std::string
+Match::LevelToString(Match::Level level)
+{
+	switch (level)
+	{
+		case Level::BEGINNER:
+			return "BEGINNER";
+		case Level::INTERMEDIATE:
+			return "INTERMEDIATE";
+		case Level::EXPERT:
+			return "EXPERT";
+		default:
+			return "<invalid>";
+	}
+}
+
+std::string
+Match::StateToString(Match::State state)
+{
+	switch (state)
+	{
+		case STATE_WAITINGFORPLAYERS:
+			return "STATE_WAITINGFORPLAYERS";
+		case STATE_PENDINGSTART:
+			return "STATE_PENDINGSTART";
+		case STATE_PLAYING:
+			return "STATE_PLAYING";
+		case STATE_GAMEOVER:
+			return "STATE_GAMEOVER";
+		case STATE_ENDED:
+			return "STATE_ENDED";
+		default:
+			return "<unknown>";
+	}
+}
+
 
 Match::QueuedEvent::QueuedEvent(const std::string& xml_, bool includeSender_) :
 	xml(xml_),

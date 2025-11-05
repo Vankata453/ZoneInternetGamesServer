@@ -29,6 +29,7 @@ public:
 		INTERMEDIATE,
 		EXPERT
 	};
+	static std::string SkillLevelToString(SkillLevel level);
 
 	enum State {
 		STATE_WAITINGFORPLAYERS,
@@ -37,6 +38,7 @@ public:
 		STATE_GAMEOVER,
 		STATE_ENDED
 	};
+	static std::string StateToString(State state);
 
 public:
 	Match(unsigned int index, PlayerSocket& player);

@@ -197,6 +197,7 @@ std::vector<int> GenerateUniqueRandomNums(int start, int end)
 // From https://stackoverflow.com/a/26805225
 std::ostream& operator<<(std::ostream& os, REFGUID guid)
 {
+	os.width(0);
 	os.fill(0);
 	os << std::uppercase;
 	os << '{';
