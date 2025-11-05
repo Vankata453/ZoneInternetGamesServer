@@ -30,7 +30,8 @@ std::ostream& SessionLog()
 
 void FlushSessionLog()
 {
-	s_sessionLog->flush();
+	if (s_sessionLog)
+		s_sessionLog->flush();
 }
 
 /** String utilities */
