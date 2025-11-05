@@ -12,7 +12,7 @@ namespace WinXP {
 class HeartsMatch final : public Match
 {
 public:
-	HeartsMatch(PlayerSocket& player);
+	HeartsMatch(unsigned int index, PlayerSocket& player);
 
 	int8_t GetRequiredPlayerCount() const override { return HeartsNumPlayers; }
 	Game GetGame() const override { return Game::HEARTS; }

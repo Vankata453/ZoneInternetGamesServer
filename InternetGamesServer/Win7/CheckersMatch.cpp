@@ -7,8 +7,8 @@ namespace Win7 {
 
 #define CheckersInvertRole(role) (role == 0 ? 1 : 0)
 
-CheckersMatch::CheckersMatch(PlayerSocket& player) :
-	Match(player),
+CheckersMatch::CheckersMatch(unsigned int index, PlayerSocket& player) :
+	Match(index, player),
 	m_playerCheckersLeft({ 12, 12 }),
 	m_drawOfferedBy(-1)
 {}

@@ -12,7 +12,7 @@ namespace Win7 {
 class BackgammonMatch final : public Match
 {
 public:
-	BackgammonMatch(PlayerSocket& player);
+	BackgammonMatch(unsigned int index, PlayerSocket& player);
 
 	Game GetGame() const override { return Game::BACKGAMMON; }
 

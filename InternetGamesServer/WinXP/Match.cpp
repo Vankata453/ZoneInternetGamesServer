@@ -47,8 +47,8 @@ Match::GameToNameString(Match::Game game)
 
 #define MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE 0 // DEBUG: If a player leaves a match, do not disconnect other players.
 
-Match::Match(PlayerSocket& player) :
-	::Match<PlayerSocket>(player),
+Match::Match(unsigned int index, PlayerSocket& player) :
+	::Match<PlayerSocket>(index, player),
 	m_state(STATE_WAITINGFORPLAYERS),
 	m_skillLevel(player.GetSkillLevel()),
 	m_processMessageMutex(CreateMutex(nullptr, false, nullptr)),

@@ -11,7 +11,7 @@ namespace WinXP {
 class ReversiMatch final : public Match
 {
 public:
-	ReversiMatch(PlayerSocket& player);
+	ReversiMatch(unsigned int index, PlayerSocket& player);
 
 	Game GetGame() const override { return Game::REVERSI; }
 

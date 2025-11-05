@@ -13,8 +13,8 @@ namespace Win7 {
 #define BackgammonIsStoneIdxPlayer0(stoneIdx) (stoneIdx < BackgammonPlayerStones)
 #define BackgammonIsStoneIdxPlayer1(stoneIdx) (stoneIdx >= BackgammonPlayerStones && stoneIdx < BackgammonPlayerStones * 2)
 
-BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
-	Match(player),
+BackgammonMatch::BackgammonMatch(unsigned int index, PlayerSocket& player) :
+	Match(index, player),
 	m_playerPoints(),
 	m_crawfordGame(),
 	m_stones(),

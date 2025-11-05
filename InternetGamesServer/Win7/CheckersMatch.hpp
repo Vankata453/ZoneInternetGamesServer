@@ -9,7 +9,7 @@ namespace Win7 {
 class CheckersMatch final : public Match
 {
 public:
-	CheckersMatch(PlayerSocket& player);
+	CheckersMatch(unsigned int index, PlayerSocket& player);
 
 	Game GetGame() const override { return Game::CHECKERS; }
 

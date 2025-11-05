@@ -8,8 +8,8 @@ namespace WinXP {
 #define XPCheckersInvertSeat(seat) (seat == 0 ? 1 : 0)
 #define XPCheckersIsSeatHost(seat) (seat == 0)
 
-CheckersMatch::CheckersMatch(PlayerSocket& player) :
-	Match(player),
+CheckersMatch::CheckersMatch(unsigned int index, PlayerSocket& player) :
+	Match(index, player),
 	m_matchState(MatchState::AWAITING_START),
 	m_playersCheckedIn({ false, false }),
 	m_playerCheckInMsgs(),

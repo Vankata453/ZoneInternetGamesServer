@@ -48,6 +48,8 @@ private:
 private:
 	HANDLE m_mutex; // Mutex to prevent simultaneous updating and creation of matches
 
+	unsigned int m_lastMatchIndex;
+
 	std::vector<std::unique_ptr<Win7::Match>> m_matches_win7;
 	std::vector<std::unique_ptr<WinXP::Match>> m_matches_winxp;
 

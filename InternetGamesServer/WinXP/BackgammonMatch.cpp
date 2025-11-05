@@ -11,8 +11,8 @@ namespace WinXP {
 #define XPBackgammonIsSeatHost(seat) (seat == 0)
 #define XPBackgammonMatchStateToNumString(state) std::to_string(static_cast<int>(state))
 
-BackgammonMatch::BackgammonMatch(PlayerSocket& player) :
-	Match(player),
+BackgammonMatch::BackgammonMatch(unsigned int index, PlayerSocket& player) :
+	Match(index, player),
 	m_matchState(MatchState::INITIALIZING),
 	m_playerStates({ MatchPlayerState::AWAITING_CHECKIN, MatchPlayerState::AWAITING_CHECKIN }),
 	m_playerCheckInMsgs(),

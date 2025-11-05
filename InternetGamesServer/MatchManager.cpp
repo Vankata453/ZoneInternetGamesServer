@@ -36,6 +36,7 @@ bool MatchManager::s_skipLevelMatching = false;
 
 MatchManager::MatchManager() :
 	m_mutex(CreateMutex(nullptr, false, nullptr)),
+	m_lastMatchIndex(0),
 	m_matches_win7(),
 	m_matches_winxp()
 {
@@ -179,15 +180,15 @@ MatchManager::CreateLobby(Win7::PlayerSocket& player)
 			switch (player.GetGame())
 			{
 				case Win7::Match::Game::BACKGAMMON:
-					m_matches_win7.push_back(std::make_unique<Win7::BackgammonMatch>(player));
+					m_matches_win7.push_back(std::make_unique<Win7::BackgammonMatch>(++m_lastMatchIndex, player));
 					break;
 
 				case Win7::Match::Game::CHECKERS:
-					m_matches_win7.push_back(std::make_unique<Win7::CheckersMatch>(player));
+					m_matches_win7.push_back(std::make_unique<Win7::CheckersMatch>(++m_lastMatchIndex, player));
 					break;
 
 				case Win7::Match::Game::SPADES:
-					m_matches_win7.push_back(std::make_unique<Win7::SpadesMatch>(player));
+					m_matches_win7.push_back(std::make_unique<Win7::SpadesMatch>(++m_lastMatchIndex, player));
 					break;
 
 				default:
@@ -216,23 +217,23 @@ MatchManager::CreateLobby(WinXP::PlayerSocket& player)
 			switch (player.GetGame())
 			{
 				case WinXP::Match::Game::BACKGAMMON:
-					m_matches_winxp.push_back(std::make_unique<WinXP::BackgammonMatch>(player));
+					m_matches_winxp.push_back(std::make_unique<WinXP::BackgammonMatch>(++m_lastMatchIndex, player));
 					break;
 
 				case WinXP::Match::Game::CHECKERS:
-					m_matches_winxp.push_back(std::make_unique<WinXP::CheckersMatch>(player));
+					m_matches_winxp.push_back(std::make_unique<WinXP::CheckersMatch>(++m_lastMatchIndex, player));
 					break;
 
 				case WinXP::Match::Game::SPADES:
-					m_matches_winxp.push_back(std::make_unique<WinXP::SpadesMatch>(player));
+					m_matches_winxp.push_back(std::make_unique<WinXP::SpadesMatch>(++m_lastMatchIndex, player));
 					break;
 
 				case WinXP::Match::Game::HEARTS:
-					m_matches_winxp.push_back(std::make_unique<WinXP::HeartsMatch>(player));
+					m_matches_winxp.push_back(std::make_unique<WinXP::HeartsMatch>(++m_lastMatchIndex, player));
 					break;
 
 				case WinXP::Match::Game::REVERSI:
-					m_matches_winxp.push_back(std::make_unique<WinXP::ReversiMatch>(player));
+					m_matches_winxp.push_back(std::make_unique<WinXP::ReversiMatch>(++m_lastMatchIndex, player));
 					break;
 
 				default:

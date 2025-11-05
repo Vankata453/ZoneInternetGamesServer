@@ -30,8 +30,8 @@ static bool IsValidZPACardValue(uint16_t value)
 
 namespace Win7 {
 
-SpadesMatch::SpadesMatch(PlayerSocket& player) :
-	Match(player),
+SpadesMatch::SpadesMatch(unsigned int index, PlayerSocket& player) :
+	Match(index, player),
 	m_matchState(MatchState::BIDDING),
 	m_teamPoints({ 0, 0 }),
 	m_teamBags({ 0, 0 }),

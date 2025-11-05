@@ -8,8 +8,8 @@ namespace WinXP {
 #define XPReversiInvertSeat(seat) (seat == 0 ? 1 : 0)
 #define XPReversiIsSeatHost(seat) (seat == 0)
 
-ReversiMatch::ReversiMatch(PlayerSocket& player) :
-	Match(player),
+ReversiMatch::ReversiMatch(unsigned int index, PlayerSocket& player) :
+	Match(index, player),
 	m_matchState(MatchState::AWAITING_START),
 	m_playersCheckedIn({ false, false }),
 	m_playerCheckInMsgs(),

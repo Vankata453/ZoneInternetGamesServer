@@ -39,7 +39,7 @@ public:
 	};
 
 public:
-	Match(PlayerSocket& player);
+	Match(unsigned int index, PlayerSocket& player);
 	~Match() override;
 
 	void JoinPlayer(PlayerSocket& player);

@@ -66,8 +66,8 @@ Match::QueuedEvent::QueuedEvent(const std::string& xml_, const std::string& xmlS
 {}
 
 
-Match::Match(PlayerSocket& player) :
-	::Match<PlayerSocket>(player),
+Match::Match(unsigned int index, PlayerSocket& player) :
+	::Match<PlayerSocket>(index, player),
 	m_state(STATE_WAITINGFORPLAYERS),
 	m_level(player.GetLevel()),
 	m_eventMutex(CreateMutex(nullptr, false, nullptr)),

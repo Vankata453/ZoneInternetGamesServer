@@ -11,7 +11,7 @@ using namespace ::Spades;
 class SpadesMatch final : public Match
 {
 public:
-	SpadesMatch(PlayerSocket& player);
+	SpadesMatch(unsigned int index, PlayerSocket& player);
 
 	int8_t GetRequiredPlayerCount() const override { return SpadesNumPlayers; }
 	Game GetGame() const override { return Game::SPADES; }

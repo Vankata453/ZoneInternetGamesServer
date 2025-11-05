@@ -23,8 +23,8 @@ namespace WinXP {
 
 static const std::uniform_int_distribution<> s_playerDistribution(0, 3);
 
-SpadesMatch::SpadesMatch(PlayerSocket& player) :
-	Match(player),
+SpadesMatch::SpadesMatch(unsigned int index, PlayerSocket& player) :
+	Match(index, player),
 	m_matchState(),
 	m_playersCheckedIn({}),
 	m_playerCards(),

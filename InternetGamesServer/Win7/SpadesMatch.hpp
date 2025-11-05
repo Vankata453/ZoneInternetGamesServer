@@ -13,7 +13,7 @@ constexpr uint16_t ZPA_UNSET_CARD = 0xFFFF;
 class SpadesMatch final : public Match
 {
 public:
-	SpadesMatch(PlayerSocket& player);
+	SpadesMatch(unsigned int index, PlayerSocket& player);
 
 	Game GetGame() const override { return Game::SPADES; }
 	int8_t GetRequiredPlayerCount() const override { return 4; }

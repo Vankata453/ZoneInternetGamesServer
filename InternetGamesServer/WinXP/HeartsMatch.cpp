@@ -129,8 +129,8 @@ HeartsMatch::CardTrick::GetPoints() const
 }
 
 
-HeartsMatch::HeartsMatch(PlayerSocket& player) :
-	Match(player),
+HeartsMatch::HeartsMatch(unsigned int index, PlayerSocket& player) :
+	Match(index, player),
 	m_matchState(),
 	m_playersCheckedIn({}),
 	m_playerCards(),

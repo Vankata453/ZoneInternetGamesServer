@@ -16,8 +16,9 @@ template<typename P>
 class Match
 {
 public:
-	Match(P& player) :
+	Match(unsigned int index, P& player) :
 		m_guid(),
+		m_index(index),
 		m_creationTime(std::time(nullptr)),
 		m_players()
 	{
@@ -27,6 +28,7 @@ public:
 	virtual ~Match() = default;
 
 	virtual int8_t GetRequiredPlayerCount() const { return 2; }
+	inline unsigned int GetIndex() const { return m_index; }
 	inline REFGUID GetGUID() const { return m_guid; }
 
 protected:
@@ -44,6 +46,7 @@ protected:
 
 protected:
 	const GUID m_guid;
+	const unsigned int m_index;
 	const std::time_t m_creationTime;
 
 	std::vector<P*> m_players;
