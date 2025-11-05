@@ -39,6 +39,8 @@ public:
 	/** Update the logic of all matches */
 	void Update();
 
+	GUID DestroyMatch(unsigned int index);
+
 	/** Find a lobby (pending match) to join a player in, based on their game.
 		If none is available, create one. */
 	Win7::Match* FindLobby(Win7::PlayerSocket& player);

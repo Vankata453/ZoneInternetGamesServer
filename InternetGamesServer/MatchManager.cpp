@@ -100,6 +100,28 @@ MatchManager::Update()
 	}
 }
 
+GUID
+MatchManager::DestroyMatch(unsigned int index)
+{
+	auto it7 = std::remove_if(m_matches_win7.begin(), m_matches_win7.end(),
+		[index](const auto& m) { return m->GetIndex() == index; });
+	if (it7 == m_matches_win7.end())
+	{
+		auto itXP = std::remove_if(m_matches_winxp.begin(), m_matches_winxp.end(),
+			[index](const auto& m) { return m->GetIndex() == index; });
+		if (itXP != m_matches_winxp.end())
+		{
+			const GUID guid = (*itXP)->GetGUID();
+			m_matches_winxp.erase(itXP);
+			return guid;
+		}
+		throw std::runtime_error("No match with index " + std::to_string(index));
+	}
+	const GUID guid = (*it7)->GetGUID();
+	m_matches_win7.erase(it7);
+	return guid;
+}
+
 
 Win7::Match*
 MatchManager::FindLobby(Win7::PlayerSocket& player)
