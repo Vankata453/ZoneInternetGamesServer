@@ -35,6 +35,9 @@ private:
 public:
 	static inline const std::vector<Socket*>& GetList() { return s_socketList; }
 
+	static std::vector<Socket*> GetSocketsByIP(const std::string& ip);
+	static Socket* GetSocketByIP(const std::string& ip, USHORT port);
+
 	// Handler for the thread of a socket
 	static DWORD WINAPI SocketHandler(void* socket);
 

@@ -37,7 +37,8 @@ DWORD WINAPI CommandHandler(void*)
 					<< "  - 'c {key} {value}': Prints or configures the option with the specified key. For a list of valid options, type 'c'." << std::endl
 					<< "  - 'lc': Lists all connected client sockets." << std::endl
 					<< "  - 'lm': Lists all active matches." << std::endl
-					<< "  - 'k {ip}': Kicks any connected client sockets, originating from the provided IP." << std::endl
+					<< "  - 'k {ip}:{port [optional]}': Kicks any connected client sockets, originating from the provided IP and port." << std::endl
+					<< "                                If no port is specified, any clients that originate from the IP will be kicked." << std::endl
 					<< "  - 'b {ip}': Bans any client sockets, originating from the provided IP, from connecting to this server." << std::endl
 					<< "  - 'd {index}': Destroys (disbands) the match with the specified index." << std::endl;
 			}
@@ -61,15 +62,36 @@ DWORD WINAPI CommandHandler(void*)
 			}
 			else if (cmd[0] == 'k' || cmd[0] == 'K')
 			{
-				std::string ip;
-				inputStr >> ip;
-				if (ip.empty())
+				std::string address;
+				inputStr >> address;
+				if (address.empty())
 				{
-					std::cout << "No client IP provided!" << std::endl;
+					std::cout << "No client address provided!" << std::endl;
 					continue;
 				}
-
-				std::cout << "TODO! Kick " << ip << std::endl;
+				std::stringstream addrStr(address);
+				std::string ip, portStr;
+				std::getline(addrStr, ip, ':');
+				if (std::getline(addrStr, portStr, ':'))
+				{
+					const USHORT port = static_cast<USHORT>(std::stoi(portStr));
+					Socket* socket = Socket::GetSocketByIP(ip, port);
+					if (!socket)
+						throw std::runtime_error("No socket with IP \"" + ip + "\" and port " + std::to_string(port) + " found!");
+					socket->Disconnect();
+					std::cout << "Disconnected socket \"" << socket->GetAddressString() << "\"!" << std::endl;
+				}
+				else
+				{
+					const std::vector<Socket*> sockets = Socket::GetSocketsByIP(ip);
+					if (sockets.empty())
+						throw std::runtime_error("No sockets with IP \"" + ip + "\" found!");
+					for (Socket* socket : sockets)
+					{
+						socket->Disconnect();
+						std::cout << "Disconnected socket \"" << socket->GetAddressString() << "\"!" << std::endl;
+					}
+				}
 			}
 			else if (cmd[0] == 'b' || cmd[0] == 'B')
 			{

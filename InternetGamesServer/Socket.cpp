@@ -237,6 +237,36 @@ Socket::GetAddressString(SOCKET socket, const char portSeparator)
 }
 
 
+std::vector<Socket*>
+Socket::GetSocketsByIP(const std::string& ip)
+{
+	sockaddr_in socketInfo;
+	int socketInfoSize = sizeof(socketInfo);
+
+	std::vector<Socket*> sockets;
+	for (Socket* socket : s_socketList)
+	{
+		if (socket->m_ip == ip)
+			sockets.push_back(socket);
+	}
+	return sockets;
+}
+
+Socket*
+Socket::GetSocketByIP(const std::string& ip, USHORT port)
+{
+	sockaddr_in socketInfo;
+	int socketInfoSize = sizeof(socketInfo);
+
+	for (Socket* socket : s_socketList)
+	{
+		if (socket->m_ip == ip && socket->m_port == port)
+			return socket;
+	}
+	return nullptr;
+}
+
+
 Socket::Socket(SOCKET socket, std::ostream& log) :
 	m_socket(socket),
 	m_log(log),
