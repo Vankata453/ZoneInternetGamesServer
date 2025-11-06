@@ -188,16 +188,25 @@ public:
 	}
 
 	inline SOCKET GetRaw() const { return m_socket; }
-	inline std::string GetAddressString() const { return GetAddressString(m_socket); }
 	inline bool IsDisconnected() const { return m_disconnected; }
 	inline std::time_t GetConnectionTime() const { return m_connectionTime; }
 	inline Type GetType() const { return m_type; }
 	inline PlayerSocket* GetPlayerSocket() const { return m_playerSocket; }
 
+	inline std::string GetIP() const { return m_ip; }
+	inline USHORT GetPort() const { return m_port; }
+	inline std::string GetAddressString(const char portSeparator = ':') const
+	{
+		return m_ip + portSeparator + std::to_string(m_port);
+	}
+
 private:
 	const SOCKET m_socket;
 	std::ostream& m_log;
 	const std::time_t m_connectionTime;
+
+	const std::string m_ip;
+	const USHORT m_port;
 
 	bool m_disconnected;
 

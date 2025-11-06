@@ -229,7 +229,6 @@ Socket::GetAddressString(SOCKET socket, const char portSeparator)
 {
 	sockaddr_in socketInfo;
 	int socketInfoSize = sizeof(socketInfo);
-
 	getpeername(socket, reinterpret_cast<sockaddr*>(&socketInfo), &socketInfoSize);
 
 	std::stringstream stream;
@@ -242,10 +241,19 @@ Socket::Socket(SOCKET socket, std::ostream& log) :
 	m_socket(socket),
 	m_log(log),
 	m_connectionTime(std::time(nullptr)),
+	m_ip(),
+	m_port(),
 	m_disconnected(false),
 	m_type(UNKNOWN),
 	m_playerSocket(nullptr)
 {
+	sockaddr_in socketInfo;
+	int socketInfoSize = sizeof(socketInfo);
+	getpeername(socket, reinterpret_cast<sockaddr*>(&socketInfo), &socketInfoSize);
+
+	const_cast<std::string&>(m_ip) = inet_ntoa(socketInfo.sin_addr);
+	const_cast<USHORT&>(m_port) = ntohs(socketInfo.sin_port);
+
 	s_socketList.push_back(this);
 }
 
