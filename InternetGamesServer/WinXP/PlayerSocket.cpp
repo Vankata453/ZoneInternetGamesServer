@@ -58,7 +58,7 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 
 PlayerSocket::~PlayerSocket()
 {
-	if (!m_socket.IsDisconnected())
+	if (!IsDisconnected())
 		OnDisconnected();
 
 	CloseHandle(m_acceptsGameMessagesEvent);

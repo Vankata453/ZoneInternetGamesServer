@@ -41,7 +41,7 @@ PlayerSocket::PlayerSocket(Socket& socket) :
 
 PlayerSocket::~PlayerSocket()
 {
-	if (!m_socket.IsDisconnected())
+	if (!IsDisconnected())
 		OnDisconnected();
 }
 

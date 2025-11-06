@@ -7,7 +7,8 @@
 #include "Util.hpp"
 
 PlayerSocket::PlayerSocket(Socket& socket) :
-	m_socket(socket)
+	m_socket(socket),
+	m_disconnected(false)
 {
 }
 
@@ -15,8 +16,10 @@ PlayerSocket::PlayerSocket(Socket& socket) :
 void
 PlayerSocket::Disconnect()
 {
-	if (m_socket.IsDisconnected())
+	if (m_disconnected)
 		return;
+
+	m_disconnected = true; // Set early on to prevent another thread from disconnecting this socket again.
 
 	OnDisconnected();
 	m_socket.Disconnect();

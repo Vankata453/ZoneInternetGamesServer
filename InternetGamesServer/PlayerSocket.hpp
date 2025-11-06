@@ -19,12 +19,15 @@ public:
 
 	inline Socket::Type GetType() const { return m_socket.GetType(); }
 	inline std::string GetAddressString() const { return m_socket.GetAddressString(); }
+	inline bool IsDisconnected() const { return m_disconnected; }
 
 protected:
 	virtual void OnDisconnected() {}
 
 protected:
 	Socket& m_socket;
+
+	bool m_disconnected;
 
 private:
 	PlayerSocket(const PlayerSocket&) = delete;
