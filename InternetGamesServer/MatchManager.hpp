@@ -27,9 +27,6 @@ public:
 	static DWORD WINAPI UpdateHandler(void*);
 
 public:
-	static bool s_skipLevelMatching; // DEBUG: When searching for a lobby, don't take the match level into account
-
-public:
 	MatchManager();
 	~MatchManager();
 

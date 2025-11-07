@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 
+#include "Config.hpp"
 #include "MatchManager.hpp"
 #include "Socket.hpp"
 #include "Util.hpp"
@@ -34,7 +35,7 @@ DWORD WINAPI CommandHandler(void*)
 			if (cmd[0] == '?' || cmd[0] == 'h' || cmd[0] == 'H')
 			{
 				std::cout << "List of commands:" << std::endl
-					<< "  - 'c {key} {value}': Prints or configures the option with the specified key. For a list of valid options, type 'c'." << std::endl
+					<< "  - 'c {key} {value [optional]}': Prints or configures the option with the specified key. For a list of valid options, type 'c'." << std::endl
 					<< "  - 'lc': Lists all connected client sockets." << std::endl
 					<< "  - 'lm': Lists all active matches." << std::endl
 					<< "  - 'k {ip}:{port [optional]}': Kicks any connected client sockets, originating from the provided IP and port." << std::endl
@@ -48,17 +49,18 @@ DWORD WINAPI CommandHandler(void*)
 				inputStr >> key >> value;
 				if (key.empty())
 				{
-					std::cout << "List of options:" << std::endl
-						<< "  - TODO! List options" << std::endl;
+					std::cout << "List of options:" << std::endl;
+					for (const auto& optionKey : Config::s_optionKeys)
+						std::cout << "  - \"" << optionKey.first << "\": " << optionKey.second << std::endl;
 					continue;
 				}
 				if (value.empty())
 				{
-					std::cout << "TODO! Show value of " << key << std::endl;
+					std::cout << '"' << g_config.GetValue(key) << '"' << std::endl;
 					continue;
 				}
 
-				std::cout << "TODO! Configure " << key << " " << value << std::endl;
+				g_config.SetValue(key, value);
 			}
 			else if (cmd[0] == 'k' || cmd[0] == 'K')
 			{
@@ -220,7 +222,7 @@ DWORD WINAPI CommandHandler(void*)
 		}
 		catch (const std::exception& err)
 		{
-			std::cout << "ERROR: " << err.what() << std::endl;
+			std::cout << err.what() << std::endl;
 		}
 	}
 

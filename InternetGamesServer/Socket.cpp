@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "Config.hpp"
 #include "Resource.h"
 #include "Util.hpp"
 #include "Win7/PlayerSocket.hpp"
@@ -19,17 +20,11 @@
 static const char* SOCKET_WIN7_HI_RESPONSE = "STADIUM/2.0\r\n";
 static const std::vector<BYTE> XP_AD_BANNER_DATA = {};
 
-std::string Socket::s_logsDirectory = "";
-bool Socket::s_logPingMessages = false;
-bool Socket::s_disableXPAdBanner = false;
-
 std::vector<Socket*> Socket::s_socketList = {};
 
 
 void LoadXPAdBannerImage()
 {
-	if (Socket::s_disableXPAdBanner) return;
-
 	HINSTANCE hInstance = GetModuleHandle(NULL);
 	HRSRC hRes = FindResource(hInstance, MAKEINTRESOURCE(IDB_XP_AD_BANNER), L"PNG");
 	if (!hRes) return;
@@ -74,14 +69,14 @@ Socket::SocketHandler(void* socket_)
 
 	// Open a stream to log Socket events to
 	std::unique_ptr<std::ostream> logStream;
-	if (s_logsDirectory.empty())
+	if (g_config.logsDirectory.empty())
 	{
 		logStream = std::make_unique<NullStream>();
 	}
 	else
 	{
 		std::ostringstream logFileName;
-		logFileName << s_logsDirectory << "\\SOCKET_" << GetAddressString(rawSocket, '_')
+		logFileName << g_config.logsDirectory << "\\SOCKET_" << GetAddressString(rawSocket, '_')
 			<< "_" << std::time(nullptr) << ".txt";
 
 		logStream = std::make_unique<std::ofstream>(logFileName.str());
@@ -134,7 +129,7 @@ Socket::SocketHandler(void* socket_)
 			{
 				socket.m_type = WINXP_BANNER_AD_REQUEST;
 
-				if (s_disableXPAdBanner)
+				if (g_config.disableXPAdBanner)
 					throw DisconnectSocket("Ignoring banner ad request: Disabled.");
 
 				// Example of an old ad page: https://web.archive.org/web/20020205100250id_/http://zone.msn.com/windows/ad.asp
@@ -166,7 +161,7 @@ Socket::SocketHandler(void* socket_)
 			{
 				socket.m_type = WINXP_BANNER_AD_IMAGE_REQUEST;
 
-				if (s_disableXPAdBanner)
+				if (g_config.disableXPAdBanner)
 					throw DisconnectSocket("Ignoring banner ad image request: Disabled.");
 				if (XP_AD_BANNER_DATA.empty())
 					throw std::runtime_error("No banner ad image found!");
@@ -360,7 +355,7 @@ Socket::ReceiveData()
 			receivedEntries.push_back(StringSplit(std::move(receivedLine), "&")); // Split data by "&" for easier parsing in certain cases
 		}
 
-		if (!s_logPingMessages && receivedEntries.empty())
+		if (!g_config.logPingMessages && receivedEntries.empty())
 			return {};
 
 		m_log << "[RECEIVED]: " << std::endl;

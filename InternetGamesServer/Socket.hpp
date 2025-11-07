@@ -15,10 +15,6 @@ void LoadXPAdBannerImage();
 class Socket final
 {
 public:
-	static std::string s_logsDirectory;
-	static bool s_logPingMessages; // DEBUG: Log empty ping messages from sockets
-	static bool s_disableXPAdBanner;
-
 	enum Type
 	{
 		UNKNOWN,

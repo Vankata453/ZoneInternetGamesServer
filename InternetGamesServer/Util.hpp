@@ -76,12 +76,15 @@ public:
 tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, std::string text);
 inline tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, const char* text)
 {
-	NewElementWithText(root, name, std::string(text));
+	return NewElementWithText(root, name, std::string(text));
 };
 template<typename T>
 inline tinyxml2::XMLElement* NewElementWithText(tinyxml2::XMLElement* root, const std::string& name, T val)
 {
-	NewElementWithText(root, name, std::to_string(val));
+	tinyxml2::XMLElement* el = root->GetDocument()->NewElement(name.c_str());
+	el->SetText(val);
+	root->InsertEndChild(el);
+	return el;
 };
 
 void NewElementWithText(XMLPrinter& printer, const std::string& name, std::string text);
@@ -92,7 +95,11 @@ inline void NewElementWithText(XMLPrinter& printer, const std::string& name, con
 template<typename T>
 inline void NewElementWithText(XMLPrinter& printer, const std::string& name, T val)
 {
-	NewElementWithText(printer, name, std::to_string(val));
+	const std::string text = std::to_string(val);
+
+	printer.OpenElement(name);
+	printer.PushText(text.c_str());
+	printer.CloseElement(name);
 };
 
 /** Random generation */

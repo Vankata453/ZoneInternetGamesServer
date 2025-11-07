@@ -9,58 +9,62 @@
 #include <fstream>
 
 #include "Command.hpp"
+#include "Config.hpp"
 #include "MatchManager.hpp"
 #include "Socket.hpp"
 #include "Util.hpp"
 
-#define DEFAULT_PORT "28805"
-#define DEFAULT_LOGS_DIRECTORY "InternetGamesServer_logs"
+#define DEFAULT_CONFIG_FILE "InternetGamesServer.config"
 
 int main(int argc, char* argv[])
 {
-	PCSTR port = DEFAULT_PORT;
+	std::string argConfigFile = DEFAULT_CONFIG_FILE;
+	const char* argPort = nullptr;
 
 	// Process arguments
 	for (int i = 1; i < argc; ++i)
 	{
-		if (!strcmp(argv[i], "-p") || !strcmp(argv[i], "--port"))
+		if (!strcmp(argv[i], "-c") || !strcmp(argv[i], "--config"))
 		{
 			if (argc < i + 2 || argv[i + 1][0] == '-')
 			{
-				SessionLog() << "ERROR: Port number must be provided after \"-p\" or \"--port\"." << std::endl;
+				std::cout << "Config file must be specified after \"-c\" or \"--config\"." << std::endl;
 				return -1;
 			}
-			port = argv[++i];
+			argConfigFile = argv[++i];
 		}
-		else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--log"))
+		else if (!strcmp(argv[i], "-p") || !strcmp(argv[i], "--port"))
 		{
-			if (!Socket::s_logsDirectory.empty())
-				continue;
-
-			Socket::s_logsDirectory = (argc >= i + 2 && argv[i + 1][0] != '-' ? argv[++i] : DEFAULT_LOGS_DIRECTORY);
-			CreateNestedDirectories(Socket::s_logsDirectory);
+			if (argc < i + 2 || argv[i + 1][0] == '-')
+			{
+				std::cout << "Port number must be provided after \"-p\" or \"--port\"." << std::endl;
+				return -1;
+			}
+			argPort = argv[++i];
 		}
-		else if (!strcmp(argv[i], "--skip-level-matching"))
+		else
 		{
-			MatchManager::s_skipLevelMatching = true;
-		}
-		else if (!strcmp(argv[i], "--log-ping-messages"))
-		{
-			Socket::s_logPingMessages = true;
-		}
-		else if (!strcmp(argv[i], "--disable-xp-ad-banner"))
-		{
-			Socket::s_disableXPAdBanner = true;
+			std::cout << "Invalid argument \"" << argv[i] << "\"!" << std::endl;
+			return -1;
 		}
 	}
 
+	g_config.Load(argConfigFile);
+	if (argPort)
+	{
+		g_config.port = static_cast<USHORT>(std::stoi(argPort));
+		g_config.Save();
+	}
+
+	//if (!g_config.logsDirectory.empty())
+		//CreateNestedDirectories(g_config.logsDirectory);
 	LoadXPAdBannerImage();
 
 	// Open session log file stream, if logging is enabled
-	if (!Socket::s_logsDirectory.empty())
+	if (!g_config.logsDirectory.empty())
 	{
 		std::ostringstream logFileName;
-		logFileName << Socket::s_logsDirectory << "\\SESSION_" << std::time(nullptr) << ".txt";
+		logFileName << g_config.logsDirectory << "\\SESSION_" << std::time(nullptr) << ".txt";
 
 		auto stream = std::make_unique<std::ofstream>(logFileName.str());
 		if (!stream->is_open())
@@ -100,7 +104,8 @@ int main(int argc, char* argv[])
 	hints.ai_flags = AI_PASSIVE;
 
 	// Resolve the local address and port to be used by the server
-	HRESULT addrResult = getaddrinfo(NULL, port, &hints, &result);
+	const std::string portStr = std::to_string(g_config.port);
+	HRESULT addrResult = getaddrinfo(NULL, portStr.c_str(), &hints, &result);
 	if (addrResult != 0)
 	{
 		std::ostringstream err;
@@ -143,7 +148,7 @@ int main(int argc, char* argv[])
 
 	{
 		std::ostringstream out;
-		out << "[MAIN] Listening on port " << port << "!" << std::endl << std::endl;
+		out << "[MAIN] Listening on port " << portStr << "!" << std::endl << std::endl;
 		std::cout << out.str();
 		SessionLog() << out.str();
 	}

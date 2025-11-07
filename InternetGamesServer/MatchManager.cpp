@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <synchapi.h>
 
+#include "Config.hpp"
 #include "Util.hpp"
 #include "Win7/BackgammonMatch.hpp"
 #include "Win7/CheckersMatch.hpp"
@@ -31,8 +32,6 @@ MatchManager::UpdateHandler(void*)
 	return 0;
 }
 
-
-bool MatchManager::s_skipLevelMatching = false;
 
 MatchManager::MatchManager() :
 	m_mutex(CreateMutex(nullptr, false, nullptr)),
@@ -134,7 +133,7 @@ MatchManager::FindLobby(Win7::PlayerSocket& player)
 	{
 		if (match->GetState() == Win7::Match::STATE_WAITINGFORPLAYERS &&
 			match->GetGame() == player.GetGame() &&
-			(s_skipLevelMatching || match->GetLevel() == player.GetLevel()))
+			(g_config.skipLevelMatching || match->GetLevel() == player.GetLevel()))
 		{
 			targetMatch = match.get();
 			break;
@@ -168,7 +167,7 @@ MatchManager::FindLobby(WinXP::PlayerSocket& player)
 	{
 		if (match->GetState() == WinXP::Match::STATE_WAITINGFORPLAYERS &&
 			match->GetGame() == player.GetGame() &&
-			(s_skipLevelMatching || match->GetSkillLevel() == player.GetSkillLevel()))
+			(g_config.skipLevelMatching || match->GetSkillLevel() == player.GetSkillLevel()))
 		{
 			targetMatch = match.get();
 			break;
