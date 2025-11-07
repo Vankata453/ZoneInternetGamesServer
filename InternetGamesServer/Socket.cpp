@@ -133,14 +133,14 @@ Socket::SocketHandler(void* socket_)
 					throw DisconnectSocket("Ignoring banner ad request: Disabled.");
 
 				// Example of an old ad page: https://web.archive.org/web/20020205100250id_/http://zone.msn.com/windows/ad.asp
-				// The banner.png image will be returned by this server later, "example.com" is simply a dummy domain.
+				// The banner.png image will be returned by this server later. Look for it on the same host using '/', so that browsers can display it too (useful for testing).
 				// We link to the GitHub repository on the Wayback Machine, as it can be somewhat loaded in IE6 via HTTP (ads strictly open with IE).
 				const std::string adHtml = R"(
 					<HTML>
 						<HEAD></HEAD>
 						<BODY MARGINWIDTH="0" MARGINHEIGHT="0" TOPMARGIN="0" LEFTMARGIN="0" BGCOLOR="#FFFFFF">
-							<A HREF="http://web.archive.org/web/2/https://github.com/Vankata453/ZoneInternetGamesServer" TARGET="_new">
-								<IMG SRC="http://example.com/banner.png" ALT="Powered by ZoneInternetGamesServer" BORDER=0 WIDTH=380 HEIGHT=200>
+							<A HREF="http://web.archive.org/web/2/https://github.com/provigz/ZoneInternetGamesServer" TARGET="_new">
+								<IMG SRC="/banner.png" ALT="Powered by ZoneInternetGamesServer" BORDER=0 WIDTH=380 HEIGHT=200>
 							</A>
 							<ZONEAD></ZONEAD>
 						</BODY>
