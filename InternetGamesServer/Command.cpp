@@ -81,7 +81,7 @@ DWORD WINAPI CommandHandler(void*)
 					if (!socket)
 						throw std::runtime_error("No socket with IP \"" + ip + "\" and port " + std::to_string(port) + " found!");
 					socket->Disconnect();
-					std::cout << "Disconnected socket \"" << socket->GetAddressString() << "\"!" << std::endl;
+					std::cout << "Disconnected socket \"" << socket->GetAddress() << "\"!" << std::endl;
 				}
 				else
 				{
@@ -91,21 +91,42 @@ DWORD WINAPI CommandHandler(void*)
 					for (Socket* socket : sockets)
 					{
 						socket->Disconnect();
-						std::cout << "Disconnected socket \"" << socket->GetAddressString() << "\"!" << std::endl;
+						std::cout << "Disconnected socket \"" << socket->GetAddress() << "\"!" << std::endl;
 					}
 				}
 			}
 			else if (cmd[0] == 'b' || cmd[0] == 'B')
 			{
-				std::string ip;
-				inputStr >> ip;
-				if (ip.empty())
+				std::string address;
+				inputStr >> address;
+				if (address.empty())
 				{
 					std::cout << "No client IP provided!" << std::endl;
 					continue;
 				}
+				// Split string by ':' just in case a port was specified. In such case, it will be ignored
+				std::stringstream addrStr(address);
+				std::string ip;
+				std::getline(addrStr, ip, ':');
 
-				std::cout << "TODO! Ban " << ip << std::endl;
+				// 1. Disconnect any sockets, originating from the given IP
+				const std::vector<Socket*> sockets = Socket::GetSocketsByIP(ip);
+				for (Socket* socket : sockets)
+				{
+					socket->Disconnect();
+					std::cout << "Disconnected socket \"" << socket->GetAddress() << "\"!" << std::endl;
+				}
+
+				// 2. Add IP to ban list
+				if (g_config.bannedIPs.insert(ip).second)
+				{
+					g_config.Save();
+					std::cout << "Added IP " << ip << " to ban list!" << std::endl;
+				}
+				else
+				{
+					std::cout << "IP " << ip << " is already in ban list!" << std::endl;
+				}
 			}
 			else if (cmd[0] == 'd' || cmd[0] == 'D')
 			{

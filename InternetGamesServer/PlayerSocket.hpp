@@ -18,7 +18,7 @@ public:
 	void Disconnect();
 
 	inline Socket::Type GetType() const { return m_socket.GetType(); }
-	inline std::string GetAddressString() const { return m_socket.GetAddressString(); }
+	inline Socket::Address GetAddress() const { return m_socket.GetAddress(); }
 	inline bool IsDisconnected() const { return m_disconnected; }
 
 protected:

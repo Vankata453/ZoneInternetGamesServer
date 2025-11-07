@@ -193,19 +193,19 @@ Socket::SocketHandler(void* socket_)
 	}
 	catch (const DisconnectSocket& err) // Used to request disconnection without an actual error having occured
 	{
-		SessionLog() << "[SOCKET] Disconnecting socket " << socket.GetAddressString()
+		SessionLog() << "[SOCKET] Disconnecting socket " << socket.m_address
 			<< ": " << err.what() << std::endl;
 		return 0;
 	}
 	catch (const ClientDisconnected&)
 	{
-		SessionLog() << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
+		SessionLog() << "[SOCKET] Error communicating with socket " << socket.m_address
 			<< ": Client has been disconnected." << std::endl;
 		return 0;
 	}
 	catch (const std::exception& err)
 	{
-		SessionLog() << "[SOCKET] Error communicating with socket " << socket.GetAddressString()
+		SessionLog() << "[SOCKET] Error communicating with socket " << socket.m_address
 			<< ": " << err.what() << std::endl;
 		return 0;
 	}
@@ -213,22 +213,23 @@ Socket::SocketHandler(void* socket_)
 }
 
 
-char*
-Socket::GetAddressString(IN_ADDR address)
-{
-	return inet_ntoa(address);
-}
-
-std::string
-Socket::GetAddressString(SOCKET socket, const char portSeparator)
+Socket::Address
+Socket::GetAddress(SOCKET socket)
 {
 	sockaddr_in socketInfo;
 	int socketInfoSize = sizeof(socketInfo);
 	getpeername(socket, reinterpret_cast<sockaddr*>(&socketInfo), &socketInfoSize);
 
-	std::stringstream stream;
-	stream << inet_ntoa(socketInfo.sin_addr) << portSeparator << ntohs(socketInfo.sin_port);
-	return stream.str();
+	return {
+		inet_ntoa(socketInfo.sin_addr),
+		ntohs(socketInfo.sin_port)
+	};
+}
+
+char*
+Socket::GetAddressString(IN_ADDR address)
+{
+	return inet_ntoa(address);
 }
 
 
@@ -241,7 +242,7 @@ Socket::GetSocketsByIP(const std::string& ip)
 	std::vector<Socket*> sockets;
 	for (Socket* socket : s_socketList)
 	{
-		if (socket->m_ip == ip)
+		if (socket->m_address.ip == ip)
 			sockets.push_back(socket);
 	}
 	return sockets;
@@ -255,7 +256,7 @@ Socket::GetSocketByIP(const std::string& ip, USHORT port)
 
 	for (Socket* socket : s_socketList)
 	{
-		if (socket->m_ip == ip && socket->m_port == port)
+		if (socket->m_address.ip == ip && socket->m_address.port == port)
 			return socket;
 	}
 	return nullptr;
@@ -266,19 +267,11 @@ Socket::Socket(SOCKET socket, std::ostream& log) :
 	m_socket(socket),
 	m_log(log),
 	m_connectionTime(std::time(nullptr)),
-	m_ip(),
-	m_port(),
+	m_address(GetAddress(socket)),
 	m_disconnected(false),
 	m_type(UNKNOWN),
 	m_playerSocket(nullptr)
 {
-	sockaddr_in socketInfo;
-	int socketInfoSize = sizeof(socketInfo);
-	getpeername(socket, reinterpret_cast<sockaddr*>(&socketInfo), &socketInfoSize);
-
-	const_cast<std::string&>(m_ip) = inet_ntoa(socketInfo.sin_addr);
-	const_cast<USHORT&>(m_port) = ntohs(socketInfo.sin_port);
-
 	s_socketList.push_back(this);
 }
 
@@ -300,7 +293,7 @@ Socket::Disconnect()
 
 	m_disconnected = true; // Set early on to prevent another thread from disconnecting this socket again.
 
-	SessionLog() << "[SOCKET] Disconnecting from " << GetAddressString() << '.' << std::endl;
+	SessionLog() << "[SOCKET] Disconnecting from " << m_address << '.' << std::endl;
 
 	// Shut down the connection
 	if (shutdown(m_socket, SD_BOTH) == SOCKET_ERROR)

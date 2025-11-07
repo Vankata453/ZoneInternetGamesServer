@@ -191,23 +191,42 @@ int main(int argc, char* argv[])
 			continue;
 		}
 
-		// Connected to socket successfully
-		SessionLog() << "[SOCKET] Accepted connection from " << Socket::GetAddressString(ClientSocket) << "." << std::endl;
+		// If the client originates from a banned IP, reject the connection by immediately disconnecting
+		const Socket::Address clientAddress = Socket::GetAddress(ClientSocket);
+		bool clientBanned = false;
+		for (const std::string& ip : g_config.bannedIPs)
+		{
+			if (ip == clientAddress.ip)
+			{
+				clientBanned = true;
+				break;
+			}
+		}
+		if (clientBanned)
+		{
+			SessionLog() << "[SOCKET] Rejected connection from banned client " << clientAddress << '!' << std::endl;
+
+			closesocket(ClientSocket);
+			continue;
+		}
+
+		// Connected with client successfully
+		SessionLog() << "[SOCKET] Accepted connection from " << clientAddress << '.' << std::endl;
 
 		// Set recv/send timeout for client socket - 60 seconds
 		const DWORD timeout = 60000;
 		if (setsockopt(ClientSocket, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout)) != 0)
 		{
 			SessionLog() << "[SOCKET] \"setsockopt\" for recv() timeout failed: " << WSAGetLastError() << std::endl;
-			if (shutdown(ClientSocket, SD_BOTH) == SOCKET_ERROR)
-				SessionLog() << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+
+			closesocket(ClientSocket);
 			continue;
 		}
 		if (setsockopt(ClientSocket, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout)) != 0)
 		{
 			SessionLog() << "[SOCKET] \"setsockopt\" for send() timeout failed: " << WSAGetLastError() << std::endl;
-			if (shutdown(ClientSocket, SD_BOTH) == SOCKET_ERROR)
-				SessionLog() << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+
+			closesocket(ClientSocket);
 			continue;
 		}
 
@@ -215,10 +234,10 @@ int main(int argc, char* argv[])
 		DWORD nSocketThreadID;
 		if (!CreateThread(0, 0, Socket::SocketHandler, reinterpret_cast<LPVOID>(ClientSocket), 0, &nSocketThreadID))
 		{
-			SessionLog() << "[SOCKET] Couldn't create a thread to handle socket from " << Socket::GetAddressString(ClientSocket)
+			SessionLog() << "[SOCKET] Couldn't create a thread to handle socket from " << clientAddress
 				<< ": " << GetLastError() << std::endl;
-			if (shutdown(ClientSocket, SD_BOTH) == SOCKET_ERROR)
-				SessionLog() << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;
+
+			closesocket(ClientSocket);
 			continue;
 		}
 	}

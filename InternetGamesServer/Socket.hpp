@@ -51,8 +51,22 @@ public:
 		const std::string m_err;
 	};
 
+	struct Address final
+	{
+		const std::string ip;
+		const USHORT port;
+
+		inline std::string AsString(const char portSeparator = ':') const
+		{
+			return ip + portSeparator + std::to_string(port);
+		}
+	};
+	static Address GetAddress(SOCKET socket);
 	static char* GetAddressString(IN_ADDR address);
-	static std::string GetAddressString(SOCKET socket, const char portSeparator = ':');
+	static inline std::string GetAddressString(SOCKET socket, const char portSeparator = ':')
+	{
+		return GetAddress(socket).AsString(portSeparator);
+	}
 
 private:
 	// Client disconnected exception
@@ -192,11 +206,12 @@ public:
 	inline Type GetType() const { return m_type; }
 	inline PlayerSocket* GetPlayerSocket() const { return m_playerSocket; }
 
-	inline std::string GetIP() const { return m_ip; }
-	inline USHORT GetPort() const { return m_port; }
+	inline std::string GetIP() const { return m_address.ip; }
+	inline USHORT GetPort() const { return m_address.port; }
+	inline Address GetAddress() const { return m_address; }
 	inline std::string GetAddressString(const char portSeparator = ':') const
 	{
-		return m_ip + portSeparator + std::to_string(m_port);
+		return m_address.AsString(portSeparator);
 	}
 
 private:
@@ -204,8 +219,7 @@ private:
 	std::ostream& m_log;
 	const std::time_t m_connectionTime;
 
-	const std::string m_ip;
-	const USHORT m_port;
+	const Address m_address;
 
 	bool m_disconnected;
 
@@ -216,3 +230,8 @@ private:
 	Socket(const Socket&) = delete;
 	Socket operator=(const Socket&) = delete;
 };
+
+static inline std::ostream& operator<<(std::ostream& out, const Socket::Address& addr)
+{
+	return out << addr.ip << ':' << addr.port;
+}

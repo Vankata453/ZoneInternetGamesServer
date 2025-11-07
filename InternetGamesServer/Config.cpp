@@ -75,7 +75,7 @@ Config::Load(const std::string& file)
 				elIP; elIP = elIP->NextSiblingElement("IP"))
 			{
 				if (elIP->GetText())
-					bannedIPs.push_back(elIP->GetText());
+					bannedIPs.insert(elIP->GetText());
 			}
 		}
 	}

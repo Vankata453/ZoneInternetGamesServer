@@ -142,7 +142,7 @@ MatchManager::FindLobby(Win7::PlayerSocket& player)
 	if (targetMatch)
 	{
 		targetMatch->JoinPlayer(player);
-		SessionLog() << "[MATCH MANAGER] Added " << player.GetAddressString()
+		SessionLog() << "[MATCH MANAGER] Added " << player.GetAddress()
 			<< " to existing Windows 7 " << Win7::Match::GameToNameString(targetMatch->GetGame())
 			<< " match " << targetMatch->GetGUID() << '.' << std::endl;
 		return targetMatch;
@@ -150,7 +150,7 @@ MatchManager::FindLobby(Win7::PlayerSocket& player)
 
 	// No free lobby found - create a new one
 	Win7::Match* match = CreateLobby(player);
-	SessionLog() << "[MATCH MANAGER] Added " << player.GetAddressString()
+	SessionLog() << "[MATCH MANAGER] Added " << player.GetAddress()
 		<< " to new Windows 7 " << Win7::Match::GameToNameString(match->GetGame())
 		<< " match " << match->GetGUID() << '.' << std::endl;
 	return match;
@@ -176,7 +176,7 @@ MatchManager::FindLobby(WinXP::PlayerSocket& player)
 	if (targetMatch)
 	{
 		targetMatch->JoinPlayer(player);
-		SessionLog() << "[MATCH MANAGER] Added " << player.GetAddressString()
+		SessionLog() << "[MATCH MANAGER] Added " << player.GetAddress()
 			<< " to existing Windows XP " << WinXP::Match::GameToNameString(targetMatch->GetGame())
 			<< " match " << targetMatch->GetGUID() << '.' << std::endl;
 		return targetMatch;
@@ -184,7 +184,7 @@ MatchManager::FindLobby(WinXP::PlayerSocket& player)
 
 	// No free lobby found - create a new one
 	WinXP::Match* match = CreateLobby(player);
-	SessionLog() << "[MATCH MANAGER] Added " << player.GetAddressString()
+	SessionLog() << "[MATCH MANAGER] Added " << player.GetAddress()
 		<< " to new Windows XP " << WinXP::Match::GameToNameString(match->GetGame())
 		<< " match " << match->GetGUID() << '.' << std::endl;
 	return match;

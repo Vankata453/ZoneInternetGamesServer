@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <vector>
+#include <set>
 
 typedef unsigned short USHORT;
 
@@ -30,7 +30,7 @@ public:
 	bool skipLevelMatching; // When searching for a lobby, don't take the match level into account
 	bool disableXPAdBanner;
 
-	std::vector<std::string> bannedIPs;
+	std::set<std::string> bannedIPs;
 };
 
 extern Config g_config;
