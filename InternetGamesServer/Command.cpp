@@ -41,6 +41,8 @@ DWORD WINAPI CommandHandler(void*)
 					<< "  - 'k {ip}:{port [optional]}': Kicks any connected client sockets, originating from the provided IP and port." << std::endl
 					<< "                                If no port is specified, any clients that originate from the IP will be kicked." << std::endl
 					<< "  - 'b {ip}': Bans any client sockets, originating from the provided IP, from connecting to this server." << std::endl
+					<< "  - 'u {ip}': Removes an IP from the ban list." << std::endl
+					<< "  - 'lb': Lists all banned IPs." << std::endl
 					<< "  - 'd {index}': Destroys (disbands) the match with the specified index." << std::endl;
 			}
 			else if (cmd[0] == 'c' || cmd[0] == 'C')
@@ -125,7 +127,32 @@ DWORD WINAPI CommandHandler(void*)
 				}
 				else
 				{
-					std::cout << "IP " << ip << " is already in ban list!" << std::endl;
+					std::cout << "IP " << ip << " is already in ban list." << std::endl;
+				}
+			}
+			else if (cmd[0] == 'u' || cmd[0] == 'U')
+			{
+				std::string address;
+				inputStr >> address;
+				if (address.empty())
+				{
+					std::cout << "No client IP provided!" << std::endl;
+					continue;
+				}
+				// Split string by ':' just in case a port was specified. In such case, it will be ignored
+				std::stringstream addrStr(address);
+				std::string ip;
+				std::getline(addrStr, ip, ':');
+
+				// Remove IP from ban list
+				if (g_config.bannedIPs.erase(ip) > 0)
+				{
+					g_config.Save();
+					std::cout << "Removed IP " << ip << " from ban list!" << std::endl;
+				}
+				else
+				{
+					std::cout << "IP " << ip << " is not in ban list." << std::endl;
 				}
 			}
 			else if (cmd[0] == 'd' || cmd[0] == 'D')
@@ -235,6 +262,17 @@ DWORD WINAPI CommandHandler(void*)
 						<< std::endl;
 				}
 				std::cout << std::endl;
+			}
+			else if (StartsWith(cmd, "lb") || StartsWith(cmd, "LB") || StartsWith(cmd, "Lb") || StartsWith(cmd, "lB"))
+			{
+				std::cout << "Ban list:" << std::endl;
+				if (g_config.bannedIPs.empty())
+				{
+					std::cout << "  - <empty>" << std::endl;
+					continue;
+				}
+				for (const std::string& bannedIP : g_config.bannedIPs)
+					std::cout << "  - " << bannedIP << std::endl;
 			}
 			else
 			{
