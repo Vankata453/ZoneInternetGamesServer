@@ -27,6 +27,7 @@ protected:
 protected:
 	Socket& m_socket;
 
+private:
 	bool m_disconnected;
 
 private:
