@@ -223,8 +223,8 @@ int main(int argc, char* argv[])
 		// Connected with client successfully
 		SessionLog() << "[SOCKET] Accepted connection from " << clientAddress << '.' << std::endl;
 
-		// Set recv/send timeout for client socket - 60 seconds
-		const DWORD timeout = 60000;
+		// Set recv/send timeout for client socket
+		const DWORD timeout = SOCKET_TIMEOUT_MS;
 		if (setsockopt(ClientSocket, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout)) != 0)
 		{
 			SessionLog() << "[SOCKET] \"setsockopt\" for recv() timeout failed: " << WSAGetLastError() << std::endl;

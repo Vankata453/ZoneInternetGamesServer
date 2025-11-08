@@ -7,6 +7,8 @@
 #include <sstream>
 #include <vector>
 
+#define SOCKET_TIMEOUT_MS 60000
+
 class PlayerSocket;
 
 void LoadXPAdBannerImage();

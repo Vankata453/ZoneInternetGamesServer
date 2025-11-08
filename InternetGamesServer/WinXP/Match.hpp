@@ -5,12 +5,16 @@
 #include "Protocol/Game.hpp"
 #include "../Util.hpp"
 
+class MatchManager;
+
 namespace WinXP {
 
 class PlayerSocket;
 
 class Match : public ::Match<PlayerSocket>
 {
+	friend class ::MatchManager;
+
 public:
 	enum class Game {
 		INVALID = 0,
@@ -71,71 +75,29 @@ protected:
 	template<uint32 Type, typename T>
 	void BroadcastGenericMessage(const T& msgApp, int excludePlayerSeat = -1, int len = sizeof(T))
 	{
-		if (WaitForSingleObject(m_broadcastMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
-			throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Got ownership of an abandoned broadcast mutex: " + std::to_string(GetLastError()));
-
-		try
+		for (PlayerSocket* player : m_players)
 		{
-			for (PlayerSocket* player : m_players)
-			{
-				if (player->m_seat != excludePlayerSeat)
-					player->OnMatchGenericMessage<Type>(msgApp, len);
-			}
+			if (player->m_seat != excludePlayerSeat)
+				player->OnMatchGenericMessage<Type>(msgApp, len);
 		}
-		catch (...)
-		{
-			ReleaseMutex(m_broadcastMutex);
-			throw;
-		}
-
-		if (!ReleaseMutex(m_broadcastMutex))
-			throw std::runtime_error("WinXP::Match::BroadcastGenericMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
 	}
 	template<uint32 Type, typename T>
 	void BroadcastGameMessage(const T& msgGame, int excludePlayerSeat = -1, int len = sizeof(T))
 	{
-		if (WaitForSingleObject(m_broadcastMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
-			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Got ownership of an abandoned broadcast mutex: " + std::to_string(GetLastError()));
-
-		try
+		for (PlayerSocket* player : m_players)
 		{
-			for (PlayerSocket* player : m_players)
-			{
-				if (player->m_seat != excludePlayerSeat)
-					player->OnMatchGameMessage<Type>(msgGame, len);
-			}
+			if (player->m_seat != excludePlayerSeat)
+				player->OnMatchGameMessage<Type>(msgGame, len);
 		}
-		catch (...)
-		{
-			ReleaseMutex(m_broadcastMutex);
-			throw;
-		}
-
-		if (!ReleaseMutex(m_broadcastMutex))
-			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
 	}
 	template<uint32 Type, typename T, typename M, uint16 MessageLen> // Trailing data array after T
 	void BroadcastGameMessage(const T& msgGame, const Array<M, MessageLen>& msgGameSecond, int excludePlayerSeat = -1)
 	{
-		if (WaitForSingleObject(m_broadcastMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned broadcast mutex
-			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Got ownership of an abandoned broadcast mutex: " + std::to_string(GetLastError()));
-
-		try
+		for (PlayerSocket* player : m_players)
 		{
-			for (PlayerSocket* player : m_players)
-			{
-				if (player->m_seat != excludePlayerSeat)
-					player->OnMatchGameMessage<Type>(msgGame, msgGameSecond);
-			}
+			if (player->m_seat != excludePlayerSeat)
+				player->OnMatchGameMessage<Type>(msgGame, msgGameSecond);
 		}
-		catch (...)
-		{
-			ReleaseMutex(m_broadcastMutex);
-			throw;
-		}
-
-		if (!ReleaseMutex(m_broadcastMutex))
-			throw std::runtime_error("WinXP::Match::BroadcastGameMessage(): Couldn't release broadcast mutex: " + std::to_string(GetLastError()));
 	}
 
 protected:
@@ -144,8 +106,8 @@ protected:
 	const SkillLevel m_skillLevel;
 
 private:
-	HANDLE m_processMessageMutex; // Mutex to prevent simultaneous processing of multiple messages from several players
-	HANDLE m_broadcastMutex; // Mutex to prevent simultaneous broadcasting of multiple messages to players (otherwise they could get mashed up)
+	// Mutex to prevent simultaneous match processes, like adding/removing players and processing messages and removal of the match
+	HANDLE m_mutex;
 
 	std::time_t m_endTime;
 

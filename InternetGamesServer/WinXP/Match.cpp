@@ -87,8 +87,7 @@ Match::Match(unsigned int index, PlayerSocket& player) :
 	::Match<PlayerSocket>(index, player),
 	m_state(STATE_WAITINGFORPLAYERS),
 	m_skillLevel(player.GetSkillLevel()),
-	m_processMessageMutex(CreateMutex(nullptr, false, nullptr)),
-	m_broadcastMutex(CreateMutex(nullptr, false, nullptr)),
+	m_mutex(CreateMutex(nullptr, false, nullptr)),
 	m_endTime(0)
 {
 	JoinPlayer(player);
@@ -98,10 +97,21 @@ Match::~Match()
 {
 	// Match has ended, so disconnect any remaining players
 	for (PlayerSocket* p : m_players)
-		p->OnMatchDisconnect();
+	{
+		try
+		{
+			p->OnMatchDisconnect();
+		}
+		catch (const std::exception& err)
+		{
+			SessionLog() << "[MATCH] " << m_guid
+				<< ": Couldn't disconnect socket from this match! Disconnecting from server instead. Error: "
+				<< err.what() << std::endl;
+			p->Disconnect();
+		}
+	}
 
-	CloseHandle(m_broadcastMutex);
-	CloseHandle(m_processMessageMutex);
+	CloseHandle(m_mutex);
 }
 
 
@@ -110,6 +120,18 @@ Match::JoinPlayer(PlayerSocket& player)
 {
 	if (m_state != STATE_WAITINGFORPLAYERS)
 		return;
+
+	switch (WaitForSingleObject(m_mutex, SOCKET_TIMEOUT_MS + 10000))
+	{
+		case WAIT_OBJECT_0: // Acquired ownership of the mutex
+			break;
+		case WAIT_TIMEOUT:
+			throw std::runtime_error("WinXP::Match::JoinPlayer(): Timed out waiting for mutex: " + std::to_string(GetLastError()));
+		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+			throw std::runtime_error("WinXP::Match::JoinPlayer(): Got ownership of an abandoned mutex: " + std::to_string(GetLastError()));
+		default:
+			throw std::runtime_error("WinXP::Match::JoinPlayer(): An error occured waiting for mutex: " + std::to_string(GetLastError()));
+	}
 
 	AddPlayer(player);
 
@@ -121,33 +143,44 @@ Match::JoinPlayer(PlayerSocket& player)
 	// Switch state, if enough players have joined
 	if (m_players.size() == GetRequiredPlayerCount())
 		m_state = STATE_PENDINGSTART;
+
+	if (!ReleaseMutex(m_mutex))
+		throw std::runtime_error("WinXP::Match::JoinPlayer(): Couldn't release mutex: " + std::to_string(GetLastError()));
 }
 
 void
 Match::DisconnectedPlayer(PlayerSocket& player)
 {
+	switch (WaitForSingleObject(m_mutex, SOCKET_TIMEOUT_MS + 10000))
+	{
+		case WAIT_OBJECT_0: // Acquired ownership of the mutex
+			break;
+		case WAIT_TIMEOUT:
+			throw std::runtime_error("WinXP::Match::DisconnectedPlayer(): Timed out waiting for mutex: " + std::to_string(GetLastError()));
+		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+			throw std::runtime_error("WinXP::Match::DisconnectedPlayer(): Got ownership of an abandoned mutex: " + std::to_string(GetLastError()));
+		default:
+			throw std::runtime_error("WinXP::Match::DisconnectedPlayer(): An error occured waiting for mutex: " + std::to_string(GetLastError()));
+	}
+
 	RemovePlayer(player);
 
 	// End the match on no players, marking it as to-be-removed from MatchManager
 	if (m_players.empty())
 	{
 		m_state = STATE_ENDED;
-		return;
 	}
-
-	if (m_state == STATE_WAITINGFORPLAYERS)
+	else if (m_state == STATE_WAITINGFORPLAYERS)
 	{
 		MsgServerStatus msgServerStatus;
 		msgServerStatus.playersWaiting = static_cast<int>(m_players.size());
 		for (PlayerSocket* p : m_players)
 			p->OnMatchGenericMessage<MessageServerStatus>(msgServerStatus);
-		return;
 	}
-
 #if MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE
-	if (
+	else if (
 #else
-	if (m_state == STATE_PLAYING ||
+	else if (m_state == STATE_PLAYING ||
 #endif
 		// If the game has already ended, notify all players that someone has left the match and "Play Again" is now impossible
 		(m_state == STATE_GAMEOVER && m_players.size() == GetRequiredPlayerCount() - 1))
@@ -155,11 +188,26 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 		SessionLog() << "[MATCH] " << m_guid << ": A player left, closing match!" << std::endl;
 
 		for (PlayerSocket* p : m_players)
-			p->OnMatchDisconnect();
+		{
+			try
+			{
+				p->OnMatchDisconnect();
+			}
+			catch (const std::exception& err)
+			{
+				SessionLog() << "[MATCH] " << m_guid
+					<< ": Couldn't disconnect socket from this match! Disconnecting from server instead. Error: "
+					<< err.what() << std::endl;
+				p->Disconnect();
+			}
+		}
 		m_players.clear();
 
 		m_state = STATE_ENDED;
 	}
+
+	if (!ReleaseMutex(m_mutex))
+		throw std::runtime_error("WinXP::Match::DisconnectedPlayer(): Couldn't release mutex: " + std::to_string(GetLastError()));
 }
 
 
@@ -223,14 +271,38 @@ Match::Update()
 void
 Match::ProcessMessage(const MsgChatSwitch& msg)
 {
+	switch (WaitForSingleObject(m_mutex, SOCKET_TIMEOUT_MS + 10000))
+	{
+		case WAIT_OBJECT_0: // Acquired ownership of the mutex
+			break;
+		case WAIT_TIMEOUT:
+			throw std::runtime_error("WinXP::Match::ProcessMessage(): Timed out waiting for mutex: " + std::to_string(GetLastError()));
+		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+			throw std::runtime_error("WinXP::Match::ProcessMessage(): Got ownership of an abandoned mutex: " + std::to_string(GetLastError()));
+		default:
+			throw std::runtime_error("WinXP::Match::ProcessMessage(): An error occured waiting for mutex: " + std::to_string(GetLastError()));
+	}
+
 	BroadcastGenericMessage<MessageChatSwitch>(msg);
+
+	if (!ReleaseMutex(m_mutex))
+		throw std::runtime_error("WinXP::Match::ProcessMessage(): Couldn't release mutex: " + std::to_string(GetLastError()));
 }
 
 void
 Match::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 {
-	if (WaitForSingleObject(m_processMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned process message mutex
-		throw std::runtime_error("WinXP::Match::ProcessIncomingGameMessage(): Got ownership of an abandoned process message mutex: " + std::to_string(GetLastError()));
+	switch (WaitForSingleObject(m_mutex, SOCKET_TIMEOUT_MS + 10000))
+	{
+		case WAIT_OBJECT_0: // Acquired ownership of the mutex
+			break;
+		case WAIT_TIMEOUT:
+			throw std::runtime_error("WinXP::Match::ProcessIncomingGameMessage(): Timed out waiting for mutex: " + std::to_string(GetLastError()));
+		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+			throw std::runtime_error("WinXP::Match::ProcessIncomingGameMessage(): Got ownership of an abandoned mutex: " + std::to_string(GetLastError()));
+		default:
+			throw std::runtime_error("WinXP::Match::ProcessIncomingGameMessage(): An error occured waiting for mutex: " + std::to_string(GetLastError()));
+	}
 
 	try
 	{
@@ -238,12 +310,12 @@ Match::ProcessIncomingGameMessage(PlayerSocket& player, uint32 type)
 	}
 	catch (...)
 	{
-		ReleaseMutex(m_processMessageMutex);
+		ReleaseMutex(m_mutex);
 		throw;
 	}
 
-	if (!ReleaseMutex(m_processMessageMutex))
-		throw std::runtime_error("WinXP::Match::ProcessIncomingGameMessage(): Couldn't release process message mutex: " + std::to_string(GetLastError()));
+	if (!ReleaseMutex(m_mutex))
+		throw std::runtime_error("WinXP::Match::ProcessIncomingGameMessage(): Couldn't release mutex: " + std::to_string(GetLastError()));
 }
 
 

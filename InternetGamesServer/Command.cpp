@@ -40,6 +40,7 @@ DWORD WINAPI CommandHandler(void*)
 					<< "  - 'lm': Lists all active matches." << std::endl
 					<< "  - 'k {ip}:{port [optional]}': Kicks any connected client sockets, originating from the provided IP and port." << std::endl
 					<< "                                If no port is specified, any clients that originate from the IP will be kicked." << std::endl
+					<< "                                NOTE: This command, as well as 'b' which also kicks players, does not guarantee that other players will stay connected to the server!" << std::endl
 					<< "  - 'b {ip}': Bans any client sockets, originating from the provided IP, from connecting to this server." << std::endl
 					<< "  - 'u {ip}': Removes an IP from the ban list." << std::endl
 					<< "  - 'lb': Lists all banned IPs." << std::endl
@@ -82,8 +83,10 @@ DWORD WINAPI CommandHandler(void*)
 					Socket* socket = Socket::GetSocketByIP(ip, port);
 					if (!socket)
 						throw std::runtime_error("No socket with IP \"" + ip + "\" and port " + std::to_string(port) + " found!");
+
+					const Socket::Address sockAddr = socket->GetAddress();
 					socket->Disconnect();
-					std::cout << "Disconnected socket \"" << socket->GetAddress() << "\"!" << std::endl;
+					std::cout << "Disconnected socket \"" << sockAddr << "\"!" << std::endl;
 				}
 				else
 				{
@@ -92,8 +95,9 @@ DWORD WINAPI CommandHandler(void*)
 						throw std::runtime_error("No sockets with IP \"" + ip + "\" found!");
 					for (Socket* socket : sockets)
 					{
+						const Socket::Address sockAddr = socket->GetAddress();
 						socket->Disconnect();
-						std::cout << "Disconnected socket \"" << socket->GetAddress() << "\"!" << std::endl;
+						std::cout << "Disconnected socket \"" << sockAddr << "\"!" << std::endl;
 					}
 				}
 			}
@@ -115,8 +119,9 @@ DWORD WINAPI CommandHandler(void*)
 				const std::vector<Socket*> sockets = Socket::GetSocketsByIP(ip);
 				for (Socket* socket : sockets)
 				{
+					const Socket::Address sockAddr = socket->GetAddress();
 					socket->Disconnect();
-					std::cout << "Disconnected socket \"" << socket->GetAddress() << "\"!" << std::endl;
+					std::cout << "Disconnected socket \"" << sockAddr << "\"!" << std::endl;
 				}
 
 				// 2. Add IP to ban list
@@ -229,7 +234,9 @@ DWORD WINAPI CommandHandler(void*)
 					<< std::setw(25) << "State"
 					<< "Game" << std::endl
 					<< std::string(130, '-') << std::endl;
-				for (const auto& match : MatchManager::Get().GetMatchesWin7())
+
+				const auto matches = MatchManager::Get().AcquireMatches();
+				for (const std::unique_ptr<Win7::Match>& match : matches.first)
 				{
 					const std::time_t creationTime = match->GetCreationTime();
 					std::tm localCreationTime;
@@ -245,7 +252,7 @@ DWORD WINAPI CommandHandler(void*)
 						<< " (" << Win7::Match::LevelToString(match->GetLevel()) << ')'
 						<< std::endl;
 				}
-				for (const auto& match : MatchManager::Get().GetMatchesWinXP())
+				for (const std::unique_ptr<WinXP::Match>& match : matches.second)
 				{
 					const std::time_t creationTime = match->GetCreationTime();
 					std::tm localCreationTime;
@@ -261,6 +268,8 @@ DWORD WINAPI CommandHandler(void*)
 						<< " (" << WinXP::Match::SkillLevelToString(match->GetSkillLevel()) << ')'
 						<< std::endl;
 				}
+				MatchManager::Get().FreeAcquiredMatches();
+
 				std::cout << std::endl;
 			}
 			else if (StartsWith(cmd, "lb") || StartsWith(cmd, "LB") || StartsWith(cmd, "Lb") || StartsWith(cmd, "lB"))

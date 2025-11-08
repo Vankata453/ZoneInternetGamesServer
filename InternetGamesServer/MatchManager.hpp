@@ -30,8 +30,9 @@ public:
 	MatchManager();
 	~MatchManager();
 
-	inline const std::vector<std::unique_ptr<Win7::Match>>& GetMatchesWin7() const { return m_matches_win7; }
-	inline const std::vector<std::unique_ptr<WinXP::Match>>& GetMatchesWinXP() const { return m_matches_winxp; }
+	std::pair<const std::vector<std::unique_ptr<Win7::Match>>&, const std::vector<std::unique_ptr<WinXP::Match>>&>
+		AcquireMatches();
+	void FreeAcquiredMatches();
 
 	/** Update the logic of all matches */
 	void Update();

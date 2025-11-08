@@ -12,6 +12,14 @@
 
 namespace WinXP {
 
+#define XPPlayerSocketMatchGuard(funcName) \
+	if (!m_match) \
+		throw std::runtime_error(std::string("WinXP::PlayerSocket::") + funcName + "(): Attempted to access destroyed match!"); \
+	if (m_match->GetState() == Match::STATE_ENDED) \
+		throw std::runtime_error(std::string("WinXP::PlayerSocket::") + funcName + "(): Attempted to access ended match!"); \
+	if (m_state != STATE_PLAYING) \
+		throw std::runtime_error(std::string("WinXP::PlayerSocket::") + funcName + "(): Attempted to access match while not in PLAYING state!"); \
+
 class PlayerSocket final : public ::PlayerSocket
 {
 public:
@@ -64,7 +72,7 @@ public:
 	template<uint32 Type, typename T>
 	void OnMatchGameMessage(const T& msgGame, int len = sizeof(T))
 	{
-		switch (WaitForSingleObject(m_acceptsGameMessagesEvent, 5000))
+		switch (WaitForSingleObject(m_acceptsGameMessagesEvent, SOCKET_TIMEOUT_MS + 10000))
 		{
 			case WAIT_OBJECT_0:
 				SendGameMessage<Type>(msgGame, len);
@@ -78,7 +86,7 @@ public:
 	template<uint32 Type, typename T, typename M, uint16 MessageLen> // Trailing data array after T
 	void OnMatchGameMessage(T msgGame, const Array<M, MessageLen>& msgGameSecond)
 	{
-		switch (WaitForSingleObject(m_acceptsGameMessagesEvent, 5000))
+		switch (WaitForSingleObject(m_acceptsGameMessagesEvent, SOCKET_TIMEOUT_MS + 10000))
 		{
 			case WAIT_OBJECT_0:
 				SendGameMessage<Type>(msgGame, msgGameSecond);
@@ -107,7 +115,7 @@ private:
 	/* Awaiting utilities */
 	void AwaitGenericMessageHeader();
 	template<typename T, uint32 Type>
-	T AwaitIncomingGenericMessage()
+	T AwaitIncomingGenericMessage(bool forceProxySig = false)
 	{
 		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
 
@@ -119,7 +127,7 @@ private:
 		if (msgBaseGeneric.totalLength != sizeof(MsgBaseGeneric) + sizeof(MsgBaseApplication) + ROUND_DATA_LENGTH_UINT32(msgBaseApp.dataLength) + sizeof(MsgFooterGeneric))
 			throw std::runtime_error("MsgBaseGeneric: totalLength is invalid!");
 
-		if (msgBaseApp.signature != (m_inLobby ? XPLobbyProtocolSignature : XPProxyProtocolSignature))
+		if (msgBaseApp.signature != (m_proxyConnected && !forceProxySig ? XPLobbyProtocolSignature : XPProxyProtocolSignature))
 			throw std::runtime_error("MsgBaseApplication: Invalid protocol signature!");
 		if (msgBaseApp.messageType != Type)
 			throw std::runtime_error("MsgBaseApplication: Incorrect message type! Expected: " + std::to_string(Type));
@@ -162,6 +170,7 @@ private:
 		const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
 		const MsgGameMessage& msgGameMessage = m_incomingGameMsg.info;
 
+		XPPlayerSocketMatchGuard("AwaitIncomingGameMessage")
 		if (msgGameMessage.gameID != m_match->GetGameID())
 			throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
 		if (msgGameMessage.type != Type)
@@ -209,6 +218,7 @@ private:
 		const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
 		const MsgGameMessage& msgGameMessage = m_incomingGameMsg.info;
 
+		XPPlayerSocketMatchGuard("AwaitIncomingGameMessage")
 		if (msgGameMessage.gameID != m_match->GetGameID())
 			throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
 		if (msgGameMessage.type != Type)
@@ -277,6 +287,7 @@ private:
 		const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
 		const MsgGameMessage& msgGameMessage = m_incomingGameMsg.info;
 
+		XPPlayerSocketMatchGuard("AwaitIncomingGameMessage")
 		if (msgGameMessage.gameID != m_match->GetGameID())
 			throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
 		if (msgGameMessage.type != Type)
@@ -356,7 +367,7 @@ private:
 		assert(len % sizeof(uint32) == 0);
 
 		MsgBaseApplication msgBaseApp;
-		msgBaseApp.signature = (m_inLobby && !forceProxySig ? XPLobbyProtocolSignature : XPProxyProtocolSignature);
+		msgBaseApp.signature = (m_proxyConnected && !forceProxySig ? XPLobbyProtocolSignature : XPProxyProtocolSignature);
 		msgBaseApp.messageType = Type;
 		msgBaseApp.dataLength = len;
 
@@ -371,8 +382,17 @@ private:
 		MsgFooterGeneric msgFooterGeneric;
 		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
 
-		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
-			throw std::runtime_error("WinXP::PlayerSocket::SendGenericMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
+		switch (WaitForSingleObject(m_genericMessageMutex, SOCKET_TIMEOUT_MS + 10000))
+		{
+			case WAIT_OBJECT_0: // Acquired ownership of the mutex
+				break;
+			case WAIT_TIMEOUT:
+				throw std::runtime_error("WinXP::PlayerSocket::SendGenericMessage(): Timed out waiting for generic message mutex: " + std::to_string(GetLastError()));
+			case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+				throw std::runtime_error("WinXP::PlayerSocket::SendGenericMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
+			default:
+				throw std::runtime_error("WinXP::PlayerSocket::SendGenericMessage(): An error occured waiting for generic message mutex: " + std::to_string(GetLastError()));
+		}
 
 		try
 		{
@@ -396,8 +416,9 @@ private:
 		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
 		assert(len % sizeof(uint32) == 0);
 
-		assert(m_inLobby);
-		assert(m_state == STATE_PLAYING); // The client accepts game messages only in STATE_PLAYING
+		XPPlayerSocketMatchGuard("SendGameMessage")
+
+		assert(m_proxyConnected);
 
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = XPLobbyProtocolSignature;
@@ -425,8 +446,17 @@ private:
 		MsgFooterGeneric msgFooterGeneric;
 		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
 
-		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
-			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
+		switch (WaitForSingleObject(m_genericMessageMutex, SOCKET_TIMEOUT_MS + 10000))
+		{
+			case WAIT_OBJECT_0: // Acquired ownership of the mutex
+				break;
+			case WAIT_TIMEOUT:
+				throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Timed out waiting for generic message mutex: " + std::to_string(GetLastError()));
+			case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+				throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
+			default:
+				throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): An error occured waiting for generic message mutex: " + std::to_string(GetLastError()));
+		}
 
 		try
 		{
@@ -451,8 +481,9 @@ private:
 	{
 		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
 
-		assert(m_inLobby);
-		assert(m_state == STATE_PLAYING); // The client accepts game messages only in STATE_PLAYING
+		XPPlayerSocketMatchGuard("SendGameMessage")
+
+		assert(m_proxyConnected);
 
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = XPLobbyProtocolSignature;
@@ -486,8 +517,17 @@ private:
 		MsgFooterGeneric msgFooterGeneric;
 		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
 
-		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
-			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
+		switch (WaitForSingleObject(m_genericMessageMutex, SOCKET_TIMEOUT_MS + 10000))
+		{
+			case WAIT_OBJECT_0: // Acquired ownership of the mutex
+				break;
+			case WAIT_TIMEOUT:
+				throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Timed out waiting for generic message mutex: " + std::to_string(GetLastError()));
+			case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+				throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
+			default:
+				throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): An error occured waiting for generic message mutex: " + std::to_string(GetLastError()));
+		}
 
 		try
 		{
@@ -513,8 +553,9 @@ private:
 	{
 		static_assert(sizeof(T) % sizeof(uint32) == 0, "Size of T must be divisible by 4! Add STRUCT_PADDING at the end, if required.");
 
-		assert(m_inLobby);
-		assert(m_state == STATE_PLAYING); // The client accepts game messages only in STATE_PLAYING
+		XPPlayerSocketMatchGuard("SendGameMessage")
+
+		assert(m_proxyConnected);
 
 		MsgBaseApplication msgBaseApp;
 		msgBaseApp.signature = XPLobbyProtocolSignature;
@@ -554,8 +595,17 @@ private:
 		MsgFooterGeneric msgFooterGeneric;
 		msgFooterGeneric.status = MsgFooterGeneric::STATUS_OK;
 
-		if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
-			throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
+		switch (WaitForSingleObject(m_genericMessageMutex, SOCKET_TIMEOUT_MS + 10000))
+		{
+			case WAIT_OBJECT_0: // Acquired ownership of the mutex
+				break;
+			case WAIT_TIMEOUT:
+				throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Timed out waiting for generic message mutex: " + std::to_string(GetLastError()));
+			case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+				throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
+			default:
+				throw std::runtime_error("WinXP::PlayerSocket::SendGameMessage(): An error occured waiting for generic message mutex: " + std::to_string(GetLastError()));
+		}
 
 		try
 		{
@@ -617,7 +667,7 @@ private:
 	const uint32 m_securityKey;
 	ClientVersion m_clientVersion;
 	uint32 m_sequenceID;
-	bool m_inLobby;
+	bool m_proxyConnected;
 
 	HANDLE m_genericMessageMutex; // Mutex to prevent simultaneous receiving/sending generic messages
 	HANDLE m_acceptsGameMessagesEvent; // Signaled when the client is ready to accept game messages. Only set in STATE_PLAYING

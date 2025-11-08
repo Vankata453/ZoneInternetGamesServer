@@ -106,7 +106,7 @@ Match::Match(unsigned int index, PlayerSocket& player) :
 	::Match<PlayerSocket>(index, player),
 	m_state(STATE_WAITINGFORPLAYERS),
 	m_level(player.GetLevel()),
-	m_eventMutex(CreateMutex(nullptr, false, nullptr)),
+	m_mutex(CreateMutex(nullptr, false, nullptr)),
 	m_endTime(0)
 {
 	JoinPlayer(player);
@@ -118,7 +118,7 @@ Match::~Match()
 	for (PlayerSocket* p : m_players)
 		p->Disconnect();
 
-	CloseHandle(m_eventMutex);
+	CloseHandle(m_mutex);
 }
 
 
@@ -128,11 +128,26 @@ Match::JoinPlayer(PlayerSocket& player)
 	if (m_state != STATE_WAITINGFORPLAYERS)
 		return;
 
+	switch (WaitForSingleObject(m_mutex, SOCKET_TIMEOUT_MS + 10000))
+	{
+		case WAIT_OBJECT_0: // Acquired ownership of the mutex
+			break;
+		case WAIT_TIMEOUT:
+			throw std::runtime_error("Win7::Match::JoinPlayer(): Timed out waiting for mutex: " + std::to_string(GetLastError()));
+		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+			throw std::runtime_error("Win7::Match::JoinPlayer(): Got ownership of an abandoned mutex: " + std::to_string(GetLastError()));
+		default:
+			throw std::runtime_error("Win7::Match::JoinPlayer(): An error occured waiting for mutex: " + std::to_string(GetLastError()));
+	}
+
 	AddPlayer(player);
 
 	// Switch state, if enough players have joined
 	if (m_players.size() == GetRequiredPlayerCount())
 		m_state = STATE_PENDINGSTART;
+
+	if (!ReleaseMutex(m_mutex))
+		throw std::runtime_error("Win7::Match::JoinPlayer(): Couldn't release mutex: " + std::to_string(GetLastError()));
 }
 
 void
@@ -141,15 +156,25 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 	if (m_state == STATE_ENDED)
 		return;
 
+	switch (WaitForSingleObject(m_mutex, SOCKET_TIMEOUT_MS + 10000))
+	{
+		case WAIT_OBJECT_0: // Acquired ownership of the mutex
+			break;
+		case WAIT_TIMEOUT:
+			throw std::runtime_error("Win7::Match::DisconnectedPlayer(): Timed out waiting for mutex: " + std::to_string(GetLastError()));
+		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+			throw std::runtime_error("Win7::Match::DisconnectedPlayer(): Got ownership of an abandoned mutex: " + std::to_string(GetLastError()));
+		default:
+			throw std::runtime_error("Win7::Match::DisconnectedPlayer(): An error occured waiting for mutex: " + std::to_string(GetLastError()));
+	}
+
 	RemovePlayer(player);
 
 	// End the match on no players, marking it as to-be-removed from MatchManager
 	if (m_players.empty())
 	{
 		m_state = STATE_ENDED;
-		return;
 	}
-
 #if not MATCH_NO_DISCONNECT_ON_PLAYER_LEAVE
 	// Originally, servers replaced players who have left the game with AI.
 	// However, since there is no logic support for any of the games on this server currently,
@@ -157,7 +182,7 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 	// NOTE: The server doesn't know when a game has finished with a win, so this has the drawback of causing
 	//       an "Error communicating with server" message after a game has finished with a win
 	//       (even though since the game has ended anyway, it's not really important).
-	if (m_state == STATE_PLAYING)
+	else if (m_state == STATE_PLAYING)
 	{
 		// Set ENDED state before disconnecting players, so that this function no longer executes,
 		// preventing recursion which leads to a segfault when trying to disconnect an already disconnected and destroyed socket.
@@ -169,6 +194,9 @@ Match::DisconnectedPlayer(PlayerSocket& player)
 		m_players.clear();
 	}
 #endif
+
+	if (!ReleaseMutex(m_mutex))
+		throw std::runtime_error("Win7::Match::JoinPlayer(): Couldn't release mutex: " + std::to_string(GetLastError()));
 }
 
 
@@ -239,36 +267,36 @@ Match::EventSend(const PlayerSocket& caller, const std::string& xml)
 		return;
 
 	/* Process event */
-	switch (WaitForSingleObject(m_eventMutex, 5000))
+	switch (WaitForSingleObject(m_mutex, SOCKET_TIMEOUT_MS + 10000))
 	{
-		case WAIT_OBJECT_0: // Acquired ownership of the event mutex
-		{
-			const std::vector<QueuedEvent> events = ProcessEvent(*elEvent, caller);
-			for (const QueuedEvent& ev : events)
-			{
-				if (!ev.xml.empty())
-				{
-					const bool includeSender = ev.includeSender && ev.xmlSender.empty();
-					for (const PlayerSocket* p : m_players)
-					{
-						if (includeSender || p != &caller)
-							p->OnEventReceive(ev.xml);
-					}
-				}
-				if (!ev.xmlSender.empty())
-				{
-					caller.OnEventReceive(ev.xmlSender);
-				}
-			}
-
-			if (!ReleaseMutex(m_eventMutex))
-				throw std::runtime_error("Match::EventSend(): Couldn't release event mutex: " + std::to_string(GetLastError()));
+		case WAIT_OBJECT_0: // Acquired ownership of the mutex
 			break;
-		}
-
-		case WAIT_ABANDONED: // Acquired ownership of an abandoned event mutex
-			throw std::runtime_error("Match::EventSend(): Got ownership of an abandoned event mutex: " + std::to_string(GetLastError()));
+		case WAIT_TIMEOUT:
+			throw std::runtime_error("Win7::Match::EventSend(): Timed out waiting for mutex: " + std::to_string(GetLastError()));
+		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+			throw std::runtime_error("Win7::Match::EventSend(): Got ownership of an abandoned mutex: " + std::to_string(GetLastError()));
+		default:
+			throw std::runtime_error("Win7::Match::EventSend(): An error occured waiting for mutex: " + std::to_string(GetLastError()));
 	}
+	const std::vector<QueuedEvent> events = ProcessEvent(*elEvent, caller);
+	for (const QueuedEvent& ev : events)
+	{
+		if (!ev.xml.empty())
+		{
+			const bool includeSender = ev.includeSender && ev.xmlSender.empty();
+			for (const PlayerSocket* p : m_players)
+			{
+				if (includeSender || p != &caller)
+					p->OnEventReceive(ev.xml);
+			}
+		}
+		if (!ev.xmlSender.empty())
+		{
+			caller.OnEventReceive(ev.xmlSender);
+		}
+	}
+	if (!ReleaseMutex(m_mutex))
+		throw std::runtime_error("Win7::Match::EventSend(): Couldn't release mutex: " + std::to_string(GetLastError()));
 }
 
 void
@@ -304,8 +332,23 @@ Match::Chat(StateChatTag tag)
 	}
 
 	// Send the event to all other players
+	switch (WaitForSingleObject(m_mutex, SOCKET_TIMEOUT_MS + 10000))
+	{
+		case WAIT_OBJECT_0: // Acquired ownership of the mutex
+			break;
+		case WAIT_TIMEOUT:
+			throw std::runtime_error("Win7::Match::Chat(): Timed out waiting for mutex: " + std::to_string(GetLastError()));
+		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+			throw std::runtime_error("Win7::Match::Chat(): Got ownership of an abandoned mutex: " + std::to_string(GetLastError()));
+		default:
+			throw std::runtime_error("Win7::Match::Chat(): An error occured waiting for mutex: " + std::to_string(GetLastError()));
+	}
 	for (PlayerSocket* p : m_players)
+	{
 		p->OnChat(&tag);
+	}
+	if (!ReleaseMutex(m_mutex))
+		throw std::runtime_error("Win7::Match::Chat(): Couldn't release mutex: " + std::to_string(GetLastError()));
 }
 
 

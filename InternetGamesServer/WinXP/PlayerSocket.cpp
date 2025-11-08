@@ -45,7 +45,7 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 	m_securityKey(std::uniform_int_distribution<uint32>{}(g_rng)),
 	m_clientVersion(ClientVersion::INVALID),
 	m_sequenceID(0),
-	m_inLobby(false),
+	m_proxyConnected(false),
 	m_genericMessageMutex(CreateMutex(nullptr, false, nullptr)),
 	m_acceptsGameMessagesEvent(CreateEvent(nullptr, TRUE, FALSE, nullptr)),
 	m_incomingGenericMsg(),
@@ -65,12 +65,6 @@ PlayerSocket::~PlayerSocket()
 	CloseHandle(m_genericMessageMutex);
 }
 
-
-#define XPPlayerSocketMatchGuard \
-	if (!m_match) \
-		throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Attempted to access destroyed match!"); \
-	if (m_match->GetState() == Match::STATE_ENDED) \
-		throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Attempted to access ended match!");
 
 void
 PlayerSocket::ProcessMessages()
@@ -104,7 +98,7 @@ PlayerSocket::ProcessMessages()
 				}
 				case STATE_PROXY_DISCONNECTED: // Disconnected proxy (after: disconnected from match, find new opponent, received corrupted data)
 				{
-					assert(!m_inLobby);
+					assert(!m_proxyConnected);
 
 					/* Await connect request and send response */
 					const MsgProxyServiceRequest msgServiceRequestConnect = AwaitIncomingGenericMessage<MsgProxyServiceRequest, 1>();
@@ -123,7 +117,7 @@ PlayerSocket::ProcessMessages()
 				}
 				case STATE_STARTING_GAME:
 				{
-					switch (WaitForSingleObject(m_acceptsGameMessagesEvent, 5000))
+					switch (WaitForSingleObject(m_acceptsGameMessagesEvent, SOCKET_TIMEOUT_MS + 10000))
 					{
 						case WAIT_OBJECT_0:
 							break;
@@ -138,47 +132,45 @@ PlayerSocket::ProcessMessages()
 				{
 					switch (m_incomingGenericMsg.GetType())
 					{
-					case MessageGameMessage:
-					{
-						AwaitIncomingGameMessageHeader();
+						case MessageGameMessage:
+						{
+							AwaitIncomingGameMessageHeader();
 
-						XPPlayerSocketMatchGuard
-						m_match->ProcessIncomingGameMessage(*this, m_incomingGameMsg.GetType());
-						break;
-					}
-					case MessageChatSwitch:
-					{
-						const MsgChatSwitch msgChatSwitch = AwaitIncomingGenericMessage<MsgChatSwitch, MessageChatSwitch>();
-						if (msgChatSwitch.userID != m_ID)
-							throw std::runtime_error("MsgChatSwitch: Incorrect user ID!");
-
-						if (m_config.chatEnabled == msgChatSwitch.chatEnabled)
+							XPPlayerSocketMatchGuard("ProcessMessages")
+							m_match->ProcessIncomingGameMessage(*this, m_incomingGameMsg.GetType());
 							break;
-						m_config.chatEnabled = msgChatSwitch.chatEnabled;
+						}
+						case MessageChatSwitch:
+						{
+							const MsgChatSwitch msgChatSwitch = AwaitIncomingGenericMessage<MsgChatSwitch, MessageChatSwitch>();
+							if (msgChatSwitch.userID != m_ID)
+								throw std::runtime_error("MsgChatSwitch: Incorrect user ID!");
 
-						XPPlayerSocketMatchGuard
-						m_match->ProcessMessage(msgChatSwitch);
-						break;
-					}
-					case 1: // Disconnect proxy (find new opponent, received corrupted data)
-					{
-						assert(m_inLobby);
+							if (m_config.chatEnabled == msgChatSwitch.chatEnabled)
+								break;
+							m_config.chatEnabled = msgChatSwitch.chatEnabled;
 
-						m_inLobby = false;
+							XPPlayerSocketMatchGuard("ProcessMessages")
+							m_match->ProcessMessage(msgChatSwitch);
+							break;
+						}
+						case 1: // Disconnect proxy (find new opponent, received corrupted data)
+						{
+							assert(m_proxyConnected);
 
-						/* Await disconnect request and send response */
-						const MsgProxyServiceRequest msgServiceRequestDisconnect = AwaitIncomingGenericMessage<MsgProxyServiceRequest, 1>();
-						if (!ValidateProxyMessage<MessageProxyServiceRequest>(msgServiceRequestDisconnect))
-							throw std::runtime_error("MsgProxyServiceRequest: Message is invalid!");
+							/* Await disconnect request and send response */
+							const MsgProxyServiceRequest msgServiceRequestDisconnect = AwaitIncomingGenericMessage<MsgProxyServiceRequest, 1>(true);
+							if (!ValidateProxyMessage<MessageProxyServiceRequest>(msgServiceRequestDisconnect))
+								throw std::runtime_error("MsgProxyServiceRequest: Message is invalid!");
 
-						if (msgServiceRequestDisconnect.reason != MsgProxyServiceRequest::REASON_DISCONNECT)
-							throw std::runtime_error("MsgProxyServiceRequest: Reason is not client disconnection!");
+							if (msgServiceRequestDisconnect.reason != MsgProxyServiceRequest::REASON_DISCONNECT)
+								throw std::runtime_error("MsgProxyServiceRequest: Reason is not client disconnection!");
 
-						SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_DISCONNECT);
-						break;
-					}
-					default:
-						throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Generic message of unknown type received: " + std::to_string(m_incomingGenericMsg.GetType()));
+							SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_DISCONNECT);
+							break;
+						}
+						default:
+							throw std::runtime_error("WinXP::PlayerSocket::ProcessMessages(): Generic message of unknown type received: " + std::to_string(m_incomingGenericMsg.GetType()));
 					}
 					break;
 				}
@@ -197,8 +189,6 @@ PlayerSocket::ProcessMessages()
 		}
 	}
 }
-
-#undef XPPlayerSocketMatchGuard
 
 
 void
@@ -250,7 +240,7 @@ PlayerSocket::OnDisconnected()
 		m_match->DisconnectedPlayer(*this);
 		m_match = nullptr;
 	}
-	m_inLobby = false;
+	m_proxyConnected = false;
 	m_state = STATE_DISCONNECTING;
 	ResetEvent(m_acceptsGameMessagesEvent);
 }
@@ -260,7 +250,12 @@ PlayerSocket::OnMatchDisconnect()
 {
 	if (!m_match)
 		return;
+
 	m_match = nullptr;
+	m_proxyConnected = false;
+	m_state = STATE_PROXY_DISCONNECTED;
+	ResetEvent(m_acceptsGameMessagesEvent);
+
 	SendProxyServiceInfoMessages(MsgProxyServiceInfo::SERVICE_DISCONNECT);
 }
 
@@ -274,8 +269,17 @@ PlayerSocket::AwaitGenericMessageHeader()
 	if (!ValidateInternalMessageNoTotalLength<MessageConnectionGeneric>(m_incomingGenericMsg.base))
 		throw std::runtime_error("MsgBaseGeneric: Message is invalid!");
 
-	if (WaitForSingleObject(m_genericMessageMutex, 5000) == WAIT_ABANDONED) // Acquired ownership of an abandoned generic message mutex
-		throw std::runtime_error("WinXP::PlayerSocket::AwaitGenericMessageHeader(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
+	switch (WaitForSingleObject(m_genericMessageMutex, SOCKET_TIMEOUT_MS + 10000))
+	{
+		case WAIT_OBJECT_0: // Acquired ownership of the mutex
+			break;
+		case WAIT_TIMEOUT:
+			throw std::runtime_error("WinXP::PlayerSocket::AwaitGenericMessageHeader(): Timed out waiting for generic message mutex: " + std::to_string(GetLastError()));
+		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+			throw std::runtime_error("WinXP::PlayerSocket::AwaitGenericMessageHeader(): Got ownership of an abandoned generic message mutex: " + std::to_string(GetLastError()));
+		default:
+			throw std::runtime_error("WinXP::PlayerSocket::AwaitGenericMessageHeader(): An error occured waiting for generic message mutex: " + std::to_string(GetLastError()));
+	}
 
 	try
 	{
@@ -295,8 +299,9 @@ PlayerSocket::AwaitIncomingGameMessageHeader()
 {
 	assert(m_incomingGenericMsg.valid && !m_incomingGameMsg.valid);
 
-	assert(m_inLobby);
-	assert(m_state == STATE_PLAYING); // The client can send game messages only in STATE_PLAYING
+	XPPlayerSocketMatchGuard("AwaitIncomingGameMessageHeader")
+
+	assert(m_proxyConnected);
 
 	const MsgBaseGeneric& msgBaseGeneric = m_incomingGenericMsg.base;
 	const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
@@ -333,6 +338,7 @@ PlayerSocket::AwaitIncomingEmptyGameMessage(uint32 type)
 	const MsgBaseApplication& msgBaseApp = m_incomingGenericMsg.info;
 	const MsgGameMessage& msgGameMessage = m_incomingGameMsg.info;
 
+	XPPlayerSocketMatchGuard("AwaitIncomingEmptyGameMessage")
 	if (msgGameMessage.gameID != m_match->GetGameID())
 		throw std::runtime_error("MsgGameMessage: Incorrect game ID!");
 	if (msgGameMessage.type != type)
@@ -506,7 +512,7 @@ PlayerSocket::SendProxyHelloMessages()
 	SendGenericMessage<3>(std::move(msgsHello));
 	SendGenericMessage<2>(std::move(msgsServiceInfo));
 
-	m_inLobby = true;
+	m_proxyConnected = true;
 	m_state = STATE_UNCONFIGURED;
 }
 
@@ -528,7 +534,7 @@ PlayerSocket::SendProxyServiceInfoMessages(MsgProxyServiceInfo::Reason reason)
 	{
 		assert(m_state != STATE_PLAYING);
 
-		m_inLobby = true;
+		m_proxyConnected = true;
 		m_state = STATE_UNCONFIGURED;
 	}
 	else if (reason == MsgProxyServiceInfo::SERVICE_DISCONNECT)
@@ -538,7 +544,7 @@ PlayerSocket::SendProxyServiceInfoMessages(MsgProxyServiceInfo::Reason reason)
 			m_match->DisconnectedPlayer(*this);
 			m_match = nullptr;
 		}
-		m_inLobby = false;
+		m_proxyConnected = false;
 		m_state = STATE_PROXY_DISCONNECTED;
 		ResetEvent(m_acceptsGameMessagesEvent);
 	}

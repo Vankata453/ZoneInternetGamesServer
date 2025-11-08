@@ -298,6 +298,11 @@ Socket::Disconnect()
 
 	SessionLog() << "[SOCKET] Disconnecting from " << m_address << '.' << std::endl;
 
+	// PlayerSocket expects Socket to exist while it's being disconnected.
+	// Ensure it's disconnected first.
+	if (m_playerSocket)
+		m_playerSocket->Disconnect();
+
 	// Shut down the connection
 	if (shutdown(m_socket, SD_BOTH) == SOCKET_ERROR)
 		SessionLog() << "[SOCKET] \"shutdown\" failed: " << WSAGetLastError() << std::endl;

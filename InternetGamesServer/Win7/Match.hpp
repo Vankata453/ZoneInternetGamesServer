@@ -6,12 +6,16 @@
 
 #include "StateTags.hpp"
 
+class MatchManager;
+
 namespace Win7 {
 
 class PlayerSocket;
 
 class Match : public ::Match<PlayerSocket>
 {
+	friend class ::MatchManager;
+
 public:
 	enum class Game {
 		INVALID = 0,
@@ -93,7 +97,8 @@ protected:
 	const Level m_level;
 
 private:
-	HANDLE m_eventMutex; // Mutex to prevent simultaneous event processing from multiple clients
+	// Mutex to prevent simultaneous match processes, like adding/removing players and processing events and removal of the match
+	HANDLE m_mutex;
 
 	std::time_t m_endTime;
 
