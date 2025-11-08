@@ -21,6 +21,7 @@ static const char* SOCKET_WIN7_HI_RESPONSE = "STADIUM/2.0\r\n";
 static const std::vector<BYTE> XP_AD_BANNER_DATA = {};
 
 std::vector<Socket*> Socket::s_socketList = {};
+const HANDLE Socket::s_socketListMutex = CreateMutex(nullptr, false, nullptr);
 
 
 void LoadXPAdBannerImage()
@@ -275,12 +276,28 @@ Socket::Socket(SOCKET socket, std::ostream& log) :
 	m_type(UNKNOWN),
 	m_playerSocket(nullptr)
 {
+	switch (WaitForSingleObject(s_socketListMutex, 5000))
+	{
+		case WAIT_OBJECT_0: // Acquired ownership of the mutex
+			break;
+		case WAIT_TIMEOUT:
+			throw std::runtime_error("Socket::Socket(): Timed out waiting for socket list mutex: " + std::to_string(GetLastError()));
+		case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+			throw std::runtime_error("Socket::Socket(): Got ownership of an abandoned socket list mutex: " + std::to_string(GetLastError()));
+		default:
+			throw std::runtime_error("Socket::Socket(): An error occured waiting for socket list mutex: " + std::to_string(GetLastError()));
+	}
 	s_socketList.push_back(this);
+	if (!ReleaseMutex(s_socketListMutex))
+		throw std::runtime_error("Socket::Socket(): Couldn't release socket list mutex: " + std::to_string(GetLastError()));
 }
 
 Socket::~Socket()
 {
+	assert(WaitForSingleObject(s_socketListMutex, 5000) == WAIT_OBJECT_0
+		&& "Socket::~Socket(): Failed to acquire socket list mutex!");
 	s_socketList.erase(std::remove(s_socketList.begin(), s_socketList.end(), this));
+	assert(ReleaseMutex(s_socketListMutex) && "Socket::~Socket(): Failed to release socket list mutex!");
 
 	// Clean up
 	Disconnect();

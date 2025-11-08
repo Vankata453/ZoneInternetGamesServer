@@ -31,6 +31,9 @@ private:
 	static std::vector<Socket*> s_socketList;
 
 public:
+	static const HANDLE s_socketListMutex; // Mutex to prevent simultaneous modification/iteration of socket list
+
+public:
 	static inline const std::vector<Socket*>& GetList() { return s_socketList; }
 
 	static std::vector<Socket*> GetSocketsByIP(const std::string& ip);

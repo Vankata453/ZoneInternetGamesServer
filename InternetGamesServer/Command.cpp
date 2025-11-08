@@ -77,6 +77,18 @@ DWORD WINAPI CommandHandler(void*)
 				std::stringstream addrStr(address);
 				std::string ip, portStr;
 				std::getline(addrStr, ip, ':');
+
+				switch (WaitForSingleObject(Socket::s_socketListMutex, 5000))
+				{
+					case WAIT_OBJECT_0: // Acquired ownership of the mutex
+						break;
+					case WAIT_TIMEOUT:
+						throw std::runtime_error("CommandHandler(): Kick: Timed out waiting for socket list mutex: " + std::to_string(GetLastError()));
+					case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+						throw std::runtime_error("CommandHandler(): Kick: Got ownership of an abandoned socket list mutex: " + std::to_string(GetLastError()));
+					default:
+						throw std::runtime_error("CommandHandler(): Kick: An error occured waiting for socket list mutex: " + std::to_string(GetLastError()));
+				}
 				if (std::getline(addrStr, portStr, ':'))
 				{
 					const USHORT port = static_cast<USHORT>(std::stoi(portStr));
@@ -100,6 +112,8 @@ DWORD WINAPI CommandHandler(void*)
 						std::cout << "Disconnected socket \"" << sockAddr << "\"!" << std::endl;
 					}
 				}
+				if (!ReleaseMutex(Socket::s_socketListMutex))
+					throw std::runtime_error("CommandHandler(): Kick: Couldn't release socket list mutex: " + std::to_string(GetLastError()));
 			}
 			else if (cmd[0] == 'b' || cmd[0] == 'B')
 			{
@@ -116,6 +130,17 @@ DWORD WINAPI CommandHandler(void*)
 				std::getline(addrStr, ip, ':');
 
 				// 1. Disconnect any sockets, originating from the given IP
+				switch (WaitForSingleObject(Socket::s_socketListMutex, 5000))
+				{
+					case WAIT_OBJECT_0: // Acquired ownership of the mutex
+						break;
+					case WAIT_TIMEOUT:
+						throw std::runtime_error("CommandHandler(): Ban: Timed out waiting for socket list mutex: " + std::to_string(GetLastError()));
+					case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+						throw std::runtime_error("CommandHandler(): Ban: Got ownership of an abandoned socket list mutex: " + std::to_string(GetLastError()));
+					default:
+						throw std::runtime_error("CommandHandler(): Ban: An error occured waiting for socket list mutex: " + std::to_string(GetLastError()));
+				}
 				const std::vector<Socket*> sockets = Socket::GetSocketsByIP(ip);
 				for (Socket* socket : sockets)
 				{
@@ -123,6 +148,8 @@ DWORD WINAPI CommandHandler(void*)
 					socket->Disconnect();
 					std::cout << "Disconnected socket \"" << sockAddr << "\"!" << std::endl;
 				}
+				if (!ReleaseMutex(Socket::s_socketListMutex))
+					throw std::runtime_error("CommandHandler(): Ban: Couldn't release socket list mutex: " + std::to_string(GetLastError()));
 
 				// 2. Add IP to ban list
 				if (g_config.bannedIPs.insert(ip).second)
@@ -183,6 +210,18 @@ DWORD WINAPI CommandHandler(void*)
 					<< std::setw(27) << "State"
 					<< "Match Joined (GUID)" << std::endl
 					<< std::string(134, '-') << std::endl;
+
+				switch (WaitForSingleObject(Socket::s_socketListMutex, 5000))
+				{
+					case WAIT_OBJECT_0: // Acquired ownership of the mutex
+						break;
+					case WAIT_TIMEOUT:
+						throw std::runtime_error("CommandHandler(): List clients: Timed out waiting for socket list mutex: " + std::to_string(GetLastError()));
+					case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+						throw std::runtime_error("CommandHandler(): List clients: Got ownership of an abandoned socket list mutex: " + std::to_string(GetLastError()));
+					default:
+						throw std::runtime_error("CommandHandler(): List clients: An error occured waiting for socket list mutex: " + std::to_string(GetLastError()));
+				}
 				for (const Socket* socket : Socket::GetList())
 				{
 					const std::time_t connectionTime = socket->GetConnectionTime();
@@ -221,6 +260,9 @@ DWORD WINAPI CommandHandler(void*)
 					}
 					std::cout << std::endl;
 				}
+				if (!ReleaseMutex(Socket::s_socketListMutex))
+					throw std::runtime_error("CommandHandler(): List clients: Couldn't release socket list mutex: " + std::to_string(GetLastError()));
+
 				std::cout << std::endl;
 			}
 			else if (StartsWith(cmd, "lm") || StartsWith(cmd, "LM") || StartsWith(cmd, "Lm") || StartsWith(cmd, "lM"))
