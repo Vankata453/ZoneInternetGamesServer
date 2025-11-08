@@ -55,9 +55,18 @@ int main(int argc, char* argv[])
 		g_config.port = static_cast<USHORT>(std::stoi(argPort));
 		g_config.Save();
 	}
+	if (!g_config.logsDirectory.empty())
+	{
+		try
+		{
+			CreateNestedDirectories(g_config.logsDirectory);
+		}
+		catch (const std::exception& err)
+		{
+			std::cout << err.what() << std::endl;
+		}
+	}
 
-	//if (!g_config.logsDirectory.empty())
-		//CreateNestedDirectories(g_config.logsDirectory);
 	LoadXPAdBannerImage();
 
 	// Open session log file stream, if logging is enabled
@@ -68,8 +77,9 @@ int main(int argc, char* argv[])
 
 		auto stream = std::make_unique<std::ofstream>(logFileName.str());
 		if (!stream->is_open())
-			throw std::runtime_error("Failed to open log file \"" + logFileName.str() + "\"!");
-		SetSessionLog(std::move(stream));
+			std::cout << "Failed to open log file \"" << logFileName.str() << "\"!" << std::endl;
+		else
+			SetSessionLog(std::move(stream));
 	}
 
 	// Create a thread to update the logic of all matches

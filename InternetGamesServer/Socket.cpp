@@ -81,7 +81,10 @@ Socket::SocketHandler(void* socket_)
 
 		logStream = std::make_unique<std::ofstream>(logFileName.str());
 		if (!static_cast<std::ofstream*>(logStream.get())->is_open())
-			throw std::runtime_error("Failed to open log file \"" + logFileName.str() + "\"!");
+		{
+			SessionLog() << "Failed to open log file \"" << logFileName.str() << "\"!" << std::endl;
+			logStream = std::make_unique<NullStream>();
+		}
 	}
 
 	Socket socket(rawSocket, *logStream);

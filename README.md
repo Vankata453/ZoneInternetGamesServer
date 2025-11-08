@@ -127,7 +127,7 @@ Each game has custom messages, which are supported by the server in order for it
 #### Command line arguments
 
 * `-c` (`--config`): Sets the target configuration file. Any changes to options will be written there. *Default: "InternetGamesServer.config"*
-* `-p` (`--port`): Port to host the server on. *Default: 28805*
+* `-p` (`--port`): Port to host the server on. Automatically written to config file.
 
 ### Internet Games Client DLL + DLL Injector
 

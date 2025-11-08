@@ -15,7 +15,7 @@ public:
 
 	static const std::initializer_list<std::pair<std::string, std::string>> s_optionKeys;
 
-	std::string GetValue(const std::string& key);
+	std::string GetValue(const std::string& key) const;
 	void SetValue(const std::string& key, const std::string& value);
 
 private:

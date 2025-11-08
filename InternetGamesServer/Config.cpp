@@ -110,14 +110,14 @@ Config::Save()
 
 const std::initializer_list<std::pair<std::string, std::string>> Config::s_optionKeys = {
 	{ "port", "The port the server should be hosted on. Requires restart to apply. (Default: 28805)" },
-	{ "logdir", "The directory where log files are written to. Set to 0 to disable logging. (Default: \"InternetGamesServer_logs\")" },
+	{ "logdir", "The directory where log files are written to. Set to 0 to disable logging. Requires restart to fully apply. (Default: \"InternetGamesServer_logs\")" },
 	{ "logping", "Log empty ping messages from socket. Aimed towards debugging. Value can only be 0 or 1. (Default: 0)" },
 	{ "skiplevel", "Do not match players in matches based on skill level. Value can only be 0 or 1. (Default: 0)" },
 	{ "disablead", "Prevent the server from responding to ad banner requests from Windows XP games with a custom \"Powered by ZoneInternetGamesServer\" banner. Value can only be 0 or 1. (Default: 0)" }
 };
 
 std::string
-Config::GetValue(const std::string& key)
+Config::GetValue(const std::string& key) const
 {
 	if (key == "port")
 		return std::to_string(port);
@@ -140,7 +140,15 @@ Config::SetValue(const std::string& key, const std::string& value)
 	if (key == "port")
 		port = static_cast<USHORT>(std::stoi(value));
 	else if (key == "logdir")
-		logsDirectory = value == "0" ? "" : value;
+	{
+		if (value == "0")
+		{
+			logsDirectory.clear();
+			return;
+		}
+		CreateNestedDirectories(value);
+		logsDirectory = value;
+	}
 	else if (key == "logping")
 		logPingMessages = CONFIG_SET_BOOL_VALUE(logPingMessages);
 	else if (key == "skiplevel")
