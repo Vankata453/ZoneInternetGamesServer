@@ -15,11 +15,11 @@ Config::Config() :
 	port(DEFAULT_PORT),
 	logsDirectory(DEFAULT_LOGS_DIRECTORY),
 	logPingMessages(false),
+	numConnectionsPerIP(0),
 	skipLevelMatching(false),
 	disableXPAdBanner(false),
 	bannedIPs()
 {
-
 }
 
 void
@@ -58,6 +58,11 @@ Config::Load(const std::string& file)
 			logPingMessages = *elLogPingMessages->GetText() == '1';
 	}
 	{
+		tinyxml2::XMLElement* elNumConnectionsPerIP = elRoot->FirstChildElement("NumConnectionsPerIP");
+		if (elNumConnectionsPerIP && elNumConnectionsPerIP->GetText())
+			numConnectionsPerIP = static_cast<USHORT>(std::stoi(elNumConnectionsPerIP->GetText()));
+	}
+	{
 		tinyxml2::XMLElement* elSkipLevelMatching = elRoot->FirstChildElement("SkipLevelMatching");
 		if (elSkipLevelMatching && elSkipLevelMatching->GetText())
 			skipLevelMatching = *elSkipLevelMatching->GetText() == '1';
@@ -92,6 +97,7 @@ Config::Save()
 	NewElementWithText(elRoot, "Port", port);
 	NewElementWithText(elRoot, "LogsDirectory", logsDirectory.c_str());
 	NewElementWithText(elRoot, "LogPingMessages", logPingMessages ? "1" : "0");
+	NewElementWithText(elRoot, "NumConnectionsPerIP", numConnectionsPerIP);
 	NewElementWithText(elRoot, "SkipLevelMatching", skipLevelMatching ? "1" : "0");
 	NewElementWithText(elRoot, "DisableXPAdBanner", disableXPAdBanner ? "1" : "0");
 
@@ -102,7 +108,7 @@ Config::Save()
 
 	const tinyxml2::XMLError err = doc.SaveFile(m_file.c_str());
 	if (err != tinyxml2::XML_SUCCESS)
-		std::cout << "WARNING: Couldn't save config file \"" << m_file << "\": "
+		SessionLog() << "[CONFIG] WARNING: Couldn't save config file \"" << m_file << "\": "
 			<< std::string(tinyxml2::XMLDocument::ErrorIDToName(err))
 			<< ": " + std::string(doc.ErrorStr()) << std::endl;
 }
@@ -112,6 +118,7 @@ const std::initializer_list<std::pair<std::string, std::string>> Config::s_optio
 	{ "port", "The port the server should be hosted on. Requires restart to apply. (Default: 28805)" },
 	{ "logdir", "The directory where log files are written to. Set to 0 to disable logging. Requires restart to fully apply. (Default: \"InternetGamesServer_logs\")" },
 	{ "logping", "Log empty ping messages from socket. Aimed towards debugging. Value can only be 0 or 1. (Default: 0)" },
+	{ "numconnsip", "Limits the number of connections allowed from a given IP address. Maximum is 65535. 0 signifies no limit. NOTE: Make this 0 or higher than 1 to keep XP ad banner functionality! (Default: 0)" },
 	{ "skiplevel", "Do not match players in matches based on skill level. Value can only be 0 or 1. (Default: 0)" },
 	{ "disablead", "Prevent the server from responding to ad banner requests from Windows XP games with a custom \"Powered by ZoneInternetGamesServer\" banner. Value can only be 0 or 1. (Default: 0)" }
 };
@@ -125,6 +132,8 @@ Config::GetValue(const std::string& key) const
 		return logsDirectory;
 	if (key == "logping")
 		return logPingMessages ? "1" : "0";
+	if (key == "numconnsip")
+		return std::to_string(numConnectionsPerIP);
 	if (key == "skiplevel")
 		return skipLevelMatching ? "1" : "0";
 	if (key == "disablead")
@@ -151,6 +160,8 @@ Config::SetValue(const std::string& key, const std::string& value)
 	}
 	else if (key == "logping")
 		logPingMessages = CONFIG_SET_BOOL_VALUE(logPingMessages);
+	else if (key == "numconnsip")
+		numConnectionsPerIP = static_cast<USHORT>(std::stoi(value));
 	else if (key == "skiplevel")
 		skipLevelMatching = CONFIG_SET_BOOL_VALUE(skipLevelMatching);
 	else if (key == "disablead")

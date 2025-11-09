@@ -13,7 +13,7 @@ class PlayerSocket;
 
 void LoadXPAdBannerImage();
 
-/** SOCKET wrapper featuring general socket handling functions */
+/** SOCKET wrapper, featuring general socket handling functions and a few additional features */
 class Socket final
 {
 public:
@@ -67,11 +67,8 @@ public:
 		}
 	};
 	static Address GetAddress(SOCKET socket);
+	static Address GetAddress(const sockaddr_in& socketAddr);
 	static char* GetAddressString(IN_ADDR address);
-	static inline std::string GetAddressString(SOCKET socket, const char portSeparator = ':')
-	{
-		return GetAddress(socket).AsString(portSeparator);
-	}
 
 private:
 	// Client disconnected exception
@@ -82,7 +79,7 @@ private:
 	};
 
 public:
-	Socket(SOCKET socket, std::ostream& log);
+	Socket(SOCKET socket);
 	~Socket();
 
 	void Disconnect();
@@ -103,7 +100,7 @@ public:
 		else if (receivedLen < 0)
 			throw std::runtime_error("\"recv\" failed: " + std::to_string(WSAGetLastError()));
 
-		m_log << "[RECEIVED]: " << data << "\n\n" << std::endl;
+		*m_logStream << "[RECEIVED]: " << data << "\n\n" << std::endl;
 
 		return receivedLen;
 	}
@@ -122,7 +119,7 @@ public:
 
 		decryptor(&data, len, decryptKey);
 
-		m_log << "[RECEIVED]: " << data << "\n\n" << std::endl;
+		*m_logStream << "[RECEIVED]: " << data << "\n\n" << std::endl;
 
 		return receivedLen;
 	}
@@ -146,7 +143,7 @@ public:
 			std::memcpy(dataRaw, &data, len);
 		(data.*converter)();
 
-		m_log << "[RECEIVED]: " << data << "\n\n" << std::endl;
+		*m_logStream << "[RECEIVED]: " << data << "\n\n" << std::endl;
 
 		return receivedLen;
 	}
@@ -163,7 +160,7 @@ public:
 		if (sentLen == SOCKET_ERROR)
 			throw std::runtime_error("\"send\" failed: " + std::to_string(WSAGetLastError()));
 
-		m_log << "[SENT]: " << data << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
+		*m_logStream << "[SENT]: " << data << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
 
 		return sentLen;
 	}
@@ -181,7 +178,7 @@ public:
 		if (sentLen == SOCKET_ERROR)
 			throw std::runtime_error("\"send\" failed: " + std::to_string(WSAGetLastError()));
 
-		m_log << logBuf.str() << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
+		*m_logStream << logBuf.str() << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
 
 		return sentLen;
 	}
@@ -200,7 +197,7 @@ public:
 		if (sentLen == SOCKET_ERROR)
 			throw std::runtime_error("\"send\" failed: " + std::to_string(WSAGetLastError()));
 
-		m_log << logBuf.str() << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
+		*m_logStream << logBuf.str() << "\n(BYTES SENT=" << len << ")\n\n" << std::endl;
 
 		return sentLen;
 	}
@@ -220,11 +217,14 @@ public:
 	}
 
 private:
+	void Initialize();
+
+private:
 	const SOCKET m_socket;
-	std::ostream& m_log;
 	const std::time_t m_connectionTime;
 
 	const Address m_address;
+	std::unique_ptr<std::ostream> m_logStream;
 
 	bool m_disconnected;
 

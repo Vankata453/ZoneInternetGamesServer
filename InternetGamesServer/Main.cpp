@@ -178,31 +178,29 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	std::string fatalError;
 	while (true)
 	{
 		// Listen for a client socket connection
 		if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
 		{
-			std::ostringstream err;
-			err << "[SOCKET] \"listen\" failed: " << WSAGetLastError() << std::endl;
-			std::cout << err.str();
-			SessionLog() << err.str();
-
-			closesocket(ListenSocket);
-			WSACleanup();
-			return 1;
+			fatalError = "[SOCKET] \"listen\" failed: " + std::to_string(WSAGetLastError());
+			break;
 		}
 
 		// Accept the client socket
-		SOCKET ClientSocket = accept(ListenSocket, NULL, NULL);
+		sockaddr_in socketAddr;
+		int socketAddrSize = sizeof(socketAddr);
+		SOCKET ClientSocket = accept(ListenSocket, reinterpret_cast<sockaddr*>(&socketAddr), &socketAddrSize);
 		if (ClientSocket == INVALID_SOCKET)
 		{
 			SessionLog() << "[SOCKET] \"accept\" failed: " << WSAGetLastError() << std::endl;
 			continue;
 		}
 
+		const Socket::Address clientAddress = Socket::GetAddress(socketAddr);
+
 		// If the client originates from a banned IP, reject the connection by immediately disconnecting
-		const Socket::Address clientAddress = Socket::GetAddress(ClientSocket);
 		bool clientBanned = false;
 		for (const std::string& ip : g_config.bannedIPs)
 		{
@@ -218,6 +216,48 @@ int main(int argc, char* argv[])
 
 			closesocket(ClientSocket);
 			continue;
+		}
+
+		// If number of connections per IP is restricted,
+		// reject the connection if enough sockets from that IP are already connected
+		if (g_config.numConnectionsPerIP)
+		{
+			switch (WaitForSingleObject(Socket::s_socketListMutex, 5000))
+			{
+				case WAIT_OBJECT_0: // Acquired ownership of the mutex
+					break;
+				case WAIT_TIMEOUT:
+					fatalError = "main(): Timed out waiting for socket list mutex: " + std::to_string(GetLastError());
+					break;
+				case WAIT_ABANDONED: // Acquired ownership of an abandoned mutex
+					fatalError = "main(): Got ownership of an abandoned socket list mutex: " + std::to_string(GetLastError());
+					break;
+				default:
+					fatalError = "main(): An error occured waiting for socket list mutex: " + std::to_string(GetLastError());
+					break;
+			}
+			if (!fatalError.empty())
+				break;
+			USHORT numConns = 0;
+			for (const Socket* socket : Socket::GetList())
+			{
+				if (socket->GetAddress().ip == clientAddress.ip)
+				{
+					if (++numConns >= g_config.numConnectionsPerIP)
+						break;
+				}
+			}
+			if (!ReleaseMutex(Socket::s_socketListMutex))
+				throw std::runtime_error("main(): Couldn't release socket list mutex: " + std::to_string(GetLastError()));
+
+			if (numConns >= g_config.numConnectionsPerIP)
+			{
+				SessionLog() << "[SOCKET] Rejected connection from client " << clientAddress
+					<< ": The number of existing connections from that IP exceeds the set limit!" << std::endl;
+
+				closesocket(ClientSocket);
+				continue;
+			}
 		}
 
 		// Connected with client successfully
@@ -251,10 +291,15 @@ int main(int argc, char* argv[])
 			continue;
 		}
 	}
+	if (!fatalError.empty())
+	{
+		std::cout << fatalError;
+		SessionLog() << fatalError;
+	}
 
 	// Clean up
 	closesocket(ListenSocket);
 	WSACleanup();
 
-	return 0;
+	return fatalError.empty() ? 0 : 1;
 }

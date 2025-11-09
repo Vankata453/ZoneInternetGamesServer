@@ -27,6 +27,8 @@ public:
 	std::string logsDirectory;
 	bool logPingMessages; // DEBUG: Log empty ping messages from sockets
 
+	USHORT numConnectionsPerIP;
+
 	bool skipLevelMatching; // When searching for a lobby, don't take the match level into account
 	bool disableXPAdBanner;
 

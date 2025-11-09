@@ -68,27 +68,8 @@ Socket::SocketHandler(void* socket_)
 {
 	const SOCKET rawSocket = reinterpret_cast<SOCKET>(socket_);
 
-	// Open a stream to log Socket events to
-	std::unique_ptr<std::ostream> logStream;
-	if (g_config.logsDirectory.empty())
-	{
-		logStream = std::make_unique<NullStream>();
-	}
-	else
-	{
-		std::ostringstream logFileName;
-		logFileName << g_config.logsDirectory << "\\SOCKET_" << GetAddressString(rawSocket, '_')
-			<< "_" << std::time(nullptr) << ".txt";
-
-		logStream = std::make_unique<std::ofstream>(logFileName.str());
-		if (!static_cast<std::ofstream*>(logStream.get())->is_open())
-		{
-			SessionLog() << "Failed to open log file \"" << logFileName.str() << "\"!" << std::endl;
-			logStream = std::make_unique<NullStream>();
-		}
-	}
-
-	Socket socket(rawSocket, *logStream);
+	Socket socket(rawSocket);
+	socket.Initialize();
 	try
 	{
 		std::unique_ptr<PlayerSocket> player;
@@ -115,7 +96,7 @@ Socket::SocketHandler(void* socket_)
 				if (WinXP::ValidateInternalMessage<WinXP::MessageConnectionHi>(hiMessage) &&
 					hiMessage.protocolVersion == XPInternalProtocolVersion)
 				{
-					*logStream << "[INITIAL MESSAGE]: " << hiMessage << '\n' << std::endl;
+					*socket.m_logStream << "[INITIAL MESSAGE]: " << hiMessage << '\n' << std::endl;
 
 					auto xpPlayer = std::make_unique<WinXP::PlayerSocket>(socket, hiMessage);
 
@@ -182,7 +163,7 @@ Socket::SocketHandler(void* socket_)
 					static_cast<int>(XP_AD_BANNER_DATA.size()), 0);
 				if (sentLen == SOCKET_ERROR)
 					throw std::runtime_error("\"send\" failed: " + std::to_string(WSAGetLastError()));
-				*logStream << "[SENT]: [RAW AD BANNER PNG]\n(BYTES SENT=" << sentLen << ")\n\n" << std::endl;
+				*socket.m_logStream << "[SENT]: [RAW AD BANNER PNG]\n(BYTES SENT=" << sentLen << ")\n\n" << std::endl;
 
 				throw DisconnectSocket("Banner ad image sent over.");
 			}
@@ -220,13 +201,22 @@ Socket::SocketHandler(void* socket_)
 Socket::Address
 Socket::GetAddress(SOCKET socket)
 {
-	sockaddr_in socketInfo;
-	int socketInfoSize = sizeof(socketInfo);
-	getpeername(socket, reinterpret_cast<sockaddr*>(&socketInfo), &socketInfoSize);
+	sockaddr_in socketAddr;
+	int socketAddrSize = sizeof(socketAddr);
+	getpeername(socket, reinterpret_cast<sockaddr*>(&socketAddr), &socketAddrSize);
 
 	return {
-		inet_ntoa(socketInfo.sin_addr),
-		ntohs(socketInfo.sin_port)
+		inet_ntoa(socketAddr.sin_addr),
+		ntohs(socketAddr.sin_port)
+	};
+}
+
+Socket::Address
+Socket::GetAddress(const sockaddr_in& socketAddr)
+{
+	return {
+		inet_ntoa(socketAddr.sin_addr),
+		ntohs(socketAddr.sin_port)
 	};
 }
 
@@ -267,11 +257,11 @@ Socket::GetSocketByIP(const std::string& ip, USHORT port)
 }
 
 
-Socket::Socket(SOCKET socket, std::ostream& log) :
+Socket::Socket(SOCKET socket) :
 	m_socket(socket),
-	m_log(log),
 	m_connectionTime(std::time(nullptr)),
 	m_address(GetAddress(socket)),
+	m_logStream(),
 	m_disconnected(false),
 	m_type(UNKNOWN),
 	m_playerSocket(nullptr)
@@ -296,7 +286,7 @@ Socket::~Socket()
 {
 	assert(WaitForSingleObject(s_socketListMutex, 5000) == WAIT_OBJECT_0
 		&& "Socket::~Socket(): Failed to acquire socket list mutex!");
-	s_socketList.erase(std::remove(s_socketList.begin(), s_socketList.end(), this));
+	s_socketList.erase(std::remove(s_socketList.begin(), s_socketList.end(), this), s_socketList.end());
 	assert(ReleaseMutex(s_socketListMutex) && "Socket::~Socket(): Failed to release socket list mutex!");
 
 	// Clean up
@@ -304,6 +294,32 @@ Socket::~Socket()
 	closesocket(m_socket);
 }
 
+
+// Need a separate initailization function, so that the Socket can be pushed to the list
+// as soon as possible in the constructor, without risking undefined behaviour if we wait
+// for these operations to complete there.
+void
+Socket::Initialize()
+{
+	// Open a stream to log Socket events to
+	if (g_config.logsDirectory.empty())
+	{
+		m_logStream = std::make_unique<NullStream>();
+	}
+	else
+	{
+		std::ostringstream logFileName;
+		logFileName << g_config.logsDirectory << "\\SOCKET_" << m_address.AsString('_')
+			<< "_" << std::time(nullptr) << ".txt";
+
+		m_logStream = std::make_unique<std::ofstream>(logFileName.str());
+		if (!static_cast<std::ofstream*>(m_logStream.get())->is_open())
+		{
+			SessionLog() << "[SOCKET] Failed to open log file \"" << logFileName.str() << "\"!" << std::endl;
+			m_logStream = std::make_unique<NullStream>();
+		}
+	}
+}
 
 void
 Socket::Disconnect()
@@ -338,9 +354,10 @@ Socket::ReceiveData(char* data, int len)
 	else if (receivedLen < 0)
 		throw std::runtime_error("\"recv\" failed: " + std::to_string(WSAGetLastError()));
 
-	m_log << "[RECEIVED]: ";
-	m_log.write(data, receivedLen);
-	m_log << "\n\n" << std::endl;
+	std::ostream& log = *m_logStream;
+	log << "[RECEIVED]: ";
+	log.write(data, receivedLen);
+	log << "\n\n" << std::endl;
 
 	return receivedLen;
 }
@@ -376,16 +393,17 @@ Socket::ReceiveData()
 		if (!g_config.logPingMessages && receivedEntries.empty())
 			return {};
 
-		m_log << "[RECEIVED]: " << std::endl;
+		std::ostream& log = *m_logStream;
+		log << "[RECEIVED]: " << std::endl;
 		for (const std::vector<std::string>& receivedLineEntries : receivedEntries)
 		{
 			for (const std::string& entry : receivedLineEntries)
 			{
-				m_log << entry << std::endl;
+				log << entry << std::endl;
 			}
-			m_log << std::endl;
+			log << std::endl;
 		}
-		m_log << '\n' << std::endl;
+		log << '\n' << std::endl;
 
 		return receivedEntries;
 	}
@@ -404,9 +422,10 @@ Socket::SendData(const char* data, int len)
 	if (sentLen == SOCKET_ERROR)
 		throw std::runtime_error("\"send\" failed: " + std::to_string(WSAGetLastError()));
 
-	m_log << "[SENT]: ";
-	m_log.write(data, sentLen);
-	m_log << "\n(BYTES SENT=" << sentLen << ")\n\n" << std::endl;
+	std::ostream& log = *m_logStream;
+	log << "[SENT]: ";
+	log.write(data, sentLen);
+	log << "\n(BYTES SENT=" << sentLen << ")\n\n" << std::endl;
 
 	return sentLen;
 }
