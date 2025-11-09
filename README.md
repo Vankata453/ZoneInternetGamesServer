@@ -1,6 +1,6 @@
 # Zone Internet Games Server
 
-This project aims to bring back the functionality of the Internet Games included in Windows 7 and XP/ME, the servers for which were officially shut down on:
+This project brings back the functionality of the Internet Games included in Windows 7 and XP/ME, the servers for which were officially shut down on:
 
 * **Windows XP/ME**: July 31st, 2019
 * **Windows 7**: January 22nd, 2020
@@ -69,7 +69,7 @@ This repository includes the following:
 
 ![Preview of the Internet Games Server in action](docs/img/README_ServerPreview.png)
 
-A Winsock server, which aims to make the Internet Games playable by acting as a Zone games server.
+A Winsock server, which makes the Internet Games playable by acting as a Zone games server.
 It matches players in lobbies, depending on the game being played, as well as the chosen skill level.
 It can manage many matches of any of the games at the same time.
 
