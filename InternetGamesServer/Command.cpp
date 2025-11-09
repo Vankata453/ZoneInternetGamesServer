@@ -204,12 +204,12 @@ DWORD WINAPI CommandHandler(void*)
 			{
 				std::cout
 					<< std::endl
-					<< std::left << std::setw(17) << "IP"
+					<< std::left << std::setw(23) << "IP"
 					<< std::setw(21) << "Connected since"
 					<< std::setw(31) << "Type"
 					<< std::setw(27) << "State"
 					<< "Match Joined (GUID)" << std::endl
-					<< std::string(134, '-') << std::endl;
+					<< std::string(140, '-') << std::endl;
 
 				switch (WaitForSingleObject(Socket::s_socketListMutex, 5000))
 				{
@@ -229,7 +229,7 @@ DWORD WINAPI CommandHandler(void*)
 					localtime_s(&localConnectionTime, &connectionTime);
 
 					std::cout
-						<< std::setw(15) << socket->GetAddressString() << "  "
+						<< std::setw(21) << socket->GetAddressString() << "  "
 						<< std::put_time(&localConnectionTime, "%d/%m/%Y %H:%M:%S") << "  "
 						<< std::setw(29) << Socket::TypeToString(socket->GetType()) << "  ";
 					if (socket->GetPlayerSocket())
