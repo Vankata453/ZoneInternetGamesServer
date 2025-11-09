@@ -1,6 +1,6 @@
-# Running multiple instances of a Windows 7 Internet Game
+# Running multiple instances of an Internet Game (any version)
 
-This document covers how the Windows 7 Internet Games implement protection against creating multiple instances
+This document covers how the Windows 7/XP/ME Internet Games implement protection against creating multiple instances
 of the same game, and how to bypass it for various purposes (for example, testing the Internet Games Server).
 
 ## How it works
@@ -31,13 +31,13 @@ Running multiple instances of different Internet Games is not an issue, since th
 
 1. Install a Hex editor, like [HxD](https://mh-nexus.de/en/hxd/), which will be used here.
 
-2. Go to "C:\Program Files\Microsoft Games\Multiplayer" and create a full copy of the game's folder.
+2. For Windows 7 games, go to "C:\Program Files\Microsoft Games\Multiplayer" and create a full copy of the game's folder. For other versions, simply copy the game executable.
 
 ![A copy of the "Checkers" folder](img/MultipleInstances_CheckersFolderCopy.png)
 
 > [!NOTE]
 >
-> A full folder copy needs to be done, because of a "Parental Controls" issue, when launching a renamed game executable.
+> For Windows 7 games, a full folder copy needs to be done, because of a "Parental Controls" issue, when launching a renamed game executable.
 >
 > !["Parental Controls has blocked this game" error dialog](img/MultipleInstances_ParentalControlsIssue.png)
 >
