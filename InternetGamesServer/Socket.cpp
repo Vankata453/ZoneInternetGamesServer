@@ -228,9 +228,6 @@ Socket::GetAddressString(IN_ADDR address)
 std::vector<Socket*>
 Socket::GetSocketsByIP(const std::string& ip)
 {
-	sockaddr_in socketInfo;
-	int socketInfoSize = sizeof(socketInfo);
-
 	std::vector<Socket*> sockets;
 	for (Socket* socket : s_socketList)
 	{
@@ -243,9 +240,6 @@ Socket::GetSocketsByIP(const std::string& ip)
 Socket*
 Socket::GetSocketByIP(const std::string& ip, USHORT port)
 {
-	sockaddr_in socketInfo;
-	int socketInfoSize = sizeof(socketInfo);
-
 	for (Socket* socket : s_socketList)
 	{
 		if (socket->m_address.ip == ip && socket->m_address.port == port)
