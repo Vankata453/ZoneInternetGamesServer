@@ -16,6 +16,8 @@ void LoadXPAdBannerImage();
 /** SOCKET wrapper, featuring general socket handling functions and a few additional features */
 class Socket final
 {
+	friend class PlayerSocket;
+
 public:
 	enum Type
 	{

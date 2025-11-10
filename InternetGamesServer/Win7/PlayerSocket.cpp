@@ -41,8 +41,7 @@ PlayerSocket::PlayerSocket(Socket& socket) :
 
 PlayerSocket::~PlayerSocket()
 {
-	if (!IsDisconnected())
-		OnDisconnected();
+	Destroy();
 }
 
 

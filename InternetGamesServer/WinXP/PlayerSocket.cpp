@@ -58,8 +58,7 @@ PlayerSocket::PlayerSocket(Socket& socket, const MsgConnectionHi& hiMessage) :
 
 PlayerSocket::~PlayerSocket()
 {
-	if (!IsDisconnected())
-		OnDisconnected();
+	Destroy();
 
 	CloseHandle(m_acceptsGameMessagesEvent);
 	CloseHandle(m_genericMessageMutex);

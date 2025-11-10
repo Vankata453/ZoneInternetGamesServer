@@ -81,7 +81,6 @@ Socket::SocketHandler(void* socket_)
 			{
 				socket.m_type = WIN7;
 				player = std::make_unique<Win7::PlayerSocket>(socket);
-				socket.m_playerSocket = player.get();
 
 				socket.SendData(SOCKET_WIN7_HI_RESPONSE, static_cast<int>(strlen(SOCKET_WIN7_HI_RESPONSE)));
 			}
@@ -103,7 +102,6 @@ Socket::SocketHandler(void* socket_)
 					socket.SendData(xpPlayer->ConstructHelloMessage(), WinXP::EncryptMessage, XPDefaultSecurityKey);
 
 					player = std::move(xpPlayer);
-					socket.m_playerSocket = player.get();
 				}
 				else
 				{

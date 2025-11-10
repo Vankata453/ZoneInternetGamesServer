@@ -22,6 +22,9 @@ public:
 	inline bool IsDisconnected() const { return m_disconnected; }
 
 protected:
+	/* Any child PlayerSocket must call this in its destructor first! */
+	void Destroy();
+
 	virtual void OnDisconnected() {}
 
 protected:
