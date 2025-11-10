@@ -282,10 +282,11 @@ Socket::Socket(SOCKET socket) :
 
 Socket::~Socket()
 {
-	assert(WaitForSingleObject(s_socketListMutex, 5000) == WAIT_OBJECT_0
-		&& "Socket::~Socket(): Failed to acquire socket list mutex!");
+	DWORD mutexResult = WaitForSingleObject(s_socketListMutex, 5000) == WAIT_OBJECT_0;
+	assert(waitResult && "Socket::~Socket(): Failed to acquire socket list mutex!");
 	s_socketList.erase(std::remove(s_socketList.begin(), s_socketList.end(), this), s_socketList.end());
-	assert(ReleaseMutex(s_socketListMutex) && "Socket::~Socket(): Failed to release socket list mutex!");
+	mutexResult = ReleaseMutex(s_socketListMutex);
+	assert(mutexResult && "Socket::~Socket(): Failed to release socket list mutex!");
 
 	// Clean up
 	Disconnect();
