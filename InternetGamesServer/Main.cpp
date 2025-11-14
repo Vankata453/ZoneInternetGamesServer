@@ -248,7 +248,10 @@ int main(int argc, char* argv[])
 				}
 			}
 			if (!ReleaseMutex(Socket::s_socketListMutex))
-				throw std::runtime_error("main(): Couldn't release socket list mutex: " + std::to_string(GetLastError()));
+			{
+				fatalError = "main(): Couldn't release socket list mutex: " + std::to_string(GetLastError());
+				break;
+			}
 
 			if (numConns >= g_config.numConnectionsPerIP)
 			{
