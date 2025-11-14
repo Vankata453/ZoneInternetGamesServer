@@ -52,7 +52,14 @@ int main(int argc, char* argv[])
 	g_config.Load(argConfigFile);
 	if (argPort)
 	{
-		g_config.port = static_cast<USHORT>(std::stoi(argPort));
+		try
+		{
+			g_config.port = static_cast<USHORT>(std::stoi(argPort));
+		}
+		catch (const std::exception& err)
+		{
+			std::cout << "Invalid port number argument provided: " << err.what() << std::endl;
+		}
 		g_config.Save();
 	}
 	if (!g_config.logsDirectory.empty())

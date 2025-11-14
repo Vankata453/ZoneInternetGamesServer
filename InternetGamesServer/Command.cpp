@@ -91,7 +91,15 @@ DWORD WINAPI CommandHandler(void*)
 				}
 				if (std::getline(addrStr, portStr, ':'))
 				{
-					const USHORT port = static_cast<USHORT>(std::stoi(portStr));
+					USHORT port;
+					try
+					{
+						port = static_cast<USHORT>(std::stoi(portStr));
+					}
+					catch (const std::exception& err)
+					{
+						throw std::runtime_error("Invalid port number: " + std::string(err.what()));
+					}
 					Socket* socket = Socket::GetSocketByIP(ip, port);
 					if (!socket)
 						throw std::runtime_error("No socket with IP \"" + ip + "\" and port " + std::to_string(port) + " found!");

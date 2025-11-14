@@ -31,7 +31,7 @@ Config::Load(const std::string& file)
 	const tinyxml2::XMLError err = doc.LoadFile(file.c_str());
 	if (err != tinyxml2::XML_SUCCESS)
 	{
-		std::cout << "WARNING: Couldn't load config file \"" << m_file << "\": "
+		std::cout << "[CONFIG] WARNING: Couldn't load config file \"" << m_file << "\": "
 			<< std::string(tinyxml2::XMLDocument::ErrorIDToName(err))
 			<< ": " + std::string(doc.ErrorStr()) << std::endl;
 		Save();
@@ -45,7 +45,16 @@ Config::Load(const std::string& file)
 	{
 		tinyxml2::XMLElement* elPort = elRoot->FirstChildElement("Port");
 		if (elPort && elPort->GetText())
-			port = static_cast<USHORT>(std::stoi(elPort->GetText()));
+		{
+			try
+			{
+				port = static_cast<USHORT>(std::stoi(elPort->GetText()));
+			}
+			catch (const std::exception& err)
+			{
+				std::cout << "[CONFIG] Invalid \"Port\" number: " << err.what() << std::endl;
+			}
+		}
 	}
 	{
 		tinyxml2::XMLElement* elLogsDirectory = elRoot->FirstChildElement("LogsDirectory");
@@ -60,7 +69,16 @@ Config::Load(const std::string& file)
 	{
 		tinyxml2::XMLElement* elNumConnectionsPerIP = elRoot->FirstChildElement("NumConnectionsPerIP");
 		if (elNumConnectionsPerIP && elNumConnectionsPerIP->GetText())
-			numConnectionsPerIP = static_cast<USHORT>(std::stoi(elNumConnectionsPerIP->GetText()));
+		{
+			try
+			{
+				numConnectionsPerIP = static_cast<USHORT>(std::stoi(elNumConnectionsPerIP->GetText()));
+			}
+			catch (const std::exception& err)
+			{
+				std::cout << "[CONFIG] Invalid \"NumConnectionsPerIP\" number: " << err.what() << std::endl;
+			}
+		}
 	}
 	{
 		tinyxml2::XMLElement* elSkipLevelMatching = elRoot->FirstChildElement("SkipLevelMatching");
@@ -147,7 +165,16 @@ Config::SetValue(const std::string& key, const std::string& value)
 #define CONFIG_SET_BOOL_VALUE(var) (value == "1" ? true : (value == "0" ? false : var))
 
 	if (key == "port")
-		port = static_cast<USHORT>(std::stoi(value));
+	{
+		try
+		{
+			port = static_cast<USHORT>(std::stoi(value));
+		}
+		catch (const std::exception& err)
+		{
+			throw std::runtime_error("Invalid \"port\" number: " + std::string(err.what()));
+		}
+	}
 	else if (key == "logdir")
 	{
 		if (value == "0")
@@ -161,7 +188,16 @@ Config::SetValue(const std::string& key, const std::string& value)
 	else if (key == "logping")
 		logPingMessages = CONFIG_SET_BOOL_VALUE(logPingMessages);
 	else if (key == "numconnsip")
-		numConnectionsPerIP = static_cast<USHORT>(std::stoi(value));
+	{
+		try
+		{
+			numConnectionsPerIP = static_cast<USHORT>(std::stoi(value));
+		}
+		catch (const std::exception& err)
+		{
+			throw std::runtime_error("Invalid \"numconnsip\" number: " + std::string(err.what()));
+		}
+	}
 	else if (key == "skiplevel")
 		skipLevelMatching = CONFIG_SET_BOOL_VALUE(skipLevelMatching);
 	else if (key == "disablead")
