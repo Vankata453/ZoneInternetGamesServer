@@ -91,6 +91,11 @@ PlayerSocket::ProcessMessages()
 				{
 					AwaitClientConfig();
 
+					MsgUserInfoResponse msgUserInfo;
+					msgUserInfo.ID = m_ID;
+					msgUserInfo.language = m_config.userLanguage;
+					SendGenericMessage<MessageUserInfoResponse>(std::move(msgUserInfo));
+
 					m_match = MatchManager::Get().FindLobby(*this);
 					m_state = STATE_WAITINGFOROPPONENTS;
 					break;
@@ -196,10 +201,6 @@ PlayerSocket::OnGameStart(const std::vector<PlayerSocket*>& matchPlayers)
 	if (m_state != STATE_WAITINGFOROPPONENTS)
 		return;
 
-	MsgUserInfoResponse msgUserInfo;
-	msgUserInfo.ID = m_ID;
-	msgUserInfo.language = m_config.userLanguage;
-
 	const int16 totalPlayerCount = static_cast<int16>(m_match->GetRequiredPlayerCount());
 	MsgGameStart msgGameStart;
 	msgGameStart.gameID = m_match->GetGameID();
@@ -222,7 +223,6 @@ PlayerSocket::OnGameStart(const std::vector<PlayerSocket*>& matchPlayers)
 
 	m_state = STATE_STARTING_GAME;
 
-	SendGenericMessage<MessageUserInfoResponse>(std::move(msgUserInfo));
 	SendGenericMessage<MessageGameStart>(std::move(msgGameStart),
 		sizeof(MsgGameStart) - sizeof(MsgGameStart::User) * (XPMaxMatchPlayers - totalPlayerCount));
 
