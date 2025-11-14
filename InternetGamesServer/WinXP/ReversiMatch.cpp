@@ -13,7 +13,6 @@ ReversiMatch::ReversiMatch(unsigned int index, PlayerSocket& player) :
 	m_matchState(MatchState::AWAITING_START),
 	m_playersCheckedIn({ false, false }),
 	m_playerCheckInMsgs(),
-	m_playerTurn(1),
 	m_playerResigned(-1)
 {}
 
@@ -22,7 +21,6 @@ ReversiMatch::Reset()
 {
 	m_playersCheckedIn = { false, false };
 	m_playerCheckInMsgs = {};
-	m_playerTurn = 1;
 	m_playerResigned = -1;
 }
 
@@ -71,14 +69,10 @@ ReversiMatch::ProcessIncomingGameMessageImpl(PlayerSocket& player, uint32 type)
 				{
 					if (m_playerResigned != -1)
 						throw std::runtime_error("Reversi::MsgMovePiece: Player has resigned!");
-					if (player.m_seat != m_playerTurn)
-						throw std::runtime_error("Reversi::MsgMovePiece: Not this player's turn!");
 
 					MsgMovePiece msgMovePiece = player.OnMatchAwaitGameMessage<MsgMovePiece, MessageMovePiece>();
 					if (msgMovePiece.seat != player.m_seat)
 						throw std::runtime_error("Reversi::MsgMovePiece: Incorrect player seat!");
-
-					m_playerTurn = XPReversiInvertSeat(m_playerTurn);
 
 					BroadcastGameMessage<MessageMovePiece>(msgMovePiece, player.m_seat);
 					return;

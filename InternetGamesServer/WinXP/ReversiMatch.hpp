@@ -34,7 +34,6 @@ private:
 	std::array<bool, 2> m_playersCheckedIn;
 	std::array<Reversi::MsgCheckIn, 2> m_playerCheckInMsgs;
 
-	int16 m_playerTurn;
 	int16 m_playerResigned;
 
 private:
